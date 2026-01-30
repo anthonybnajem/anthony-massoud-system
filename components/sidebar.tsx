@@ -70,7 +70,7 @@ const navMain: (NavItem & { roles?: string[] })[] = [
   { href: "/discounts", label: "Discounts", icon: Percent },
   {
     href: "/employees",
-    label: "Employees",
+    label: "Users",
     icon: Users,
     roles: ["admin", "manager"],
   },

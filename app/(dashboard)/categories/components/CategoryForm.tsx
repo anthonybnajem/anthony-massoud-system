@@ -61,7 +61,7 @@ export function CategoryForm({
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
       <div className="grid gap-2">
         <Label htmlFor="name">Name</Label>
-        <Input id="name" placeholder="Category name ex: Meat pork" {...register("name")} />
+        <Input id="name" placeholder="Category name ex: meat pork" {...register("name")} />
         {errors.name && (
           <p className="text-destructive">{errors.name.message}</p>
         )}
@@ -76,7 +76,7 @@ export function CategoryForm({
         />
       </div>
 
-      <div className="grid gap-2">
+      {/* <div className="grid gap-2">
         <Label htmlFor="color">Color (Optional)</Label>
         <div className="flex gap-2">
           {colorOptions.map((color) => (
@@ -91,12 +91,12 @@ export function CategoryForm({
             />
           ))}
         </div>
-      </div>
+      </div> */}
 
-      <div className="grid gap-2">
+      {/* <div className="grid gap-2">
         <Label htmlFor="icon">Icon (Optional)</Label>
         <Input id="icon" placeholder="Category icon" {...register("icon")} />
-      </div>
+      </div> */}
 
       <div className="flex justify-end gap-2 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>
