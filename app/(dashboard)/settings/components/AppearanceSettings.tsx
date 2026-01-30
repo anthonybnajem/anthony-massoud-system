@@ -20,7 +20,8 @@ interface AppearanceSettingsProps {
 
 export function AppearanceSettings({ onThemeChange }: AppearanceSettingsProps) {
   const { theme, resolvedTheme, setTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
+  // const isDark = resolvedTheme === "dark";
+   const isDark = false;
 
   return (
     <div className="space-y-6">
