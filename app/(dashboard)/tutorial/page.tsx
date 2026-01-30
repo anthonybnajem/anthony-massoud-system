@@ -163,18 +163,14 @@ export default function TutorialPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 text-sm text-muted-foreground">
+        
           <p>
-            1. Visit the Receipt Designer and upload your Carnico logo (PNG/SVG). Adjust logo size for 80mm paper.
+            1. Enter store details (address, phone, meat-processing certification) under Store Information so they appear on every receipt.
           </p>
           <p>
-            2. Enter store details (address, phone, meat-processing certification) under Store Information so they appear on every receipt.
+            2. Add a thank-you message (e.g., “Thank you for choosing Carnico Meat Factory”) and optional returns policy.
           </p>
-          <p>
-            3. Add a thank-you message (e.g., “Thank you for choosing Carnico Meat Factory”) and optional returns policy.
-          </p>
-          <p>
-            4. Enable barcode/QR if you need to scan receipt numbers during order pickup.
-          </p>
+         
         </CardContent>
       </Card>
 
