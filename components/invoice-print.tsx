@@ -410,7 +410,7 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
       fontFamily = "Arial",
       fontSize = 12,
       receiptWidth = 300,
-      storeName = "My Store",
+      storeName = "Carnico",
       storeAddress,
       storePhone,
       storeEmail,
