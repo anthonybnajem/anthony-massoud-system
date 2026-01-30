@@ -61,7 +61,7 @@ export function CategoryForm({
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
       <div className="grid gap-2">
         <Label htmlFor="name">Name</Label>
-        <Input id="name" placeholder="Category name" {...register("name")} />
+        <Input id="name" placeholder="Category name ex: Meat pork" {...register("name")} />
         {errors.name && (
           <p className="text-destructive">{errors.name.message}</p>
         )}
