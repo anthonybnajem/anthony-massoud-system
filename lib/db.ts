@@ -218,7 +218,7 @@ export const DEFAULT_RECEIPT_SETTINGS: ReceiptSettings = {
   fontFamily: "Arial",
   thankYouMessage: "Thank you for shopping with us!",
   returnPolicy: "Returns accepted within 30 days with receipt.",
-  showBarcode: true,
+  showBarcode: false,
 };
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {

@@ -55,7 +55,7 @@ export function ReceiptDesigner() {
     fontFamily: "Arial",
     thankYouMessage: "",
     returnPolicy: "",
-    showBarcode: true, // Add this field
+    showBarcode: false, // Add this field
   });
 
   // Update form data when settings change
@@ -84,7 +84,7 @@ export function ReceiptDesigner() {
         fontFamily: settings.fontFamily,
         thankYouMessage: settings.thankYouMessage || "",
         returnPolicy: settings.returnPolicy || "",
-        showBarcode: settings.showBarcode !== undefined ? settings.showBarcode : true, // Add this field
+        showBarcode: settings.showBarcode !== undefined ? settings.showBarcode : false, // Add this field
       });
     }
   }, [settings]);
