@@ -232,7 +232,7 @@ export function Cart({
     <div
       className={`w-full ${
         isTablet ? "md:w-80 md:max-w-80" : "md:w-96 md:max-w-96"
-      } flex flex-col border rounded-lg bg-card shadow-lg flex-shrink-0 min-w-0 max-h-screen md:max-h-none`}
+      } flex flex-col border rounded-lg bg-card shadow-lg flex-shrink-0 min-w-0 max-h-[100vh]`}
     >
       {cartContent}
     </div>
