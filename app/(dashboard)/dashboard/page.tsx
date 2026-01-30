@@ -13,8 +13,14 @@ import { RecentSalesList } from "./components/RecentSalesList";
 import { TopProductsList } from "./components/TopProductsList";
 import { DollarSign, Package, ShoppingCart, Tags } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { useTheme } from "next-themes";
+import { useEffect } from "react";
 
 export default function DashboardPage() {
+   const {  setTheme } = useTheme()
+    useEffect(() => {
+      setTheme("light");
+    }, [setTheme]);
   const { products, sales, categories } = usePosData();
   const { tier, activeStore, canUseEnterpriseFeatures } = useSubscription();
   const { licenseInfo, licenseStatus } = useLicense();

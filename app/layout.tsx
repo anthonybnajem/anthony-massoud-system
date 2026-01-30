@@ -9,6 +9,8 @@ import { PosDataProvider } from "@/components/pos-data-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { DiscountProvider } from "@/components/discount-provider";
 import { AuthProvider } from "@/components/auth-provider";
+import { useEffect } from "react";
+import { useTheme } from "next-themes";
 const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({
@@ -16,6 +18,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+   
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>

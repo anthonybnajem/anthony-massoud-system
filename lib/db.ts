@@ -122,10 +122,9 @@ export type Discount = {
   usageCount: number;
 };
 
-  // | "dark" | "system";
 export type AppSettings = {
   id: string;
-  theme: "light" ;
+  theme: "light" | "dark" | "system";
   language: string;
   defaultTaxRate: number;
   defaultDiscountRate: number;
@@ -224,7 +223,7 @@ export const DEFAULT_RECEIPT_SETTINGS: ReceiptSettings = {
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   id: "app_settings",
-  theme: "system",
+  theme: "light",
   language: "en",
   defaultTaxRate: 10,
   defaultDiscountRate: 0,
