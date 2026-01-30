@@ -58,7 +58,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 overflow-hidden min-w-0">
-       <Label className="text-yellow-500">Carnico Team, don't forget to export your data before closing the browser from Data Export (side menu). I'am working on the database :)</Label>
+       <Label className="text-yellow-500">Carnico Team, don’t forget to export your data from the Data Export and History (side menu) before closing the browser. I’m working on the database :)</Label>
       {/* <LicenseStatusCard
         tier={tier}
         licenseStatus={licenseStatus}
