@@ -20,6 +20,7 @@ import {
   History,
   Users,
   LogOut,
+  BookOpen,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -100,6 +101,11 @@ const navReports: (NavItem & { roles?: string[] })[] = [
     label: "Data Export",
     icon: ClipboardList,
     roles: ["admin"],
+  },
+  {
+    href: "/tutorial",
+    label: "Tutorial",
+    icon: BookOpen,
   },
 ];
 

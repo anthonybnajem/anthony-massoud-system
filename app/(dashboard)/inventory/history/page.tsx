@@ -163,6 +163,78 @@ export default function InventoryHistoryPage() {
     fileInputRef.current?.click();
   };
 
+  const handleExportCSV = () => {
+    if (filteredMovements.length === 0) {
+      toast({
+        title: "Nothing to Export",
+        description: "No stock movements match the current filters.",
+      });
+      return;
+    }
+
+    const headers = [
+      "ID",
+      "Product Name",
+      "Product ID",
+      "Movement Type",
+      "Quantity",
+      "Previous Stock",
+      "New Stock",
+      "Reason",
+      "Notes",
+      "Recorded By",
+      "Date",
+    ];
+
+    const rows = filteredMovements.map((movement) => {
+      const product =
+        products.find((p) => p.id === movement.productId) || null;
+      return [
+        movement.id,
+        product?.name || "Unknown Product",
+        movement.productId,
+        movement.type,
+        movement.quantity.toString(),
+        movement.previousStock.toString(),
+        movement.newStock.toString(),
+        movement.reason || "",
+        movement.notes || "",
+        movement.userId || "",
+        new Date(movement.date).toISOString(),
+      ];
+    });
+
+    const csvContent = [headers, ...rows]
+      .map((row) =>
+        row
+          .map((value) =>
+            `"${String(value).replace(/"/g, '""')}"`
+          )
+          .join(",")
+      )
+      .join("\n");
+
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `stock-movements-${format(
+      new Date(),
+      "yyyyMMdd-HHmmss"
+    )}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export Ready",
+      description: `${filteredMovements.length} movements exported as CSV.`,
+    });
+  };
+
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
     show: { y: 0, opacity: 1 },
@@ -264,7 +336,10 @@ export default function InventoryHistoryPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" onClick={handleExportMovements}>
-                  Export
+                  Export JSON
+                </Button>
+                <Button variant="outline" onClick={handleExportCSV}>
+                  Export CSV
                 </Button>
                 <Button variant="default" onClick={triggerImport} disabled={isImporting}>
                   {isImporting ? "Importing..." : "Import"}
