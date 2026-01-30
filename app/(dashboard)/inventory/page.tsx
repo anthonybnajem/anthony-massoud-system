@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { usePosData, type Product } from "@/components/pos-data-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,13 +11,21 @@ import { InventoryTable } from "./components/InventoryTable";
 import { StockAdjustmentDialog } from "./components/StockAdjustmentDialog";
 
 export default function InventoryPage() {
-  const { products, categories, adjustStock } = usePosData();
+  const { products, categories, adjustStock, fetchData } = usePosData();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [stockStatus, setStockStatus] = useState("all");
   const [sortBy, setSortBy] = useState("name");
   const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  useEffect(() => {
+    if (products.length === 0) {
+      fetchData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products.length]);
+
 
   // Filter and sort products
   const filteredProducts = products
@@ -57,8 +65,17 @@ export default function InventoryPage() {
     });
 
   const handleAdjust = (product: Product) => {
-    setSelectedProduct(product);
-    setIsAdjustDialogOpen(true);
+    if (product.category && product.category.id) {
+      setSelectedProduct(product);
+      setIsAdjustDialogOpen(true);
+    } else {
+      fetchData();
+      const found = products.find((p) => p.id === product.id);
+      if (found) {
+        setSelectedProduct(found);
+        setIsAdjustDialogOpen(true);
+      }
+    }
   };
 
   const handleAdjustStock = async (
@@ -69,6 +86,7 @@ export default function InventoryPage() {
     notes?: string
   ) => {
     await adjustStock(productId, quantity, type, reason, notes);
+    await fetchData();
   };
 
   const containerVariants = {
@@ -145,6 +163,7 @@ export default function InventoryPage() {
             </div>
           </CardHeader>
           <CardContent className="overflow-hidden min-w-0 p-0">
+            
             <InventoryTable
               products={filteredProducts}
               onAdjust={handleAdjust}
@@ -164,3 +183,4 @@ export default function InventoryPage() {
     </motion.div>
   );
 }
+ 

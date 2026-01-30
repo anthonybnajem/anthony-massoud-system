@@ -43,8 +43,7 @@ export function InventoryTableRow({
   const formattedStock = formatStockDisplay(product);
 
   return (
-    <motion.tr
-      variants={variants}
+    <tr
       className="hover:bg-muted/50 transition-colors"
     >
       <TableCell className="font-medium">
@@ -72,7 +71,9 @@ export function InventoryTableRow({
         </div>
       </TableCell>
       <TableCell>
-        <Badge variant="outline">{product.category.name}</Badge>
+        <Badge variant="outline">
+          {product.category?.name || "Uncategorized"}
+        </Badge>
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
@@ -106,6 +107,6 @@ export function InventoryTableRow({
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
-    </motion.tr>
+    </tr>
   );
 }
