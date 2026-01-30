@@ -122,9 +122,10 @@ export type Discount = {
   usageCount: number;
 };
 
+  // | "dark" | "system";
 export type AppSettings = {
   id: string;
-  theme: "light" | "dark" | "system";
+  theme: "light" ;
   language: string;
   defaultTaxRate: number;
   defaultDiscountRate: number;

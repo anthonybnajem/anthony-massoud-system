@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { usePosData } from "@/components/pos-data-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,12 +18,17 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { type StockMovement } from "@/components/pos-data-provider";
 import { format, subDays } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
+import { stockMovementsApi } from "@/lib/db";
 
 export default function InventoryHistoryPage() {
-  const { stockMovements, products } = usePosData();
+  const { stockMovements, products, fetchData } = usePosData();
+  const { toast } = useToast();
   const [filterType, setFilterType] = useState<string>("all");
   const [filterProduct, setFilterProduct] = useState<string>("all");
   const [dateRange, setDateRange] = useState<string>("7");
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Filter movements
   const filteredMovements = stockMovements.filter((movement) => {
@@ -49,6 +54,113 @@ export default function InventoryHistoryPage() {
         staggerChildren: 0.1,
       },
     },
+  };
+
+  const handleExportMovements = () => {
+    if (filteredMovements.length === 0) {
+      toast({
+        title: "Nothing to Export",
+        description: "No stock movements match the current filters.",
+      });
+      return;
+    }
+
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      total: filteredMovements.length,
+      movements: filteredMovements.map((movement) => ({
+        ...movement,
+        date: new Date(movement.date).toISOString(),
+      })),
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `stock-movements-${format(
+      new Date(),
+      "yyyyMMdd-HHmmss"
+    )}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export Ready",
+      description: `${filteredMovements.length} movements exported as JSON.`,
+    });
+  };
+
+  const handleImportFile = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsImporting(true);
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const movements = Array.isArray(parsed)
+        ? parsed
+        : Array.isArray(parsed?.movements)
+        ? parsed.movements
+        : [];
+
+      if (movements.length === 0) {
+        toast({
+          title: "Import Failed",
+          description: "No valid stock movements found in the file.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      for (const raw of movements as Partial<StockMovement>[]) {
+        if (!raw.productId || !raw.type) {
+          continue;
+        }
+        const movement: StockMovement = {
+          id: raw.id && typeof raw.id === "string" ? raw.id : crypto.randomUUID(),
+          productId: raw.productId,
+          type: (raw.type as StockMovement["type"]) || "adjustment",
+          quantity: Number(raw.quantity) || 0,
+          previousStock: Number(raw.previousStock) || 0,
+          newStock: Number(raw.newStock) || 0,
+          reason: raw.reason,
+          notes: raw.notes,
+          userId: raw.userId,
+          date: raw.date ? new Date(raw.date) : new Date(),
+        };
+        await stockMovementsApi.add(movement);
+      }
+
+      await fetchData();
+      toast({
+        title: "Import Complete",
+        description: `${movements.length} stock movements imported.`,
+      });
+    } catch (error) {
+      console.error("Failed to import stock movements:", error);
+      toast({
+        title: "Import Failed",
+        description: "Could not import the provided file.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const triggerImport = () => {
+    fileInputRef.current?.click();
   };
 
   const itemVariants = {
@@ -143,14 +255,24 @@ export default function InventoryHistoryPage() {
       <motion.div variants={itemVariants}>
         <Card className="border-2 shadow-sm overflow-hidden">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-2">
                 <History className="h-5 w-5 text-primary" />
-                Movement History
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {filteredMovements.length} movements
-              </p>
+                <CardTitle className="text-lg font-semibold">
+                  Movement History
+                </CardTitle>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={handleExportMovements}>
+                  Export
+                </Button>
+                <Button variant="default" onClick={triggerImport} disabled={isImporting}>
+                  {isImporting ? "Importing..." : "Import"}
+                </Button>
+                <p className="text-sm text-muted-foreground md:ml-3">
+                  {filteredMovements.length} movements
+                </p>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="overflow-hidden min-w-0 p-0">
@@ -161,6 +283,13 @@ export default function InventoryHistoryPage() {
           </CardContent>
         </Card>
       </motion.div>
+      <input
+        type="file"
+        accept="application/json"
+        ref={fileInputRef}
+        className="hidden"
+        onChange={handleImportFile}
+      />
     </motion.div>
   );
 }
