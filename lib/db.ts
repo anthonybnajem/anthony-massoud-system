@@ -518,17 +518,23 @@ const withProductMeasurementDefaults = (product: Product): Product => {
 // Products API with error handling
 export const productsApi = {
   getAll: async (
-    page: number = 1,
-    pageSize: number = 10
+    options?: {
+      page?: number;
+      pageSize?: number;
+    }
   ): Promise<Product[]> => {
     try {
       const db = getDB();
-      const offset = (page - 1) * pageSize;
+      const { pageSize, page } = options || {};
 
-      const products = await db.products
-        .offset(offset)
-        .limit(pageSize)
-        .toArray();
+      let products: Product[];
+      if (pageSize && pageSize > 0) {
+        const pageNumber = page && page > 0 ? page : 1;
+        const offset = (pageNumber - 1) * pageSize;
+        products = await db.products.offset(offset).limit(pageSize).toArray();
+      } else {
+        products = await db.products.toArray();
+      }
 
       const productsWithCategory = await Promise.all(
         products.map(async (product) => {
