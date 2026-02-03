@@ -56,6 +56,7 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
       fontFamily = "Arial",
       fontSize = 12,
       receiptWidth = 300,
+      logoSize = 100,
     } = settings || {};
 
     return `
@@ -150,10 +151,12 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
       .text-xs {
         font-size: ${fontSize * 0.8}px;
       }
-      img {
-        max-width: 120px;
+      .receipt-logo {
+        max-width: ${logoSize}px;
+        max-height: ${logoSize}px;
         display: block;
         margin: 0 auto 8px;
+        object-fit: contain;
       }
       @media print {
         body {
@@ -257,36 +260,28 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 32;
-      const renderWidth = pageWidth - margin * 2;
-      const renderHeight = (canvas.height * renderWidth) / canvas.width;
+      const maxWidth = pageWidth - margin * 2;
+      const maxHeight = pageHeight - margin * 2;
 
-      let heightLeft = renderHeight;
-      let position = margin;
+      let renderWidth = maxWidth;
+      let renderHeight = (canvas.height * renderWidth) / canvas.width;
+
+      if (renderHeight > maxHeight) {
+        renderHeight = maxHeight;
+        renderWidth = (canvas.width * renderHeight) / canvas.height;
+      }
+
+      const xPosition = (pageWidth - renderWidth) / 2;
+      const yPosition = (pageHeight - renderHeight) / 2;
 
       pdf.addImage(
         imageData,
         "PNG",
-        margin,
-        position,
+        xPosition,
+        yPosition,
         renderWidth,
         renderHeight
       );
-
-      heightLeft -= pageHeight - margin * 2;
-
-      while (heightLeft > 0) {
-        pdf.addPage();
-        position = margin - heightLeft;
-        pdf.addImage(
-          imageData,
-          "PNG",
-          margin,
-          position,
-          renderWidth,
-          renderHeight
-        );
-        heightLeft -= pageHeight - margin * 2;
-      }
 
       pdf.save(`receipt-${receiptNumber || "download"}.pdf`);
       toast({
@@ -416,6 +411,7 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
       storeEmail,
       storeWebsite,
       storeLogo,
+      logoSize = 100,
       showLogo = true,
       thankYouMessage,
       returnPolicy,
@@ -450,7 +446,13 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
               src={storeLogo || "/placeholder.svg"}
               alt="Store Logo"
               className="receipt-logo mb-2"
-              style={{ maxWidth: "100px", maxHeight: "100px" }}
+              style={{
+                maxWidth: `${logoSize}px`,
+                maxHeight: `${logoSize}px`,
+                display: "block",
+                margin: "0 auto",
+                objectFit: "contain",
+              }}
             />
           )}
           <h2 className="text-2xl font-bold">{storeName}</h2>
@@ -566,7 +568,9 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
           <div className="flex-1 overflow-auto">{renderOriginalTable()}</div>
 
           {/* Right Side: Receipt Preview */}
-          <div className="flex-1 overflow-auto">{renderReceiptPreview()}</div>
+          <div className="flex-1 overflow-auto flex justify-center">
+            {renderReceiptPreview()}
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 mt-4">

@@ -7,6 +7,7 @@ interface ReceiptContentProps {
     storeLogo?: string;
     storeName: string;
     fontSize: number;
+    logoSize?: number;
     headerText?: string;
     storeAddress?: string;
     storePhone?: string;
@@ -36,12 +37,19 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
     return (
       <>
         <div ref={ref}>
-          <div className="receipt-header">
+          <div className="receipt-header text-center">
             {data.showLogo && data.storeLogo && (
               <img
                 src={data.storeLogo || "/placeholder.svg"}
                 alt="Store Logo"
                 className="receipt-logo mb-2"
+                style={{
+                  maxWidth: `${data.logoSize || 100}px`,
+                  maxHeight: `${data.logoSize || 100}px`,
+                  display: "block",
+                  margin: "0 auto",
+                  objectFit: "contain",
+                }}
               />
             )}
             <h1

@@ -448,9 +448,9 @@ export function ReceiptDesigner() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between mb-2">
                     <Label htmlFor="showLogo">Show Logo</Label>
-                      <Label className="text-sm" htmlFor="showLogo">Coming Soon!</Label>
+                      {/* <Label className="text-sm" htmlFor="showLogo">Coming Soon!</Label> */}
                     <Switch
-                    disabled
+                    
                       id="showLogo"
                       checked={formData.showLogo}
                       onCheckedChange={(checked) =>
