@@ -33,6 +33,8 @@ export function ReceiptDesigner() {
   const [previewMode, setPreviewMode] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const qrRef = useRef<HTMLCanvasElement>(null);
+
 
   const [formData, setFormData] = useState({
     storeName: "",
@@ -147,73 +149,68 @@ export function ReceiptDesigner() {
   };
 
   const handlePrintPreview = () => {
-    if (!receiptRef.current) return;
+  if (!receiptRef.current) return;
 
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      toast({
-        title: "Error",
-        description: "Could not open print preview window",
-        variant: "destructive",
-      });
-      return;
-    }
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    toast({
+      title: "Error",
+      description: "Could not open print preview window",
+      variant: "destructive",
+    });
+    return;
+  }
 
-    const content = receiptRef.current.innerHTML;
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Receipt Preview</title>
-          <style>
-            body {
-              font-family: ${formData.fontFamily}, sans-serif;
-              font-size: ${formData.fontSize}px;
-              width: ${formData.receiptWidth}px;
-              margin: 0 auto;
-              padding: 20px;
-            }
-            .receipt-header {
-              text-align: center;
-              margin-bottom: 10px;
-            }
-            .receipt-logo {
-              max-width: 100px;
-              max-height: 100px;
-              margin: 0 auto;
-              display: block;
-            }
-            .receipt-items {
-              width: 100%;
-              border-collapse: collapse;
-              margin: 10px 0;
-            }
-            .receipt-items th, .receipt-items td {
-              text-align: left;
-              padding: 3px 0;
-            }
-            .receipt-total {
-              margin-top: 10px;
-              padding-top: 5px;
-            }
-            .receipt-footer {
-              margin-top: 20px;
-              text-align: center;
-              font-size: ${formData.fontSize - 2}px;
-            }
-          </style>
-        </head>
-        <body>
-          ${content}
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 250);
-  };
+  let qrImgHtml = "";
+  if (qrRef.current) {
+    const qrDataUrl = qrRef.current.toDataURL();
+    qrImgHtml = `
+      <div style="text-align:center; margin-top:10px;">
+        <span style="display:block; font-size:12px;">Follow us on Instagram</span>
+        <img src="${qrDataUrl}" width="80" height="80"/>
+        <div style="font-size:10px;">${formData.instagramUrl.replace(
+          "https://www.instagram.com/",
+          "@"
+        ).replace("/", "")}</div>
+      </div>
+    `;
+  }
+
+  const content = receiptRef.current.innerHTML + qrImgHtml;
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Receipt Preview</title>
+        <style>
+          body {
+            font-family: ${formData.fontFamily}, sans-serif;
+            font-size: ${formData.fontSize}px;
+            width: ${formData.receiptWidth}px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          .receipt-header { text-align:center; margin-bottom:10px; }
+          .receipt-logo { max-width:100px; max-height:100px; margin:0 auto; display:block; }
+          .receipt-items { width:100%; border-collapse:collapse; margin:10px 0; }
+          .receipt-items th, .receipt-items td { text-align:left; padding:3px 0; }
+          .receipt-total { margin-top:10px; padding-top:5px; }
+          .receipt-footer { margin-top:20px; text-align:center; font-size:${formData.fontSize - 2}px; }
+        </style>
+      </head>
+      <body>
+        ${content}
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 250);
+};
+
 
   // Sample receipt data for preview
   const sampleItems = [
@@ -632,6 +629,7 @@ export function ReceiptDesigner() {
   <div className="mt-4 flex flex-col items-center text-center">
     <span className="text-sm font-medium mb-1">Follow us on Instagram</span>
     <QRCodeCanvas
+    ref={qrRef}
       value={formData.instagramUrl} // dynamic URL
       size={80}
       bgColor="#ffffff"
