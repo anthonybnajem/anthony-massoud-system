@@ -23,6 +23,8 @@ import { Loader2, Save, RefreshCw, Printer, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import Barcode from "react-barcode";
 import { ReceiptContent } from "@/components/receipt-content";
+import { QRCodeCanvas } from "qrcode.react";
+
 
 export function ReceiptDesigner() {
   const { settings, isLoading, updateSettings } = useReceiptSettings();
@@ -56,6 +58,8 @@ export function ReceiptDesigner() {
     thankYouMessage: "",
     returnPolicy: "",
     showBarcode: false, // Add this field
+    showInstagramQr: false,
+    instagramUrl: "https://www.instagram.com/carnico.lb/",
   });
 
   // Update form data when settings change
@@ -85,6 +89,10 @@ export function ReceiptDesigner() {
         thankYouMessage: settings.thankYouMessage || "",
         returnPolicy: settings.returnPolicy || "",
         showBarcode: settings.showBarcode !== undefined ? settings.showBarcode : false, // Add this field
+        showInstagramQr: settings.showInstagramQr !== undefined ? settings.showInstagramQr : false,
+        instagramUrl: settings.instagramUrl || "",
+
+
       });
     }
   }, [settings]);
@@ -549,7 +557,29 @@ export function ReceiptDesigner() {
                     onChange={handleInputChange}
                     rows={2}
                   />
+              
                 </div>
+                <div className="space-y-2">
+  <Label htmlFor="instagramUrl">Instagram URL</Label>
+  <Input
+    id="instagramUrl"
+    name="instagramUrl"
+    value={formData.instagramUrl}
+    onChange={handleInputChange}
+    placeholder="https://www.instagram.com/yourhandle/"
+  />
+</div>
+
+<div className="flex items-center justify-between">
+  <Label htmlFor="showInstagramQr">Show Instagram QR</Label>
+  <Switch
+    id="showInstagramQr"
+    checked={formData.showInstagramQr}
+    onCheckedChange={(checked) =>
+      handleSwitchChange("showInstagramQr", checked)
+    }
+  />
+</div>
               </TabsContent>
             </CardContent>
           </Card>
@@ -598,7 +628,31 @@ export function ReceiptDesigner() {
               tax={tax}
               total={total}
             />
+{formData.showInstagramQr && formData.instagramUrl && (
+  <div className="mt-4 flex flex-col items-center text-center">
+    <span className="text-sm font-medium mb-1">Follow us on Instagram</span>
+    <QRCodeCanvas
+      value={formData.instagramUrl} // dynamic URL
+      size={80}
+      bgColor="#ffffff"
+      fgColor="#000000"
+      level="H"
+      includeMargin={true}
+    />
+    <div className="mt-1 text-xs text-gray-600">
+      {formData.instagramUrl
+        .replace("https://www.instagram.com/", "@")
+        .replace("/", "")}
+    </div>
+  </div>
+)}
+
+
+  
+
+
           </div>
+
         </div>
       </div>
     </div>

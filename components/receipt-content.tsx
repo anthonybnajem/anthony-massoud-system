@@ -20,6 +20,10 @@ interface ReceiptContentProps {
     returnPolicy?: string;
     footerText?: string;
     showBarcode: boolean;
+    showInstagramQr: boolean; // ✅ new flag
+    instagramUrl?: string;  
+ 
+
   };
   item: {
     name: string;

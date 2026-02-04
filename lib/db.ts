@@ -100,6 +100,8 @@ export type ReceiptSettings = {
   returnPolicy?: string;
   receiptTemplate?: string;
   showBarcode: boolean;
+  showInstagramQr: boolean;
+  instagramUrl?: string;
 };
 
 export type DiscountType = "percentage" | "fixed";
@@ -219,6 +221,8 @@ export const DEFAULT_RECEIPT_SETTINGS: ReceiptSettings = {
   thankYouMessage: "Thank you for shopping with us!",
   returnPolicy: "All sales are final. No returns or exchanges are accepted.",
   showBarcode: false,
+  showInstagramQr: false,
+  instagramUrl: "",
 };
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
