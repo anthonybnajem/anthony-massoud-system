@@ -166,7 +166,7 @@ export function AddEmployeeDialog({
                     <FormLabel>Phone</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="+961 7008175"
+                        placeholder="+961 70008175"
                         {...field}
                         className="border-2 focus:border-primary"
                       />

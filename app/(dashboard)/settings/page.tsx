@@ -33,7 +33,7 @@ export default function SettingsPage() {
   const [storeSettings, setStoreSettings] = useState({
     name: "Carnico",
     address: "Zgharta",
-    phone: "+961 7008175",
+    phone: "+961 70008175",
     email: "",
     taxRate: "0",
   });
@@ -76,7 +76,7 @@ export default function SettingsPage() {
             name: receiptSettings.storeName || "Carnico",
             address:
               receiptSettings.storeAddress || "Zgharta",
-            phone: receiptSettings.storePhone || "+961 7008175",
+            phone: receiptSettings.storePhone || "+961 70008175",
             email: receiptSettings.storeEmail || "",
             taxRate: receiptSettings.taxRate?.toString() || "7.5",
           });

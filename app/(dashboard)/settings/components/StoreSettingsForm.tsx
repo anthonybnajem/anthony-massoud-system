@@ -86,7 +86,7 @@ export function StoreSettingsForm({
                 onSettingsChange({ ...settings, phone: e.target.value })
               }
               className="border-2 focus:border-primary"
-              placeholder="+961 7008175"
+              placeholder="+961 70008175"
             />
           </div>
 

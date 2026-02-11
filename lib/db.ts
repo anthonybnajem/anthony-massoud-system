@@ -201,7 +201,7 @@ export const DEFAULT_RECEIPT_SETTINGS: ReceiptSettings = {
   id: "receipt_settings",
   storeName: "Carnico",
   storeAddress: "Zgharta",
-  storePhone: "+961 7008175",
+  storePhone: "+961 70008175",
   storeEmail: "",
   storeWebsite: "www.mystore.com",
   showLogo: true,
