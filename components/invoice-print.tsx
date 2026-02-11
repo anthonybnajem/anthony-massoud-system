@@ -14,12 +14,12 @@ import type { Sale } from "./pos-data-provider";
 import type { Product } from "@/lib/db";
 import { formatQuantityWithLabel } from "@/lib/product-measurements";
 import { useToast } from "@/components/ui/use-toast";
-import {
-  ReceiptSettingsProvider,
-  useReceiptSettings,
-} from "@/components/receipt-settings-provider";
+import { useReceiptSettings } from "@/components/receipt-settings-provider";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { ReceiptContent } from "./receipt-content";
+import { getReceiptStyles, openReceiptPrintWindow } from "@/lib/receipt-print";
+
 interface InvoicePrintProps {
   sale: Sale;
   isOpen: boolean;
@@ -34,7 +34,6 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
-    // Generate a receipt number based on the sale ID and date
     if (sale) {
       const dateStr = format(new Date(sale.date), "yyMMdd");
       const shortId = sale.id.slice(0, 4);
@@ -42,157 +41,14 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
     }
   }, [sale]);
 
-  // Auto-print if settings specify
   useEffect(() => {
     if (isOpen && settings?.printAutomatically) {
-      setTimeout(() => {
-        handlePrint();
-      }, 500);
+      const t = setTimeout(() => handlePrint(), 500);
+      return () => clearTimeout(t);
     }
   }, [isOpen, settings?.printAutomatically]);
 
-  const buildPrintStyles = () => {
-    const {
-      fontFamily = "Arial",
-      fontSize = 12,
-      receiptWidth = 300,
-      logoSize = 100,
-    } = settings || {};
-
-    return `
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        font-family: ${fontFamily}, sans-serif;
-        font-size: ${fontSize}px;
-        background: #ffffff;
-        padding: 24px;
-      }
-      .receipt-preview {
-        width: ${receiptWidth}px;
-        margin: 0 auto;
-        padding: 0;
-      }
-      .receipt-header {
-        text-align: center;
-        margin-bottom: 16px;
-      }
-      .receipt-header h2 {
-        margin: 8px 0;
-        font-size: ${fontSize * 1.5}px;
-      }
-      .receipt-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-        font-size: ${fontSize * 0.9}px;
-      }
-      .receipt-grid .text-right {
-        text-align: right;
-      }
-      .receipt-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 16px;
-        font-size: ${fontSize}px;
-      }
-      .receipt-table th {
-        text-align: left;
-        font-weight: 600;
-        padding: 8px;
-        border-bottom: 1px solid #e5e7eb;
-      }
-      .receipt-table td {
-        padding: 8px;
-        border-bottom: 1px dashed #e5e7eb;
-      }
-      .receipt-table th:last-child,
-      .receipt-table td:last-child {
-        text-align: right;
-      }
-      .receipt-summary {
-        margin-top: 16px;
-        border-top: 1px solid #e5e7eb;
-        padding-top: 12px;
-        font-size: ${fontSize}px;
-      }
-      .receipt-summary .summary-row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 6px;
-      }
-      .receipt-summary .total-row {
-        font-size: ${fontSize * 1.2}px;
-        font-weight: 600;
-        margin-top: 12px;
-      }
-      .receipt-footer {
-        text-align: center;
-        margin-top: 24px;
-        color: #4b5563;
-        font-size: ${fontSize * 0.85}px;
-      }
-      .text-muted-foreground {
-        color: #6b7280;
-      }
-      .font-medium {
-        font-weight: 500;
-      }
-      .text-right {
-        text-align: right;
-      }
-      .text-center {
-        text-align: center;
-      }
-      .text-sm {
-        font-size: ${fontSize * 0.9}px;
-      }
-      .text-xs {
-        font-size: ${fontSize * 0.8}px;
-      }
-      .receipt-logo {
-        max-width: ${logoSize}px;
-        max-height: ${logoSize}px;
-        display: block;
-        margin: 0 auto 8px;
-        object-fit: contain;
-      }
-      @media print {
-        body {
-          padding: 0;
-        }
-        @page {
-          size: auto;
-          margin: 10mm;
-        }
-      }
-    `;
-  };
-
   const handlePrint = () => {
-    const printContent = invoiceRef.current?.outerHTML; // Ensure outerHTML is used to capture the full receipt content
-    if (!printContent) {
-      toast({
-        title: "Print Error",
-        description: "No content available to print.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      toast({
-        title: "Print Error",
-        description:
-          "Could not open print window. Please check your browser settings.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const printStyles = buildPrintStyles();
     const printableContent = invoiceRef.current?.outerHTML;
     if (!printableContent) {
       toast({
@@ -203,24 +59,30 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
       return;
     }
 
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Receipt #${receiptNumber}</title>
-          <style>${printStyles}</style>
-        </head>
-        <body>
-          ${printableContent}
-        </body>
-      </html>
-    `);
+    // const printWindow = window.open("", "_blank");
+    // if (!printWindow) {
+    //   toast({
+    //     title: "Print Error",
+    //     description:
+    //       "Could not open print window. Please check your browser settings.",
+    //     variant: "destructive",
+    //   });
+    //   return;
+    // }
 
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 250);
+    const success = openReceiptPrintWindow(
+      printableContent,
+      `Receipt #${receiptNumber}`,
+      settings
+    );
+
+    if (!success) {
+      toast({
+        title: "Print Error",
+        description: "Unable to prepare the print preview.",
+        variant: "destructive",
+      });
+    }
 
     toast({
       title: "Receipt Printed",
@@ -238,6 +100,8 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
       return;
     }
 
+    let receiptContainer: HTMLDivElement | null = null;
+
     try {
       setIsDownloading(true);
       toast({
@@ -245,45 +109,80 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
         description: "Generating a printable receipt preview...",
       });
 
-      const canvas = await html2canvas(invoiceRef.current, {
+      const originalReceipt = invoiceRef.current;
+      const receiptClone = originalReceipt.cloneNode(true) as HTMLElement;
+
+      receiptContainer = document.createElement("div");
+      const measuredWidth =
+        originalReceipt.getBoundingClientRect().width ||
+        originalReceipt.offsetWidth ||
+        originalReceipt.scrollWidth ||
+        0;
+
+      receiptContainer.style.position = "fixed";
+      receiptContainer.style.left = "0";
+      receiptContainer.style.top = "0";
+      receiptContainer.style.width = `${measuredWidth}px`;
+      receiptContainer.style.zIndex = "-1";
+      receiptContainer.style.pointerEvents = "none";
+      receiptContainer.style.opacity = "0";
+      receiptContainer.style.backgroundColor = "#ffffff";
+      receiptContainer.style.margin = "0";
+      receiptContainer.style.padding = "0";
+
+      receiptClone.style.maxHeight = "none";
+      receiptClone.style.height = "auto";
+      receiptClone.style.overflow = "visible";
+      receiptClone.style.width = "100%";
+      receiptClone.style.margin = "0 auto";
+
+      const captureStyles = document.createElement("style");
+      captureStyles.textContent = getReceiptStyles(settings, ".pdf-capture");
+
+      receiptContainer.classList.add("pdf-capture");
+      receiptContainer.appendChild(captureStyles);
+      receiptContainer.appendChild(receiptClone);
+      document.body.appendChild(receiptContainer);
+
+      const canvas = await html2canvas(receiptClone, {
         scale: 2,
         backgroundColor: "#ffffff",
+        scrollX: 0,
+        scrollY: -window.scrollY,
+        useCORS: true,
+        windowWidth: receiptClone.scrollWidth,
+        windowHeight: receiptClone.scrollHeight,
       });
 
       const imageData = canvas.toDataURL("image/png");
+      const pxToPt = (px: number) => (px * 72) / 96;
+      const contentWidth = pxToPt(canvas.width);
+      const contentHeight = pxToPt(canvas.height);
+      const marginPx = 18;
+      const margin = pxToPt(marginPx);
+      const pageWidth = contentWidth + margin * 2;
+      const pageHeight = contentHeight + margin * 2;
+      const orientation = pageWidth > pageHeight ? "landscape" : "portrait";
+
       const pdf = new jsPDF({
-        orientation: "portrait",
+        orientation,
         unit: "pt",
-        format: "a4",
+        format: [pageWidth, pageHeight],
       });
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 32;
-      const maxWidth = pageWidth - margin * 2;
-      const maxHeight = pageHeight - margin * 2;
-
-      let renderWidth = maxWidth;
-      let renderHeight = (canvas.height * renderWidth) / canvas.width;
-
-      if (renderHeight > maxHeight) {
-        renderHeight = maxHeight;
-        renderWidth = (canvas.width * renderHeight) / canvas.height;
-      }
-
-      const xPosition = (pageWidth - renderWidth) / 2;
-      const yPosition = (pageHeight - renderHeight) / 2;
 
       pdf.addImage(
         imageData,
         "PNG",
-        xPosition,
-        yPosition,
-        renderWidth,
-        renderHeight
+        margin,
+        margin,
+        contentWidth,
+        contentHeight,
+        undefined,
+        "FAST"
       );
 
       pdf.save(`receipt-${receiptNumber || "download"}.pdf`);
+
       toast({
         title: "Download Ready",
         description: "Your receipt PDF has been saved.",
@@ -296,6 +195,9 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
         variant: "destructive",
       });
     } finally {
+      if (receiptContainer?.parentNode) {
+        receiptContainer.parentNode.removeChild(receiptContainer);
+      }
       setIsDownloading(false);
     }
   };
@@ -309,7 +211,6 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
             new Date(sale.date),
             "MMM dd, yyyy"
           )}`,
-          // In a real implementation, this would be a URL to a shareable receipt
           url: window.location.href,
         });
         toast({
@@ -359,7 +260,10 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
               <tr key={index} className="border-b">
                 <td className="py-2">{item.product.name}</td>
                 <td className="text-center py-2">
-                  {formatQuantityWithLabel(item.product as Product, item.quantity)}
+                  {formatQuantityWithLabel(
+                    item.product as Product,
+                    item.quantity
+                  )}
                 </td>
                 <td className="text-right py-2">
                   {settings?.currencySymbol || "$"}
@@ -420,6 +324,9 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
       showTax = true,
       taxRate = 10,
       currencySymbol = "$",
+      showBarcode = false,
+      showInstagramQr = false,
+      instagramUrl,
     } = settings || {};
 
     const subtotal = sale.items.reduce(
@@ -428,6 +335,51 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
     );
     const tax = showTax ? subtotal * (taxRate / 100) : 0;
     const total = subtotal + tax;
+
+    const receiptItems = sale.items.map((item) => ({
+      name: item.product.name,
+      quantity: item.quantity,
+      quantityDisplay: formatQuantityWithLabel(
+        item.product as Product,
+        item.quantity
+      ),
+      price: item.product.price,
+      total: item.product.price * item.quantity,
+    }));
+
+    const receiptData = {
+      showLogo,
+      storeLogo,
+      storeName,
+      fontSize,
+      logoSize,
+      headerText,
+      storeAddress,
+      storePhone,
+      storeEmail,
+      storeWebsite,
+      currencySymbol,
+      showTax,
+      taxRate,
+      thankYouMessage,
+      returnPolicy,
+      footerText,
+      showBarcode,
+      showInstagramQr,
+      instagramUrl,
+    };
+
+    const meta = {
+      date: format(new Date(sale.date), "MMM dd, yyyy"),
+      time: format(new Date(sale.date), "hh:mm a"),
+      customerName: sale.customerName || "Walk-in Customer",
+      paymentMethod:
+        sale.paymentMethod === "credit"
+          ? "Credit Card"
+          : sale.paymentMethod === "cash"
+          ? "Cash"
+          : "Mobile Payment",
+    };
 
     return (
       <div
@@ -438,120 +390,17 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
           width: `${receiptWidth}px`,
           margin: "0 auto",
         }}
-        className="receipt-preview space-y-4"
+        className="receipt-preview"
       >
-        <div className="receipt-header text-center">
-          {showLogo && storeLogo && (
-            <img
-              src={storeLogo || "/placeholder.svg"}
-              alt="Store Logo"
-              className="receipt-logo mb-2"
-              style={{
-                maxWidth: `${logoSize}px`,
-                maxHeight: `${logoSize}px`,
-                display: "block",
-                margin: "0 auto",
-                objectFit: "contain",
-              }}
-            />
-          )}
-          <h2 className="text-2xl font-bold">{storeName}</h2>
-          {storeAddress && <p>{storeAddress}</p>}
-          {storePhone && <p>Phone: {storePhone}</p>}
-          {storeEmail && <p>Email: {storeEmail}</p>}
-          {storeWebsite && <p>Web: {storeWebsite}</p>}
-          {headerText && <p>{headerText}</p>}
-        </div>
-
-        <div className="receipt-info my-4">
-          <div className="receipt-grid grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <p className="font-medium">Receipt #: {receiptNumber}</p>
-              <p>Date: {format(new Date(sale.date), "MMM dd, yyyy")}</p>
-              <p>Time: {format(new Date(sale.date), "hh:mm a")}</p>
-            </div>
-            <div className="text-right">
-              <p className="font-medium">Customer:</p>
-              <p>{sale.customerName || "Walk-in Customer"}</p>
-              <p>
-                Payment Method:{" "}
-                {sale.paymentMethod === "credit"
-                  ? "Credit Card"
-                  : sale.paymentMethod === "cash"
-                  ? "Cash"
-                  : "Mobile Payment"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="receipt-summary my-4 border-t border-b py-2">
-          <table className="receipt-table receipt-items w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-2">Item</th>
-                <th className="text-center py-2">Qty</th>
-                <th className="text-right py-2">Price</th>
-                <th className="text-right py-2">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sale.items.map((item, index) => (
-                <tr key={index} className="border-b border-dashed">
-                  <td className="py-2">{item.product.name}</td>
-                  <td className="text-center py-2">
-                    {formatQuantityWithLabel(
-                      item.product as Product,
-                      item.quantity
-                    )}
-                  </td>
-                  <td className="text-right py-2">
-                    {currencySymbol}
-                    {item.product.price.toFixed(2)}
-                  </td>
-                  <td className="text-right py-2">
-                    {currencySymbol}
-                    {(item.product.price * item.quantity).toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="receipt-summary text-sm space-y-1">
-          <div className="summary-row">
-            <span>Subtotal:</span>
-            <span>
-              {currencySymbol}
-              {subtotal.toFixed(2)}
-            </span>
-          </div>
-
-          {showTax && (
-            <div className="summary-row">
-              <span>Tax ({taxRate}%):</span>
-              <span>
-                {currencySymbol}
-                {tax.toFixed(2)}
-              </span>
-            </div>
-          )}
-
-          <div className="summary-row total-row font-bold text-base pt-1">
-            <span>Total:</span>
-            <span>
-              {currencySymbol}
-              {total.toFixed(2)}
-            </span>
-          </div>
-        </div>
-
-        <div className="receipt-footer text-center text-sm mt-8">
-          {thankYouMessage && <p>{thankYouMessage}</p>}
-          {returnPolicy && <p className="text-xs mt-1">{returnPolicy}</p>}
-          {footerText && <p className="text-xs mt-2">{footerText}</p>}
-        </div>
+        <ReceiptContent
+          data={receiptData}
+          item={receiptItems}
+          receiptId={receiptNumber}
+          subtotal={subtotal}
+          tax={tax}
+          total={total}
+          meta={meta}
+        />
       </div>
     );
   };
@@ -564,17 +413,15 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
         </DialogHeader>
 
         <div className="flex gap-4 mt-4">
-          {/* Left Side: Original Receipt Table */}
           <div className="flex-1 overflow-auto">{renderOriginalTable()}</div>
 
-          {/* Right Side: Receipt Preview */}
           <div className="flex-1 overflow-auto flex justify-center">
             {renderReceiptPreview()}
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={handleShare}>
+        <div className="flex justify-end gap-2 mt-4 no-print">
+          <Button variant="outline" onClick={handleShare} disabled>
             <Share2 className="mr-2 h-4 w-4" />
             Share
           </Button>

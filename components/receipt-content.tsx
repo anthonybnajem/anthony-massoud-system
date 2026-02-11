@@ -1,5 +1,6 @@
 import React, { forwardRef } from "react";
 import Barcode from "react-barcode";
+import { QRCodeSVG } from "qrcode.react";
 
 interface ReceiptContentProps {
   data: {
@@ -20,29 +21,41 @@ interface ReceiptContentProps {
     returnPolicy?: string;
     footerText?: string;
     showBarcode: boolean;
-    showInstagramQr: boolean; // ✅ new flag
-    instagramUrl?: string;  
- 
-
+    showInstagramQr: boolean;
+    instagramUrl?: string;
   };
   item: {
     name: string;
     quantity: number;
+    quantityDisplay?: string;
     price: number;
+    total?: number;
   }[];
   receiptId: string;
   subtotal: number;
   tax: number;
   total: number;
+  meta?: {
+    date?: string;
+    time?: string;
+    customerName?: string;
+    paymentMethod?: string;
+  };
 }
 
 export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
-  ({ data, item, subtotal, tax, total, receiptId }, ref) => {
+  ({ data, item, subtotal, tax, total, receiptId, meta }, ref) => {
+    const now = new Date();
+    const displayDate = meta?.date || now.toLocaleDateString();
+    const displayTime = meta?.time || now.toLocaleTimeString();
+    const displayCustomer = meta?.customerName || "";
+    const displayPayment = meta?.paymentMethod || "Credit Card";
+
     return (
       <>
         <div ref={ref}>
           <div className="receipt-header text-center">
-            {data.showLogo && data.storeLogo && (
+            {data.showLogo && (
               <img
                 src={data.storeLogo || "/placeholder.svg"}
                 alt="Store Logo"
@@ -54,6 +67,7 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
                   margin: "0 auto",
                   objectFit: "contain",
                 }}
+                crossOrigin="anonymous"
               />
             )}
             <h1
@@ -82,16 +96,28 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
           <div className="receipt-info my-2 text-sm">
             <div className="flex justify-between">
               <span>Date:</span>
-              <span>{new Date().toLocaleDateString()}</span>
+              <span>{displayDate}</span>
             </div>
             <div className="flex justify-between">
               <span>Time:</span>
-              <span>{new Date().toLocaleTimeString()}</span>
+              <span>{displayTime}</span>
             </div>
             <div className="flex justify-between">
               <span>Receipt #:</span>
               <span>{receiptId}</span>
             </div>
+            {displayCustomer && (
+              <div className="flex justify-between">
+                <span>Customer:</span>
+                <span>{displayCustomer}</span>
+              </div>
+            )}
+            {displayPayment && (
+              <div className="flex justify-between">
+                <span>Payment Method:</span>
+                <span>{displayPayment}</span>
+              </div>
+            )}
           </div>
 
           <div
@@ -101,7 +127,7 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
               borderBottom: "1px dashed #000",
             }}
           >
-            <table className="receipt-items w-full text-sm">
+            <table className="receipt-table receipt-items w-full text-sm" style={{ borderCollapse: "separate" }}>
               <thead>
                 <tr>
                   <th className="text-left">Item</th>
@@ -111,25 +137,42 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
                 </tr>
               </thead>
               <tbody>
-                {item.map((item, index) => (
-                  <tr key={index}>
-                    <td className="text-left">{item.name}</td>
-                    <td className="text-center">{item.quantity}</td>
-                    <td className="text-right">
-                      {data.currencySymbol}
-                      {item.price.toFixed(2)}
-                    </td>
-                    <td className="text-right">
-                      {data.currencySymbol}
-                      {(item.price * item.quantity).toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
+                {item.map((lineItem, index) => {
+                  const baseCellStyle = {
+                    border: "none",
+                    borderBottom: "1px dashed #e5e7eb",
+                  };
+                  const isLast = index === item.length - 1;
+                  const cellStyle = isLast
+                    ? { ...baseCellStyle, borderBottom: "none" }
+                    : baseCellStyle;
+
+                  return (
+                    <tr key={index}>
+                      <td className="text-left" style={cellStyle}>
+                        {lineItem.name}
+                      </td>
+                      <td className="text-center" style={cellStyle}>
+                        {lineItem.quantityDisplay ?? lineItem.quantity}
+                      </td>
+                      <td className="text-right" style={cellStyle}>
+                        {data.currencySymbol}
+                        {lineItem.price.toFixed(2)}
+                      </td>
+                      <td className="text-right" style={cellStyle}>
+                        {data.currencySymbol}
+                        {(
+                          lineItem.total ?? lineItem.price * lineItem.quantity
+                        ).toFixed(2)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
-          <div className="receipt-total text-sm">
+          <div className="receipt-summary receipt-total text-sm">
             <div className="flex justify-between">
               <span>Subtotal:</span>
               <span>
@@ -157,10 +200,6 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
 
           <div className="receipt-payment text-sm mt-4">
             <div className="flex justify-between">
-              <span>Payment Method:</span>
-              <span>Credit Card</span>
-            </div>
-            <div className="flex justify-between">
               <span>Amount Paid:</span>
               <span>
                 {data.currencySymbol}
@@ -169,7 +208,7 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
             </div>
           </div>
 
-          <div className="receipt-footer mt-4 text-center text-sm">
+          <div className="receipt-footer mt-4 text-center text-sm" style={{ marginBottom: "24px" }}>
             {data.thankYouMessage && <p>{data.thankYouMessage}</p>}
             {data.returnPolicy && (
               <p className="text-xs mt-1">{data.returnPolicy}</p>
@@ -178,7 +217,7 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
               <p className="text-xs mt-2">{data.footerText}</p>
             )}
           </div>
-          <div className="mt-2 flex justify-center">
+          <div className="receipt-barcode mt-2 flex justify-center">
             {data.showBarcode && (
               <Barcode
                 value={receiptId}
@@ -188,6 +227,26 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
               />
             )}
           </div>
+
+          {data.showInstagramQr && data.instagramUrl && (
+            <div className="receipt-qr flex flex-col items-center text-center">
+              <span className="qr-label">Follow us on Instagram</span>
+          
+              <QRCodeSVG
+                value={data.instagramUrl}
+                size={80}
+                bgColor="#ffffff"
+                fgColor="#000000"
+                level="H"
+                includeMargin
+              />
+              <div className="qr-handle">
+                {data.instagramUrl
+                  .replace("https://www.instagram.com/", "@")
+                  .replace(/\/$/, "")}
+              </div>
+            </div>
+          )}
         </div>
       </>
     );
