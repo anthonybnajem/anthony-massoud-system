@@ -8,33 +8,55 @@ type ToastFunction = (options: {
 
 export function exportToCSV(
   sales: any[],
-  reportRef: { current: HTMLDivElement | null },
+  _reportRef: { current: HTMLDivElement | null },
   toast: ToastFunction
 ) {
   const headers = [
     "Date",
     "Transaction ID",
     "Customer",
-    "Items",
     "Payment Method",
-    "Amount",
+    "Item",
+    "SKU",
+    "Quantity",
+    "Unit Price",
+    "Line Total",
   ];
   const csvRows = [headers];
 
   sales.forEach((sale) => {
-    const row = [
-      format(new Date(sale.date), "yyyy-MM-dd HH:mm:ss"),
-      sale.id,
-      sale.customerName || "Walk-in Customer",
-      sale.items.length.toString(),
-      sale.paymentMethod === "credit"
-        ? "Credit Card"
-        : sale.paymentMethod === "cash"
-        ? "Cash"
-        : "Mobile Payment",
-      sale.total.toFixed(2),
-    ];
-    csvRows.push(row);
+    sale.items.forEach((item: any, index: number) => {
+      const quantity =
+        typeof item.quantity === "number"
+          ? item.quantity
+          : Number(item.quantity) || 0;
+      const unitPrice =
+        typeof item.product?.price === "number"
+          ? item.product.price
+          : typeof item.price === "number"
+          ? item.price
+          : quantity && typeof item.total === "number"
+          ? item.total / quantity
+          : 0;
+      const lineTotal =
+        typeof item.total === "number" ? item.total : unitPrice * quantity;
+      const row = [
+        format(new Date(sale.date), "yyyy-MM-dd HH:mm:ss"),
+        sale.id,
+        sale.customerName || "Walk-in Customer",
+        sale.paymentMethod === "credit"
+          ? "Credit Card"
+          : sale.paymentMethod === "cash"
+          ? "Cash"
+          : "Mobile Payment",
+        item.product?.name || item.name || `Item ${index + 1}`,
+        item.product?.sku || "-",
+        quantity.toFixed(2),
+        unitPrice.toFixed(2),
+        lineTotal.toFixed(2),
+      ];
+      csvRows.push(row);
+    });
   });
 
   const csvContent = csvRows.map((row) => row.join(",")).join("\n");
@@ -202,6 +224,64 @@ export function printReport(
   toast({
     title: "Report Printed",
     description: "The sales report has been sent to the printer.",
+  });
+}
+
+export function exportProductBreakdown(
+  rows: Array<{
+    productId: string;
+    name: string;
+    sku?: string;
+    category?: string;
+    quantity: number;
+    revenue: number;
+    avgPrice: number;
+  }>,
+  toast: ToastFunction
+) {
+  if (!rows.length) {
+    toast({
+      title: "Nothing to export",
+      description: "There are no product rows for the selected filters.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  const headers = [
+    "Product",
+    "SKU",
+    "Category",
+    "Units Sold",
+    "Revenue",
+    "Average Price",
+  ];
+
+  const csvRows = [headers];
+  rows.forEach((row) => {
+    csvRows.push([
+      row.name,
+      row.sku || "-",
+      row.category || "Uncategorized",
+      row.quantity.toFixed(2),
+      row.revenue.toFixed(2),
+      row.avgPrice.toFixed(2),
+    ]);
+  });
+
+  const csvContent = csvRows.map((row) => row.join(",")).join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `product-breakdown_${format(new Date(), "yyyy-MM-dd")}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  toast({
+    title: "Product breakdown exported",
+    description: `Saved ${rows.length} rows to CSV`,
   });
 }
 

@@ -190,7 +190,14 @@ function NavReports({ items }: { items: (NavItem & { roles?: string[] })[] }) {
             <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
               <Link href={item.href}>
                 <Icon />
-                <span>{item.label}</span>
+                <span className="flex items-center gap-2">
+                  {item.label}
+                  {item.href === "/reports" && (
+                    <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                      New
+                    </Badge>
+                  )}
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
