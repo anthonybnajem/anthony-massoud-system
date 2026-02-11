@@ -451,9 +451,9 @@ export function ReceiptDesigner() {
 
                 <div className="flex items-center justify-between">
                   <Label htmlFor="showDiscounts">Show Discounts</Label>
-                       <Label className="text-sm" htmlFor="showDiscounts">Coming Soon!</Label>
+                       {/* <Label className="text-sm" htmlFor="showDiscounts">Coming Soon!</Label> */}
                   <Switch
-                  disabled
+                  
                     id="showDiscounts"
                     checked={formData.showDiscounts}
                     onCheckedChange={(checked) =>

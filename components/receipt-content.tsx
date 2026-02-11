@@ -80,7 +80,7 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
               <p className="text-center">{data.headerText}</p>
             )}
             {data.storeAddress && (
-              <p className="text-center text-sm">{data.storeAddress}</p>
+              <p className="text-center text-sm">Address: {data.storeAddress}</p>
             )}
             {data.storePhone && (
               <p className="text-center text-sm">Phone: {data.storePhone}</p>
@@ -89,7 +89,7 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
               <p className="text-center text-sm">Email: {data.storeEmail}</p>
             )}
             {data.storeWebsite && (
-              <p className="text-center text-sm">Web: {data.storeWebsite}</p>
+              <p className="text-center text-sm">Website: {data.storeWebsite}</p>
             )}
           </div>
 
