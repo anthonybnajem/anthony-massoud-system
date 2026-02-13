@@ -30,7 +30,7 @@ export const getReceiptStyles = (
       font-size: ${fontSize}px;
       background: #ffffff;
       color: #000;
-      padding: 16px;
+      padding: 0 12px 40px;
       direction: ltr;
       unicode-bidi: plaintext;
       -webkit-print-color-adjust: exact;
@@ -45,7 +45,7 @@ export const getReceiptStyles = (
     ${rootSelector} .receipt-preview {
       width: ${receiptWidth}px;
       margin: 0 auto;
-      padding: 0 0 32px 0;
+      padding: 0 0 40px 0;
     }
 
     ${rootSelector} .flex {
@@ -244,7 +244,7 @@ export const getPrintStyles = (config?: Partial<ReceiptStyleConfig>) => `
     .no-print { display: none !important; }
     @page {
       size: auto;
-      margin: 6mm;
+      margin: 0;
     }
   }
 `;
