@@ -407,20 +407,20 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Receipt #{receiptNumber}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-4 mt-4">
-          <div className="flex-1 overflow-auto">{renderOriginalTable()}</div>
+        <div className="flex gap-4 mt-4 flex-1 overflow-hidden">
+          <div className="flex-1 overflow-auto pr-2">{renderOriginalTable()}</div>
 
-          <div className="flex-1 overflow-auto flex justify-center">
+          <div className="flex-1 overflow-auto flex justify-center pl-2">
             {renderReceiptPreview()}
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 mt-4 no-print">
+        <div className="flex justify-end gap-2 mt-4 pt-4 no-print border-t">
           <Button variant="outline" onClick={handleShare} disabled>
             <Share2 className="mr-2 h-4 w-4" />
             Share
