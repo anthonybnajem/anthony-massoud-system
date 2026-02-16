@@ -46,6 +46,13 @@ export function ReportFilters({
   onExportCSV,
   onPrint,
 }: ReportFiltersProps) {
+  const rangeDescriptions: Record<string, string> = {
+    day: "Daily view shows the last 7 days (rolling).",
+    week: "Weekly view shows the current calendar week (Sun–Sat).",
+    month: "Monthly view shows the current calendar month.",
+    custom: "Choose a specific start and end date for a custom window.",
+  };
+
   return (
     <Card className="border-2">
       <CardContent className="pt-6">
@@ -90,6 +97,9 @@ export function ReportFilters({
               )}
             </div>
           </div>
+          <p className="text-xs text-muted-foreground ml-7">
+            {rangeDescriptions[dateRange] || "Select a range to filter report data."}
+          </p>
 
           {/* Filters Section */}
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
