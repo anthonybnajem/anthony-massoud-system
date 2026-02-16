@@ -82,17 +82,19 @@ export default function DashboardPage() {
           description="Analitics feature coming soon"
           icon={DollarSign}
           variants={itemVariants}
+          href="/reports"
         />
         <StatsCard
           title="Products"
           value={totalProducts}
           description={
             totalProducts > 0
-              ? `${products.filter((p) => p.stock < 10).length} low stock items`
+              ? `${products.filter((p) => p.stock < 5).length} low stock items`
               : "No products yet"
           }
           icon={Package}
           variants={itemVariants}
+          href="/products"
         />
         <StatsCard
           title="Sales"
@@ -110,6 +112,7 @@ export default function DashboardPage() {
           }
           icon={ShoppingCart}
           variants={itemVariants}
+          href="/sales"
         />
         <StatsCard
           title="Categories"
@@ -121,6 +124,7 @@ export default function DashboardPage() {
           }
           icon={Tags}
           variants={itemVariants}
+          href="/categories"
         />
       </motion.div>
 

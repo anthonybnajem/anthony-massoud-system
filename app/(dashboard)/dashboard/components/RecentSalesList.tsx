@@ -1,6 +1,13 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Empty,
   EmptyHeader,
@@ -18,8 +25,16 @@ interface RecentSalesListProps {
 export function RecentSalesList({ sales }: RecentSalesListProps) {
   return (
     <Card className="col-span-1">
-      <CardHeader>
-        <CardTitle>Recent Sales</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle className="text-xl">Recent Sales</CardTitle>
+        </div>
+        <Link
+          href="/receipts"
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          View more
+        </Link>
       </CardHeader>
       <CardContent>
         {sales.length > 0 ? (
@@ -52,6 +67,14 @@ export function RecentSalesList({ sales }: RecentSalesListProps) {
           </Empty>
         )}
       </CardContent>
+      <CardFooter className="pt-0">
+        <Link
+          href="/receipts"
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          View more
+        </Link>
+      </CardFooter>
     </Card>
   );
 }
