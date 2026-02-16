@@ -91,6 +91,12 @@ const navReports: (NavItem & { roles?: string[] })[] = [
     roles: ["admin", "manager", "cashier"],
   },
   {
+    href: "/receipts",
+    label: "Recent Receipts",
+    icon: Receipt,
+    roles: ["admin", "manager", "cashier"],
+  },
+  {
     href: "/reports",
     label: "Reports",
     icon: BarChart3,

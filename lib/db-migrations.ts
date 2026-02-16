@@ -17,7 +17,7 @@ import {
 } from "./product-constants";
 
 // Current database version - increment when schema changes
-export const CURRENT_VERSION = 6;
+export const CURRENT_VERSION = 7;
 
 // Schema definitions for each version
 // Each version includes ALL stores that should exist at that version
@@ -100,6 +100,22 @@ export const SCHEMA_VERSIONS: Record<number, Record<string, string>> = {
     categories: "id, name, description, color, icon",
     sales:
       "id, items, total, subtotal, tax, discount, discountType, paymentMethod, date, customerName, customerEmail, customerPhone, notes, receiptNumber, employeeId, shiftId",
+    discounts:
+      "id, name, code, type, value, minOrderAmount, maxDiscount, startDate, endDate, isActive, appliesTo, categoryIds, productIds, usageLimit, usageCount",
+    settings: "id",
+    stockMovements:
+      "id, productId, type, quantity, previousStock, newStock, date",
+    employees: "id, name, email, role, isActive, hireDate, password",
+    shifts: "id, employeeId, startTime, endTime, status",
+    closingReports: "id, shiftId, employeeId, date, createdAt",
+  },
+  7: {
+    // Version 7: Added sale status and audit fields
+    products:
+      "id, name, price, category, categoryId, barcode, stock, description, sku, cost, taxable, taxRate, tags, attributes, variations, saleType, unitLabel, unitIncrement",
+    categories: "id, name, description, color, icon",
+    sales:
+      "id, items, total, subtotal, tax, discount, discountType, paymentMethod, date, customerName, customerEmail, customerPhone, notes, receiptNumber, employeeId, shiftId, status, updatedAt, voidReason, voidedAt",
     discounts:
       "id, name, code, type, value, minOrderAmount, maxDiscount, startDate, endDate, isActive, appliesTo, categoryIds, productIds, usageLimit, usageCount",
     settings: "id",
@@ -205,6 +221,26 @@ export const MIGRATIONS: Record<number, (tx: any) => Promise<void> | void> = {
       });
     }
     console.log("Product records updated with measurement defaults");
+  },
+  7: async (tx) => {
+    console.log(
+      "Running migration to version 7: Adding status/audit fields to sales"
+    );
+    const salesTable = tx.table("sales");
+    const allSales = await salesTable.toArray();
+    for (const sale of allSales) {
+      const updates: Record<string, any> = {};
+      if (!sale.status) {
+        updates.status = "completed";
+      }
+      if (!sale.updatedAt) {
+        const referenceDate = sale.date ? new Date(sale.date) : new Date();
+        updates.updatedAt = referenceDate;
+      }
+      if (Object.keys(updates).length > 0) {
+        await salesTable.update(sale.id, updates);
+      }
+    }
   },
 };
 

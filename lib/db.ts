@@ -50,6 +50,8 @@ export type Category = {
   icon?: string;
 };
 
+export type SaleStatus = "completed" | "voided" | "refunded";
+
 export type Sale = {
   id: string;
   items: Array<{
@@ -65,6 +67,7 @@ export type Sale = {
   discountType?: "percentage" | "fixed";
   paymentMethod: string;
   date: Date;
+  status?: SaleStatus;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
@@ -72,6 +75,9 @@ export type Sale = {
   receiptNumber?: string;
   employeeId?: string;
   shiftId?: string;
+  updatedAt?: Date;
+  voidReason?: string;
+  voidedAt?: Date;
 };
 
 export type ReceiptSettings = {
@@ -842,6 +848,17 @@ export const salesApi = {
       if (!(sale.date instanceof Date)) {
         sale.date = new Date(sale.date);
       }
+      if (sale.updatedAt && !(sale.updatedAt instanceof Date)) {
+        sale.updatedAt = new Date(sale.updatedAt);
+      } else if (!sale.updatedAt) {
+        sale.updatedAt = new Date(sale.date);
+      }
+      if (sale.voidedAt && !(sale.voidedAt instanceof Date)) {
+        sale.voidedAt = new Date(sale.voidedAt);
+      }
+      if (!sale.status) {
+        sale.status = "completed";
+      }
       await db.sales.add(sale);
       return sale.id;
     } catch (error) {
@@ -915,6 +932,37 @@ export const salesApi = {
     } catch (error) {
       console.error("Error getting revenue by date range:", error);
       return 0;
+    }
+  },
+
+  update: async (sale: Sale): Promise<void> => {
+    try {
+      const db = getDB();
+      if (!(sale.date instanceof Date)) {
+        sale.date = new Date(sale.date);
+      }
+      if (sale.updatedAt && !(sale.updatedAt instanceof Date)) {
+        sale.updatedAt = new Date(sale.updatedAt);
+      } else {
+        sale.updatedAt = new Date();
+      }
+      if (sale.voidedAt && !(sale.voidedAt instanceof Date)) {
+        sale.voidedAt = new Date(sale.voidedAt);
+      }
+      await db.sales.put(sale);
+    } catch (error) {
+      console.error(`Error updating sale ${sale.id}:`, error);
+      throw error;
+    }
+  },
+
+  delete: async (id: string): Promise<void> => {
+    try {
+      const db = getDB();
+      await db.sales.delete(id);
+    } catch (error) {
+      console.error(`Error deleting sale ${id}:`, error);
+      throw error;
     }
   },
 };

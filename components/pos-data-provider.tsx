@@ -52,6 +52,9 @@ type PosDataContextType = {
     employeeId?: string,
     shiftId?: string
   ) => Promise<Sale>;
+  updateSale: (saleId: string, updates: Partial<Sale>) => Promise<Sale>;
+  deleteSale: (saleId: string) => Promise<void>;
+  voidSale: (saleId: string, reason?: string) => Promise<Sale>;
   adjustStock: (
     productId: string,
     quantity: number,
@@ -96,6 +99,21 @@ const PosDataContext = createContext<PosDataContextType>({
   updateExistingCategory: async () => {},
   removeCategory: async () => {},
   recordSale: async () => ({
+    id: "",
+    items: [],
+    total: 0,
+    paymentMethod: "",
+    date: new Date(),
+  }),
+  updateSale: async () => ({
+    id: "",
+    items: [],
+    total: 0,
+    paymentMethod: "",
+    date: new Date(),
+  }),
+  deleteSale: async () => {},
+  voidSale: async () => ({
     id: "",
     items: [],
     total: 0,
@@ -832,6 +850,8 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         date: new Date(),
         employeeId: resolvedEmployeeId,
         shiftId: resolvedShiftId,
+        status: "completed",
+        updatedAt: new Date(),
       };
 
       // Process sale and stock updates atomically (as much as possible with IndexedDB)
@@ -896,6 +916,158 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       toast({
         title: "Error",
         description: error.message || "Failed to record sale",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const restockFromSale = async (
+    sale: Sale,
+    {
+      reason,
+      movementType = "return",
+    }: { reason: string; movementType?: StockMovement["type"] }
+  ) => {
+    for (const item of sale.items) {
+      const product = await productsApi.getById(item.productId);
+      if (!product) {
+        throw new Error(`Product ${item.productId} not found while updating stock`);
+      }
+
+      const previousStock = product.stock;
+      const newStock = previousStock + item.quantity;
+
+      await productsApi.update({
+        ...product,
+        stock: newStock,
+      });
+
+      const movement: StockMovement = {
+        id: crypto.randomUUID(),
+        productId: product.id,
+        type: movementType,
+        quantity: item.quantity,
+        previousStock,
+        newStock,
+        reason,
+        notes: `Sale ID: ${sale.id}`,
+        date: new Date(),
+      };
+
+      await stockMovementsApi.add(movement);
+    }
+  };
+
+  const updateSale = async (
+    saleId: string,
+    updates: Partial<Sale>
+  ): Promise<Sale> => {
+    try {
+      const existingSale = await salesApi.getById(saleId);
+      if (!existingSale) {
+        throw new Error("Sale not found");
+      }
+
+      const updatedSale: Sale = {
+        ...existingSale,
+        ...updates,
+        updatedAt: new Date(),
+      };
+
+      await salesApi.update(updatedSale);
+      setSales(await salesApi.getAll());
+
+      toast({
+        title: "Receipt Updated",
+        description: `Receipt ${updatedSale.id.slice(0, 6)} has been updated.`,
+      });
+
+      return updatedSale;
+    } catch (error: any) {
+      console.error("Failed to update sale:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update receipt",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const voidSale = async (saleId: string, reason?: string): Promise<Sale> => {
+    try {
+      const existingSale = await salesApi.getById(saleId);
+      if (!existingSale) {
+        throw new Error("Sale not found");
+      }
+
+      if (existingSale.status === "voided") {
+        throw new Error("Sale has already been voided");
+      }
+
+      await restockFromSale(existingSale, {
+        reason: reason || "Sale voided",
+        movementType: "return",
+      });
+
+      const updatedSale: Sale = {
+        ...existingSale,
+        status: "voided",
+        voidReason: reason,
+        voidedAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await salesApi.update(updatedSale);
+      setProducts(await productsApi.getAll());
+      setStockMovements(await stockMovementsApi.getAll());
+      setSales(await salesApi.getAll());
+
+      toast({
+        title: "Receipt Voided",
+        description: `Receipt ${updatedSale.id.slice(0, 6)} has been voided.`,
+      });
+
+      return updatedSale;
+    } catch (error: any) {
+      console.error("Failed to void sale:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to void receipt",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const deleteSale = async (saleId: string): Promise<void> => {
+    try {
+      const existingSale = await salesApi.getById(saleId);
+      if (!existingSale) {
+        throw new Error("Sale not found");
+      }
+
+      await restockFromSale(existingSale, {
+        reason: "Sale deleted",
+        movementType: "adjustment",
+      });
+
+      await salesApi.delete(saleId);
+
+      setProducts(await productsApi.getAll());
+      setStockMovements(await stockMovementsApi.getAll());
+      setSales(await salesApi.getAll());
+
+      toast({
+        title: "Receipt Deleted",
+        description: `Receipt ${saleId.slice(0, 6)} has been removed.`,
+      });
+    } catch (error: any) {
+      console.error("Failed to delete sale:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete receipt",
         variant: "destructive",
       });
       throw error;
@@ -995,6 +1167,9 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         updateExistingCategory,
         removeCategory,
         recordSale,
+        updateSale,
+        deleteSale,
+        voidSale,
         adjustStock,
         getStockMovements,
         addEmployee,

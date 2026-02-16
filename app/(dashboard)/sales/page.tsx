@@ -42,6 +42,8 @@ import {
   isWeightBased,
 } from "@/lib/product-measurements";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function SalesPage() {
   const {
@@ -80,6 +82,7 @@ export default function SalesPage() {
   const [weightDialogProduct, setWeightDialogProduct] = useState<Product | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const router = useRouter();
   const isTablet = useIsTablet();
 
   // Get active shift for selected employee (or first active shift)
@@ -459,8 +462,19 @@ export default function SalesPage() {
             >
               
               <div className="flex items-center justify-between gap-3">
-                <SidebarTrigger className="h-9 w-9 shrink-0" />
-                
+                   <div className="p-2 rounded-lg flex items-center">
+                         <SidebarTrigger className="h-9 w-9 shrink-0" />
+                          <Button
+                  variant="outline"
+                  size="sm"
+                  className="order-1"
+                  onClick={() => router.push("/receipts")}
+                >
+                  View Recent Receipts
+                </Button>
+</div>
+           
+               
                 {/* Active Shift Indicator / Employee Selector */}
                 {activeShifts.length > 0 ? (
                   activeShifts.length === 1 ? (
@@ -500,6 +514,7 @@ export default function SalesPage() {
                   )
                 ) : (
                   <div></div>
+               
                   // <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-destructive/10 border border-destructive/20">
                   //   <div className="h-2 w-2 rounded-full bg-destructive" />
                   //   <span className="text-xs font-medium text-destructive">
@@ -508,11 +523,15 @@ export default function SalesPage() {
                   // </div>
                 )}
                 
+                
                 <div className="flex items-center gap-3">
+                 
                   <div className="flex items-center gap-2">
+                   
                     <div className="p-2 bg-primary/20 rounded-lg">
                       <ShoppingCart className="h-4 w-4 text-primary" />
                     </div>
+                    
                     <div>
                       <p className="text-xs text-muted-foreground">
                         Cart Items
@@ -534,9 +553,13 @@ export default function SalesPage() {
                         {cartTotal.toFixed(2)}
                       </p>
                     </div>
+                    
                   </div>
+                  
                 </div>
+                
               </div>
+              
             </div>
 
             {/* Search and Filter Section */}
