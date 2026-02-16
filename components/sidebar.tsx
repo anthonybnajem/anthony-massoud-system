@@ -19,6 +19,7 @@ import {
   Warehouse,
   History,
   Users,
+  UserCircle2,
   LogOut,
   BookOpen,
   type LucideIcon,
@@ -59,6 +60,12 @@ interface NavItem {
 const navMain: (NavItem & { roles?: string[] })[] = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/sales", label: "Sales", icon: ShoppingCart },
+  {
+    href: "/customers",
+    label: "Customers",
+    icon: UserCircle2,
+    roles: ["admin", "manager", "cashier"],
+  },
   { href: "/products", label: "Products", icon: Package },
   {
     href: "/inventory",

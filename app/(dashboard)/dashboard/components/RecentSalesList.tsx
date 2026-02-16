@@ -40,17 +40,21 @@ export function RecentSalesList({ sales }: RecentSalesListProps) {
         {sales.length > 0 ? (
           <div className="space-y-4">
             {sales.slice(0, 5).map((sale) => (
-              <div key={sale.id} className="flex justify-between items-center">
+              <Link
+                key={sale.id}
+                href={`/receipts/${encodeURIComponent(sale.id)}`}
+                className="flex justify-between items-center rounded-md border p-3 transition hover:border-primary/50 hover:bg-primary/5"
+              >
                 <div>
-                  <p className="text-sm font-medium">
-                    Sale #{sale.id.slice(0, 8)}
+                  <p className="text-sm font-medium text-primary">
+                    Receipt #{sale.id.slice(0, 8)}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {new Date(sale.date).toLocaleString()}
                   </p>
                 </div>
                 <p className="font-medium">${sale.total.toFixed(2)}</p>
-              </div>
+              </Link>
             ))}
           </div>
         ) : (

@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { format, subDays } from "date-fns";
 import { InvoicePrint } from "@/components/invoice-print";
 import { usePosData, type Sale } from "@/components/pos-data-provider";
@@ -32,25 +34,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Textarea } from "@/components/ui/textarea";
-import {
   Ban,
   Edit2,
   MoreVertical,
@@ -58,6 +41,11 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  EditReceiptDialog,
+  VoidReceiptDialog,
+  DeleteReceiptDialog,
+} from "./components/receipt-dialogs";
 
 const statusMeta: Record<
   NonNullable<Sale["status"]>,
@@ -76,12 +64,8 @@ const dateFilterOptions = [
 ];
 
 export default function RecentReceiptsPage() {
-  const {
-    sales,
-    updateSale,
-    voidSale,
-    deleteSale,
-  } = usePosData();
+  const router = useRouter();
+  const { sales, updateSale, voidSale, deleteSale } = usePosData();
   const { settings } = useReceiptSettings();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -256,13 +240,22 @@ export default function RecentReceiptsPage() {
                   paginatedSales.map((sale) => {
                     const status = sale.status || "completed";
                     const statusInfo = statusMeta[status];
+                    const detailHref = `/receipts/${encodeURIComponent(sale.id)}`;
                     return (
-                      <TableRow key={sale.id}>
+                      <TableRow
+                        key={sale.id}
+                        className="cursor-pointer"
+                        onClick={() => router.push(detailHref)}
+                      >
                         <TableCell>
                           <div>
-                            <p className="font-medium">
+                            <Link
+                              href={detailHref}
+                              className="font-medium text-primary hover:underline"
+                              onClick={(event) => event.stopPropagation()}
+                            >
                               {buildReceiptNumber(sale)}
-                            </p>
+                            </Link>
                             <p className="text-xs text-muted-foreground">
                               {format(new Date(sale.date), "PPp")}
                             </p>
@@ -329,20 +322,31 @@ export default function RecentReceiptsPage() {
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" aria-label="Open receipt actions">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label="Open receipt actions"
+                                onClick={(event) => event.stopPropagation()}
+                              >
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                onSelect={() => openInvoice(sale)}
+                                onSelect={(event) => {
+                                  event.preventDefault();
+                                  openInvoice(sale);
+                                }}
                                 className="gap-2"
                               >
                                 <Printer className="h-4 w-4" />
                                 View / Print
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onSelect={() => setEditTarget(sale)}
+                                onSelect={(event) => {
+                                  event.preventDefault();
+                                  setEditTarget(sale);
+                                }}
                                 className="gap-2"
                               >
                                 <Edit2 className="h-4 w-4" />
@@ -350,7 +354,10 @@ export default function RecentReceiptsPage() {
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 disabled={sale.status === "voided"}
-                                onSelect={() => setVoidTarget(sale)}
+                                onSelect={(event) => {
+                                  event.preventDefault();
+                                  setVoidTarget(sale);
+                                }}
                                 className="gap-2"
                               >
                                 <Ban className="h-4 w-4" />
@@ -358,7 +365,10 @@ export default function RecentReceiptsPage() {
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="gap-2 text-destructive focus:text-destructive"
-                                onSelect={() => setDeleteTarget(sale)}
+                                onSelect={(event) => {
+                                  event.preventDefault();
+                                  setDeleteTarget(sale);
+                                }}
                               >
                                 <Trash2 className="h-4 w-4" />
                                 Delete
@@ -462,220 +472,4 @@ function buildReceiptNumber(sale: Sale): string {
   const dateStr = format(new Date(sale.date), "yyMMdd");
   const shortId = sale.id.slice(0, 4).toUpperCase();
   return `${dateStr}-${shortId}`;
-}
-
-function EditReceiptDialog({
-  sale,
-  onClose,
-  onSave,
-}: {
-  sale: Sale | null;
-  onClose: () => void;
-  onSave: (saleId: string, updates: Partial<Sale>) => Promise<void>;
-}) {
-  const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("cash");
-  const [notes, setNotes] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    if (sale) {
-      setCustomerName(sale.customerName || "");
-      setCustomerEmail(sale.customerEmail || "");
-      setCustomerPhone(sale.customerPhone || "");
-      setPaymentMethod(sale.paymentMethod || "cash");
-      setNotes(sale.notes || "");
-    }
-  }, [sale]);
-
-  const handleSave = async () => {
-    if (!sale) return;
-    try {
-      setIsSaving(true);
-      await onSave(sale.id, {
-        customerName: customerName.trim() || undefined,
-        customerEmail: customerEmail.trim() || undefined,
-        customerPhone: customerPhone.trim() || undefined,
-        paymentMethod,
-        notes: notes.trim() || undefined,
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <Dialog open={!!sale} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Edit Receipt</DialogTitle>
-          <DialogDescription>
-            Update customer details or payment method for this receipt.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label>Customer Name</Label>
-            <Input
-              value={customerName}
-              onChange={(event) => setCustomerName(event.target.value)}
-            />
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input
-                value={customerEmail}
-                onChange={(event) => setCustomerEmail(event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Phone</Label>
-              <Input
-                value={customerPhone}
-                onChange={(event) => setCustomerPhone(event.target.value)}
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Payment Method</Label>
-            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cash">Cash</SelectItem>
-                <SelectItem value="credit">Credit Card</SelectItem>
-                <SelectItem value="mobile">Mobile Payment</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Notes</Label>
-            <Textarea
-              rows={4}
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSaving}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save Changes"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function VoidReceiptDialog({
-  sale,
-  onClose,
-  onConfirm,
-}: {
-  sale: Sale | null;
-  onClose: () => void;
-  onConfirm: (saleId: string, reason?: string) => Promise<void>;
-}) {
-  const [reason, setReason] = useState("");
-  const [isVoiding, setIsVoiding] = useState(false);
-
-  useEffect(() => {
-    setReason("");
-  }, [sale]);
-
-  const handleConfirm = async () => {
-    if (!sale) return;
-    try {
-      setIsVoiding(true);
-      await onConfirm(sale.id, reason.trim() || undefined);
-    } finally {
-      setIsVoiding(false);
-    }
-  };
-
-  return (
-    <Dialog open={!!sale} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Void Receipt</DialogTitle>
-          <DialogDescription>
-            Voiding a receipt will restock all items and keep a record of this transaction.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-2 py-4">
-          <Label>Reason for void</Label>
-          <Textarea
-            rows={3}
-            placeholder="Optional reason for voiding..."
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-          />
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isVoiding}>
-            Cancel
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleConfirm}
-            disabled={isVoiding}
-          >
-            {isVoiding ? "Voiding..." : "Confirm Void"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function DeleteReceiptDialog({
-  sale,
-  onClose,
-  onConfirm,
-}: {
-  sale: Sale | null;
-  onClose: () => void;
-  onConfirm: () => Promise<void>;
-}) {
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const handleDelete = async () => {
-    if (!sale) return;
-    try {
-      setIsDeleting(true);
-      await onConfirm();
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  return (
-    <AlertDialog open={!!sale} onOpenChange={(open) => !open && onClose()}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete receipt?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action will restock the items and permanently remove this receipt.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleDelete}
-            className="bg-destructive text-white hover:bg-destructive/90"
-            disabled={isDeleting}
-          >
-            {isDeleting ? "Deleting..." : "Delete"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
 }
