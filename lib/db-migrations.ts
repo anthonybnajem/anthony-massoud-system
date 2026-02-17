@@ -17,7 +17,7 @@ import {
 } from "./product-constants";
 
 // Current database version - increment when schema changes
-export const CURRENT_VERSION = 7;
+export const CURRENT_VERSION = 9;
 
 // Schema definitions for each version
 // Each version includes ALL stores that should exist at that version
@@ -124,6 +124,39 @@ export const SCHEMA_VERSIONS: Record<number, Record<string, string>> = {
     employees: "id, name, email, role, isActive, hireDate, password",
     shifts: "id, employeeId, startTime, endTime, status",
     closingReports: "id, shiftId, employeeId, date, createdAt",
+  },
+  8: {
+    // Version 8: Added customerLocation field to sales
+    products:
+      "id, name, price, category, categoryId, barcode, stock, description, sku, cost, taxable, taxRate, tags, attributes, variations, saleType, unitLabel, unitIncrement",
+    categories: "id, name, description, color, icon",
+    sales:
+      "id, items, total, subtotal, tax, discount, discountType, paymentMethod, date, customerName, customerEmail, customerPhone, customerLocation, notes, receiptNumber, employeeId, shiftId, status, updatedAt, voidReason, voidedAt",
+    discounts:
+      "id, name, code, type, value, minOrderAmount, maxDiscount, startDate, endDate, isActive, appliesTo, categoryIds, productIds, usageLimit, usageCount",
+    settings: "id",
+    stockMovements:
+      "id, productId, type, quantity, previousStock, newStock, date",
+    employees: "id, name, email, role, isActive, hireDate, password",
+    shifts: "id, employeeId, startTime, endTime, status",
+    closingReports: "id, shiftId, employeeId, date, createdAt",
+  },
+  9: {
+    // Version 9: Added customers table for reusable profiles
+    products:
+      "id, name, price, category, categoryId, barcode, stock, description, sku, cost, taxable, taxRate, tags, attributes, variations, saleType, unitLabel, unitIncrement",
+    categories: "id, name, description, color, icon",
+    sales:
+      "id, items, total, subtotal, tax, discount, discountType, paymentMethod, date, customerName, customerEmail, customerPhone, customerLocation, notes, receiptNumber, employeeId, shiftId, status, updatedAt, voidReason, voidedAt",
+    discounts:
+      "id, name, code, type, value, minOrderAmount, maxDiscount, startDate, endDate, isActive, appliesTo, categoryIds, productIds, usageLimit, usageCount",
+    settings: "id",
+    stockMovements:
+      "id, productId, type, quantity, previousStock, newStock, date",
+    employees: "id, name, email, role, isActive, hireDate, password",
+    shifts: "id, employeeId, startTime, endTime, status",
+    closingReports: "id, shiftId, employeeId, date, createdAt",
+    customers: "id, name, email, phone, location, notes, createdAt, updatedAt",
   },
 };
 
@@ -242,6 +275,20 @@ export const MIGRATIONS: Record<number, (tx: any) => Promise<void> | void> = {
       }
     }
   },
+  8: async (tx) => {
+    console.log("Running migration to version 8: Adding customerLocation to sales");
+    const salesTable = tx.table("sales");
+    const allSales = await salesTable.toArray();
+    for (const sale of allSales) {
+      if (sale.customerLocation === undefined) {
+        await salesTable.update(sale.id, { customerLocation: sale.customerLocation ?? null });
+      }
+    }
+  },
+  9: async () => {
+    console.log("Running migration to version 9: Adding customers table");
+    // No data migration needed - new table is empty
+  },
 };
 
 /**
@@ -304,6 +351,10 @@ export function getMigrationDescription(version: number): string {
     3: "Added employees, shifts, and closingReports tables for employee management",
     4: "Added employeeId and shiftId fields to Sale type for better tracking and closing report accuracy",
     5: "Added password field to Employee type for authentication",
+    6: "Added sale type and measurement fields to products",
+    7: "Added sale status and audit metadata",
+    8: "Added customer location field to sales records",
+    9: "Added reusable customers table",
   };
   return descriptions[version] || `Migration to version ${version}`;
 }

@@ -44,6 +44,7 @@ export function EditReceiptDialog({
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerLocation, setCustomerLocation] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -53,6 +54,7 @@ export function EditReceiptDialog({
       setCustomerName(sale.customerName || "");
       setCustomerEmail(sale.customerEmail || "");
       setCustomerPhone(sale.customerPhone || "");
+      setCustomerLocation(sale.customerLocation || "");
       setPaymentMethod(sale.paymentMethod || "cash");
       setNotes(sale.notes || "");
     }
@@ -66,6 +68,7 @@ export function EditReceiptDialog({
         customerName: customerName.trim() || undefined,
         customerEmail: customerEmail.trim() || undefined,
         customerPhone: customerPhone.trim() || undefined,
+        customerLocation: customerLocation.trim() || undefined,
         paymentMethod,
         notes: notes.trim() || undefined,
       });
@@ -106,6 +109,14 @@ export function EditReceiptDialog({
                 onChange={(event) => setCustomerPhone(event.target.value)}
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Location</Label>
+            <Input
+              value={customerLocation}
+              onChange={(event) => setCustomerLocation(event.target.value)}
+              placeholder="Address / city"
+            />
           </div>
           <div className="space-y-2">
             <Label>Payment Method</Label>

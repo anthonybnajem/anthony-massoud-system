@@ -71,6 +71,7 @@ export type Sale = {
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
+  customerLocation?: string;
   notes?: string;
   receiptNumber?: string;
   employeeId?: string;
@@ -78,6 +79,17 @@ export type Sale = {
   updatedAt?: Date;
   voidReason?: string;
   voidedAt?: Date;
+};
+
+export type CustomerProfile = {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type ReceiptSettings = {
@@ -256,6 +268,7 @@ class PosDatabase extends Dexie {
   employees!: Dexie.Table<Employee, string>;
   shifts!: Dexie.Table<Shift, string>;
   closingReports!: Dexie.Table<ClosingReport, string>;
+  customers!: Dexie.Table<CustomerProfile, string>;
 
   constructor() {
     super("pos_system_db");
@@ -290,6 +303,7 @@ class PosDatabase extends Dexie {
     this.employees = this.table("employees");
     this.shifts = this.table("shifts");
     this.closingReports = this.table("closingReports");
+    this.customers = this.table("customers");
   }
 
   // Initialize with default settings if needed
@@ -1035,6 +1049,60 @@ export const settingsApi = {
       await settingsApi.saveAppSettings({ sidebarCollapsed: collapsed });
     } catch (error) {
       console.error("Error updating sidebar state:", error);
+      throw error;
+    }
+  },
+};
+
+export const customersApi = {
+  getAll: async (): Promise<CustomerProfile[]> => {
+    try {
+      const db = getDB();
+      const customers = await db.customers.toArray();
+      return customers.map((customer) => ({
+        ...customer,
+        createdAt: new Date(customer.createdAt),
+        updatedAt: new Date(customer.updatedAt),
+      }));
+    } catch (error) {
+      console.error("Error getting customers:", error);
+      return [];
+    }
+  },
+  add: async (customer: CustomerProfile): Promise<string> => {
+    try {
+      const db = getDB();
+      if (!(customer.createdAt instanceof Date)) {
+        customer.createdAt = new Date(customer.createdAt);
+      }
+      if (!(customer.updatedAt instanceof Date)) {
+        customer.updatedAt = new Date(customer.updatedAt);
+      }
+      await db.customers.add(customer);
+      return customer.id;
+    } catch (error) {
+      console.error("Error adding customer:", error);
+      throw error;
+    }
+  },
+  update: async (customer: CustomerProfile): Promise<void> => {
+    try {
+      const db = getDB();
+      if (!(customer.updatedAt instanceof Date)) {
+        customer.updatedAt = new Date(customer.updatedAt);
+      }
+      await db.customers.put(customer);
+    } catch (error) {
+      console.error("Error updating customer:", error);
+      throw error;
+    }
+  },
+  delete: async (id: string): Promise<void> => {
+    try {
+      const db = getDB();
+      await db.customers.delete(id);
+    } catch (error) {
+      console.error("Error deleting customer:", error);
       throw error;
     }
   },

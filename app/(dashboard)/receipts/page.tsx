@@ -150,6 +150,23 @@ export default function RecentReceiptsPage() {
     setSelectedSale(null);
   };
 
+  const handleRowNavigation = (
+    event: React.MouseEvent<HTMLTableRowElement>,
+    targetHref: string
+  ) => {
+    const targetElement = event.target as HTMLElement;
+    if (event.defaultPrevented) {
+      return;
+    }
+    if (
+      targetElement.closest(".receipt-row-interactive") ||
+      targetElement.closest(".receipt-menu-trigger")
+    ) {
+      return;
+    }
+    router.push(targetHref);
+  };
+
   const handleEditSave = async (
     saleId: string,
     updates: Partial<Sale>
@@ -245,7 +262,8 @@ export default function RecentReceiptsPage() {
                       <TableRow
                         key={sale.id}
                         className="cursor-pointer"
-                        onClick={() => router.push(detailHref)}
+                        onClick={(event) => handleRowNavigation(event, detailHref)}
+                        role="row"
                       >
                         <TableCell>
                           <div>
@@ -309,7 +327,13 @@ export default function RecentReceiptsPage() {
                           {currencySymbol}
                           {sale.total.toFixed(2)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell
+                          className="receipt-row-interactive"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            event.preventDefault();
+                          }}
+                        >
                           <Badge
                             variant={statusInfo?.badgeVariant || "secondary"}
                             className={cn(
@@ -319,14 +343,24 @@ export default function RecentReceiptsPage() {
                             {statusInfo?.label || "Unknown"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell
+                          className="text-right receipt-row-interactive"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            event.preventDefault();
+                          }}
+                        >
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 aria-label="Open receipt actions"
-                                onClick={(event) => event.stopPropagation()}
+                                className="receipt-menu-trigger"
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                }}
                               >
                                 <MoreVertical className="h-4 w-4" />
                               </Button>

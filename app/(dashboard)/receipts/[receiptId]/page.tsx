@@ -196,6 +196,9 @@ export default function ReceiptDetailsPage() {
             <p className="text-sm text-muted-foreground">
               {sale.customerPhone || "No phone"}
             </p>
+            <p className="text-sm text-muted-foreground">
+              {sale.customerLocation || "No location"}
+            </p>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">Payment Method</p>

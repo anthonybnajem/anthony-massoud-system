@@ -1,6 +1,6 @@
 "use client";
 
-import { type Sale } from "@/components/pos-data-provider";
+import { type Sale, type CustomerProfile } from "@/components/pos-data-provider";
 
 export const WALK_IN_CUSTOMER_NAME = "Walk-in Customer";
 
@@ -9,29 +9,47 @@ export type CustomerSummary = {
   name: string;
   email?: string;
   phone?: string;
+  location?: string;
   totalSpent: number;
   purchaseCount: number;
   lastPurchase: Date;
   sales: Sale[];
+  profileId?: string;
 };
 
-const normalizeKey = (sale: Sale): string => {
-  const normalizedPhone = sale.customerPhone?.replace(/\D/g, "") || "";
+const createCustomerKey = ({
+  name,
+  email,
+  phone,
+  fallback,
+}: {
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  fallback: string;
+}) => {
+  const normalizedPhone = phone?.replace(/\D/g, "") || "";
   return (
-    sale.customerEmail?.toLowerCase() ||
+    email?.toLowerCase() ||
     (normalizedPhone ? `phone:${normalizedPhone}` : "") ||
-    (sale.customerName ? `name:${sale.customerName.toLowerCase()}` : "") ||
-    "walk-in"
+    (name ? `name:${name.toLowerCase()}` : "") ||
+    fallback
   );
 };
 
 export function buildCustomersFromSales(
-  sales: Sale[]
+  sales: Sale[],
+  manualProfiles: CustomerProfile[] = []
 ): CustomerSummary[] {
   const map = new Map<string, CustomerSummary>();
 
   sales.forEach((sale) => {
-    const key = normalizeKey(sale);
+    const key = createCustomerKey({
+      name: sale.customerName,
+      email: sale.customerEmail,
+      phone: sale.customerPhone,
+      fallback: "walk-in",
+    });
     const saleDate = new Date(sale.date);
     const existing = map.get(key);
 
@@ -48,26 +66,72 @@ export function buildCustomersFromSales(
       if (sale.customerPhone && !existing.phone) {
         existing.phone = sale.customerPhone;
       }
+      if (sale.customerLocation && !existing.location) {
+        existing.location = sale.customerLocation;
+      }
     } else {
       map.set(key, {
         id: key,
         name: sale.customerName?.trim() || WALK_IN_CUSTOMER_NAME,
         email: sale.customerEmail || undefined,
         phone: sale.customerPhone || undefined,
+        location: sale.customerLocation || undefined,
         totalSpent: sale.total,
         purchaseCount: 1,
         lastPurchase: saleDate,
         sales: [sale],
+        profileId: undefined,
       });
     }
   });
 
-  return Array.from(map.values()).map((customer) => ({
-    ...customer,
-    sales: [...customer.sales].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    ),
-  })).sort(
-    (a, b) => b.lastPurchase.getTime() - a.lastPurchase.getTime()
-  );
+  manualProfiles.forEach((profile) => {
+    const key = createCustomerKey({
+      name: profile.name,
+      email: profile.email,
+      phone: profile.phone,
+      fallback: `manual:${profile.id}`,
+    });
+    const existing = map.get(key);
+    const lastUpdate =
+      profile.updatedAt instanceof Date
+        ? profile.updatedAt
+        : new Date(profile.updatedAt);
+
+    if (existing) {
+      existing.id = profile.id;
+      existing.profileId = profile.id;
+      existing.name = profile.name || existing.name;
+      existing.email = profile.email || existing.email;
+      existing.phone = profile.phone || existing.phone;
+      existing.location = profile.location || existing.location;
+      if (existing.sales.length === 0) {
+        existing.lastPurchase = lastUpdate;
+      }
+    } else {
+      map.set(key, {
+        id: profile.id,
+        profileId: profile.id,
+        name: profile.name || WALK_IN_CUSTOMER_NAME,
+        email: profile.email || undefined,
+        phone: profile.phone || undefined,
+        location: profile.location || undefined,
+        totalSpent: 0,
+        purchaseCount: 0,
+        lastPurchase: lastUpdate,
+        sales: [],
+      });
+    }
+  });
+
+  return Array.from(map.values())
+    .map((customer) => ({
+      ...customer,
+      sales: [...customer.sales].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      ),
+    }))
+    .sort(
+      (a, b) => b.lastPurchase.getTime() - a.lastPurchase.getTime()
+    );
 }

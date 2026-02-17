@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   usePosData,
@@ -42,6 +42,7 @@ import {
   isWeightBased,
 } from "@/lib/product-measurements";
 import { Label } from "@/components/ui/label";
+import { buildCustomersFromSales } from "@/app/(dashboard)/customers/utils";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
@@ -49,6 +50,8 @@ export default function SalesPage() {
   const {
     products,
     categories,
+    sales,
+    customers,
     recordSale,
     employees,
     shifts,
@@ -66,6 +69,7 @@ export default function SalesPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerLocation, setCustomerLocation] = useState("");
   const [saleNotes, setSaleNotes] = useState("");
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
@@ -80,6 +84,10 @@ export default function SalesPage() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
   const [weightDialogProduct, setWeightDialogProduct] = useState<Product | null>(null);
+  const customerDirectory = useMemo(
+    () => buildCustomersFromSales(sales, customers),
+    [sales, customers]
+  );
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const router = useRouter();
@@ -336,6 +344,7 @@ export default function SalesPage() {
         customerName: customerName.trim() || undefined,
         customerEmail: customerEmail.trim() || undefined,
         customerPhone: customerPhone.trim() || undefined,
+        customerLocation: customerLocation.trim() || undefined,
         notes: saleNotes.trim() || undefined,
       };
 
@@ -353,6 +362,7 @@ export default function SalesPage() {
       setCustomerName("");
       setCustomerEmail("");
       setCustomerPhone("");
+      setCustomerLocation("");
       setSaleNotes("");
       setDiscountValue(0);
     } catch (error) {
@@ -417,7 +427,7 @@ export default function SalesPage() {
   const saveCustomerInfo = () => {
     setIsCustomerDialogOpen(false);
 
-    if (customerName || customerEmail || customerPhone) {
+    if (customerName || customerEmail || customerPhone || customerLocation) {
       toast({
         title: "Customer Info Saved",
         description: "Customer information has been saved to this sale.",
@@ -697,11 +707,14 @@ export default function SalesPage() {
           onClose={() => setIsCustomerDialogOpen(false)}
           customerName={customerName}
           setCustomerName={setCustomerName}
-          customerEmail={customerEmail}
-          setCustomerEmail={setCustomerEmail}
-          customerPhone={customerPhone}
-          setCustomerPhone={setCustomerPhone}
+        customerEmail={customerEmail}
+        setCustomerEmail={setCustomerEmail}
+        customerPhone={customerPhone}
+        setCustomerPhone={setCustomerPhone}
+        customerLocation={customerLocation}
+        setCustomerLocation={setCustomerLocation}
           saveCustomerInfo={saveCustomerInfo}
+          existingCustomers={customerDirectory}
         />
 
         {/* Checkout Dialog */}

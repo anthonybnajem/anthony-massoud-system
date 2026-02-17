@@ -11,6 +11,7 @@ import {
   employeesApi,
   shiftsApi,
   closingReportsApi,
+  customersApi,
   type Product as ProductType,
   type Category as CategoryType,
   type Sale as SaleType,
@@ -18,6 +19,7 @@ import {
   type Employee as EmployeeType,
   type Shift as ShiftType,
   type ClosingReport as ClosingReportType,
+  type CustomerProfile as CustomerProfileType,
 } from "@/lib/db";
 
 export type Product = ProductType;
@@ -27,6 +29,7 @@ export type StockMovement = StockMovementType;
 export type Employee = EmployeeType;
 export type Shift = ShiftType;
 export type ClosingReport = ClosingReportType;
+export type CustomerProfile = CustomerProfileType;
 
 export type CartItem = {
   product: Product;
@@ -37,6 +40,7 @@ type PosDataContextType = {
   products: Product[];
   categories: Category[];
   sales: Sale[];
+  customers: CustomerProfile[];
   stockMovements: StockMovement[];
   employees: Employee[];
   shifts: Shift[];
@@ -80,6 +84,13 @@ type PosDataContextType = {
     notes?: string
   ) => Promise<ClosingReport>;
   getClosingReports: (shiftId?: string, employeeId?: string) => ClosingReport[];
+  addCustomerProfile: (
+    profile: Omit<CustomerProfile, "id" | "createdAt" | "updatedAt">
+  ) => Promise<CustomerProfile>;
+  updateCustomerProfile: (
+    profile: CustomerProfile
+  ) => Promise<CustomerProfile>;
+  removeCustomerProfile: (id: string) => Promise<void>;
   syncToCloud: () => Promise<void>;
   fetchData: () => Promise<void>;
 };
@@ -88,6 +99,7 @@ const PosDataContext = createContext<PosDataContextType>({
   products: [],
   categories: [],
   sales: [],
+  customers: [],
   stockMovements: [],
   employees: [],
   shifts: [],
@@ -158,6 +170,19 @@ const PosDataContext = createContext<PosDataContextType>({
     createdAt: new Date(),
   }),
   getClosingReports: () => [],
+  addCustomerProfile: async () => ({
+    id: "",
+    name: "",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
+  updateCustomerProfile: async () => ({
+    id: "",
+    name: "",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
+  removeCustomerProfile: async () => {},
   syncToCloud: async () => {},
   fetchData: async () => {},
 });
@@ -166,6 +191,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [customers, setCustomers] = useState<CustomerProfile[]>([]);
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -178,6 +204,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       const storedProducts = await productsApi.getAll();
       const storedCategories = await categoriesApi.getAll();
       const storedSales = await salesApi.getAll();
+      const storedCustomers = await customersApi.getAll();
       const storedStockMovements = await stockMovementsApi.getAll();
       const storedEmployees = await employeesApi.getAll();
       const storedShifts = await shiftsApi.getAll();
@@ -187,6 +214,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       setProducts(storedProducts);
       setCategories(storedCategories);
       setSales(storedSales);
+      setCustomers(storedCustomers);
       setStockMovements(storedStockMovements);
       setEmployees(storedEmployees);
       setShifts(storedShifts);
@@ -1074,6 +1102,88 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const addCustomerProfile = async (
+    profile: Omit<CustomerProfile, "id" | "createdAt" | "updatedAt">
+  ): Promise<CustomerProfile> => {
+    try {
+      const newProfile: CustomerProfile = {
+        id: crypto.randomUUID(),
+        name: profile.name.trim(),
+        email: profile.email?.trim() || undefined,
+        phone: profile.phone?.trim() || undefined,
+        location: profile.location?.trim() || undefined,
+        notes: profile.notes?.trim() || undefined,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await customersApi.add(newProfile);
+      setCustomers(await customersApi.getAll());
+      toast({
+        title: "Customer Added",
+        description: `${newProfile.name} has been saved.`,
+      });
+      return newProfile;
+    } catch (error: any) {
+      console.error("Failed to add customer:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add customer",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const updateCustomerProfile = async (
+    profile: CustomerProfile
+  ): Promise<CustomerProfile> => {
+    try {
+      const updatedProfile: CustomerProfile = {
+        ...profile,
+        name: profile.name.trim(),
+        email: profile.email?.trim() || undefined,
+        phone: profile.phone?.trim() || undefined,
+        location: profile.location?.trim() || undefined,
+        notes: profile.notes?.trim() || undefined,
+        updatedAt: new Date(),
+      };
+      await customersApi.update(updatedProfile);
+      setCustomers(await customersApi.getAll());
+      toast({
+        title: "Customer Updated",
+        description: `${updatedProfile.name} has been updated.`,
+      });
+      return updatedProfile;
+    } catch (error: any) {
+      console.error("Failed to update customer:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update customer",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const removeCustomerProfile = async (id: string): Promise<void> => {
+    try {
+      await customersApi.delete(id);
+      setCustomers(await customersApi.getAll());
+      toast({
+        title: "Customer Removed",
+        description: "Customer has been deleted.",
+      });
+    } catch (error: any) {
+      console.error("Failed to delete customer:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete customer",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   // Adjust stock for a product
   const adjustStock = async (
     productId: string,
@@ -1157,6 +1267,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         categories,
         sales,
         stockMovements,
+        customers,
         employees,
         shifts,
         closingReports,
@@ -1184,6 +1295,9 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         getActiveShiftForEmployee,
         generateClosingReport,
         getClosingReports,
+        addCustomerProfile,
+        updateCustomerProfile,
+        removeCustomerProfile,
         syncToCloud,
         fetchData,
       }}

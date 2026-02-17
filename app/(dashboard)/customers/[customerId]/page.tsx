@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ArrowLeft, Users, UserCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { usePosData } from "@/components/pos-data-provider";
@@ -23,6 +23,16 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { buildCustomersFromSales } from "../utils";
 
 export default function CustomerDetailPage() {
@@ -30,12 +40,70 @@ export default function CustomerDetailPage() {
   const customerIdParam = decodeURIComponent(
     (params?.customerId as string) || ""
   );
-  const { sales } = usePosData();
+  const {
+    sales,
+    customers: customerProfiles,
+    updateSale,
+    updateCustomerProfile,
+  } = usePosData();
   const { settings } = useReceiptSettings();
   const currencySymbol = settings?.currencySymbol || "$";
 
-  const customers = useMemo(() => buildCustomersFromSales(sales), [sales]);
+  const customers = useMemo(
+    () => buildCustomersFromSales(sales, customerProfiles),
+    [sales, customerProfiles]
+  );
   const customer = customers.find((c) => c.id === customerIdParam);
+
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [pendingName, setPendingName] = useState("");
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [pendingPhone, setPendingPhone] = useState("");
+  const [pendingLocation, setPendingLocation] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (customer && isEditOpen) {
+      setPendingName(customer.name || "");
+      setPendingEmail(customer.email || "");
+      setPendingPhone(customer.phone || "");
+      setPendingLocation(customer.location || "");
+    }
+  }, [customer, isEditOpen]);
+
+  const handleSaveCustomer = async () => {
+    if (!customer) return;
+    try {
+      setIsSaving(true);
+      await Promise.all(
+        customer.sales.map((sale) =>
+          updateSale(sale.id, {
+            customerName: pendingName.trim() || undefined,
+            customerEmail: pendingEmail.trim() || undefined,
+            customerPhone: pendingPhone.trim() || undefined,
+            customerLocation: pendingLocation.trim() || undefined,
+          })
+        )
+      );
+      if (customer.profileId) {
+        const profileRecord = customerProfiles.find(
+          (p) => p.id === customer.profileId
+        );
+        if (profileRecord) {
+          await updateCustomerProfile({
+            ...profileRecord,
+            name: pendingName.trim() || profileRecord.name,
+            email: pendingEmail.trim() || undefined,
+            phone: pendingPhone.trim() || undefined,
+            location: pendingLocation.trim() || undefined,
+          });
+        }
+      }
+      setIsEditOpen(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (!customer) {
     return (
@@ -78,12 +146,17 @@ export default function CustomerDetailPage() {
           </h1>
           <p className="text-muted-foreground">
             {customer.email || "No email saved"} •{" "}
-            {customer.phone || "No phone saved"}
+            {customer.phone || "No phone saved"} •{" "}
+            {customer.location || "No location saved"}
           </p>
         </div>
+        <div className="flex-1" />
+        <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)}>
+          Edit Customer
+        </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
@@ -114,6 +187,17 @@ export default function CustomerDetailPage() {
               {format(customer.lastPurchase, "MMM dd, yyyy")}
             </p>
             <CardDescription>Most recent visit</CardDescription>
+          </CardContent>
+        </Card>
+        <Card className="border-2 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Location</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">
+              {customer.location || "Not provided"}
+            </p>
+            <CardDescription>Saved customer location</CardDescription>
           </CardContent>
         </Card>
       </div>
@@ -177,6 +261,60 @@ export default function CustomerDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Customer</DialogTitle>
+            <DialogDescription>
+              Update contact information across all of this customer&apos;s receipts.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Name</Label>
+              <Input
+                id="edit-name"
+                value={pendingName}
+                onChange={(e) => setPendingName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={pendingEmail}
+                onChange={(e) => setPendingEmail(e.target.value)}
+              />
+            </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-phone">Phone</Label>
+            <Input
+              id="edit-phone"
+              value={pendingPhone}
+              onChange={(e) => setPendingPhone(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-location">Location</Label>
+            <Input
+              id="edit-location"
+              value={pendingLocation}
+              onChange={(e) => setPendingLocation(e.target.value)}
+            />
+          </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveCustomer} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
