@@ -147,6 +147,11 @@ function NavMain({ items }: { items: (NavItem & { roles?: string[] })[] }) {
               <Link href={item.href}>
                 <Icon />
                 <span>{item.label}</span>
+                  {( item.href == "/customers") && (
+                    <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                      New
+                    </Badge>
+                  )}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
