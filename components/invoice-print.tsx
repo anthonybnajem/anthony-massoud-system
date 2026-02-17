@@ -18,7 +18,7 @@ import { useReceiptSettings } from "@/components/receipt-settings-provider";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { ReceiptContent } from "./receipt-content";
-import { getReceiptStyles, openReceiptPrintWindow } from "@/lib/receipt-print";
+import { getReceiptStyles } from "@/lib/receipt-print";
 
 interface InvoicePrintProps {
   sale: Sale;
@@ -32,6 +32,7 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
   const { settings } = useReceiptSettings();
   const [receiptNumber, setReceiptNumber] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
     if (sale) {
@@ -48,53 +49,14 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
     }
   }, [isOpen, settings?.printAutomatically]);
 
-  const handlePrint = () => {
-    const printableContent = invoiceRef.current?.outerHTML;
-    if (!printableContent) {
-      toast({
-        title: "Print Error",
-        description: "No content available to print.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // const printWindow = window.open("", "_blank");
-    // if (!printWindow) {
-    //   toast({
-    //     title: "Print Error",
-    //     description:
-    //       "Could not open print window. Please check your browser settings.",
-    //     variant: "destructive",
-    //   });
-    //   return;
-    // }
-
-    const success = openReceiptPrintWindow(
-      printableContent,
-      `Receipt #${receiptNumber}`,
-      settings
-    );
-
-    if (!success) {
-      toast({
-        title: "Print Error",
-        description: "Unable to prepare the print preview.",
-        variant: "destructive",
-      });
-    }
-
-    toast({
-      title: "Receipt Printed",
-      description: "The receipt has been sent to the printer.",
-    });
-  };
-
-  const handleDownloadPDF = async () => {
+  const processReceiptPdf = async (
+    mode: "download" | "print",
+    toastMessages: { preparing: { title: string; description: string }; success: { title: string; description: string }; error: { title: string; description: string } }
+  ) => {
     if (!invoiceRef.current) {
       toast({
-        title: "Download Failed",
-        description: "No receipt content available to download.",
+        title: toastMessages.error.title,
+        description: "No receipt content available.",
         variant: "destructive",
       });
       return;
@@ -102,13 +64,12 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
 
     let receiptContainer: HTMLDivElement | null = null;
 
-    try {
-      setIsDownloading(true);
-      toast({
-        title: "Preparing PDF",
-        description: "Generating a printable receipt preview...",
-      });
+    toast({
+      title: toastMessages.preparing.title,
+      description: toastMessages.preparing.description,
+    });
 
+    try {
       const originalReceipt = invoiceRef.current;
       const receiptClone = originalReceipt.cloneNode(true) as HTMLElement;
 
@@ -181,23 +142,71 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
         "FAST"
       );
 
-      pdf.save(`receipt-${receiptNumber || "download"}.pdf`);
+      if (mode === "download") {
+        pdf.save(`receipt-${receiptNumber || "download"}.pdf`);
+      } else {
+        pdf.autoPrint();
+        pdf.output("dataurlnewwindow");
+      }
 
       toast({
-        title: "Download Ready",
-        description: "Your receipt PDF has been saved.",
+        title: toastMessages.success.title,
+        description: toastMessages.success.description,
       });
     } catch (error) {
       console.error("PDF generation failed:", error);
       toast({
-        title: "Download Failed",
-        description: "Unable to generate the receipt PDF. Please try again.",
+        title: toastMessages.error.title,
+        description: toastMessages.error.description,
         variant: "destructive",
       });
     } finally {
       if (receiptContainer?.parentNode) {
         receiptContainer.parentNode.removeChild(receiptContainer);
       }
+    }
+  };
+
+  const handlePrint = async () => {
+    try {
+      setIsPrinting(true);
+      await processReceiptPdf("print", {
+        preparing: {
+          title: "Preparing Print",
+          description: "Generating a printable receipt...",
+        },
+        success: {
+          title: "Sent to Printer",
+          description: "The receipt has been opened in a print window.",
+        },
+        error: {
+          title: "Print Failed",
+          description: "Unable to generate the receipt for printing.",
+        },
+      });
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      setIsDownloading(true);
+      await processReceiptPdf("download", {
+        preparing: {
+          title: "Preparing PDF",
+          description: "Generating a printable receipt preview...",
+        },
+        success: {
+          title: "Download Ready",
+          description: "Your receipt PDF has been saved.",
+        },
+        error: {
+          title: "Download Failed",
+          description: "Unable to generate the receipt PDF. Please try again.",
+        },
+      });
+    } finally {
       setIsDownloading(false);
     }
   };

@@ -5,6 +5,8 @@ type ReceiptStyleConfig = Pick<
   "fontFamily" | "fontSize" | "receiptWidth" | "logoSize"
 >;
 
+const pxToMm = (px: number) => (px / 96) * 25.4;
+
 const withDefaults = (
   config?: Partial<ReceiptStyleConfig>
 ): Required<ReceiptStyleConfig> => ({
@@ -19,10 +21,11 @@ export const getReceiptStyles = (
   rootSelector = "body"
 ) => {
   const { fontFamily, fontSize, receiptWidth, logoSize } = withDefaults(config);
+  const pageWidthMm = pxToMm(receiptWidth);
 
   return `
     @page {
-      size: auto;
+      size: ${pageWidthMm}mm auto;
       margin: 0;
     }
 
@@ -269,10 +272,6 @@ export const getPrintStyles = (config?: Partial<ReceiptStyleConfig>) => `
       background: #fff !important;
     }
     .no-print { display: none !important; }
-    @page {
-      size: auto;
-      margin: 0;
-    }
   }
 `;
 

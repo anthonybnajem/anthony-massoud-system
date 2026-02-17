@@ -52,6 +52,7 @@ export default function SalesPage() {
     categories,
     sales,
     customers,
+    addCustomerProfile,
     recordSale,
     employees,
     shifts,
@@ -707,14 +708,26 @@ export default function SalesPage() {
           onClose={() => setIsCustomerDialogOpen(false)}
           customerName={customerName}
           setCustomerName={setCustomerName}
-        customerEmail={customerEmail}
-        setCustomerEmail={setCustomerEmail}
-        customerPhone={customerPhone}
-        setCustomerPhone={setCustomerPhone}
-        customerLocation={customerLocation}
-        setCustomerLocation={setCustomerLocation}
+          customerEmail={customerEmail}
+          setCustomerEmail={setCustomerEmail}
+          customerPhone={customerPhone}
+          setCustomerPhone={setCustomerPhone}
+          customerLocation={customerLocation}
+          setCustomerLocation={setCustomerLocation}
           saveCustomerInfo={saveCustomerInfo}
           existingCustomers={customerDirectory}
+          onSaveProfile={async ({ name, email, phone, location }) => {
+            const profile = await addCustomerProfile({
+              name,
+              email,
+              phone,
+              location,
+            });
+            toast({
+              title: "Customer Saved",
+              description: `${profile.name} is now available for future sales.`,
+            });
+          }}
         />
 
         {/* Checkout Dialog */}

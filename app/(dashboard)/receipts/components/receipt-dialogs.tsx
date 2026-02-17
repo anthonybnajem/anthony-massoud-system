@@ -36,10 +36,17 @@ export function EditReceiptDialog({
   sale,
   onClose,
   onSave,
+  onSaveCustomerProfile,
 }: {
   sale: Sale | null;
   onClose: () => void;
   onSave: (saleId: string, updates: Partial<Sale>) => Promise<void>;
+  onSaveCustomerProfile?: (details: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+  }) => Promise<void>;
 }) {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -48,6 +55,7 @@ export function EditReceiptDialog({
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingProfile, setIsCreatingProfile] = useState(false);
 
   useEffect(() => {
     if (sale) {
@@ -64,15 +72,26 @@ export function EditReceiptDialog({
     if (!sale) return;
     try {
       setIsSaving(true);
-      await onSave(sale.id, {
+      const updates = {
         customerName: customerName.trim() || undefined,
         customerEmail: customerEmail.trim() || undefined,
         customerPhone: customerPhone.trim() || undefined,
         customerLocation: customerLocation.trim() || undefined,
         paymentMethod,
         notes: notes.trim() || undefined,
-      });
+      };
+      await onSave(sale.id, updates);
+      if (onSaveCustomerProfile) {
+        setIsCreatingProfile(true);
+        await onSaveCustomerProfile({
+          name: updates.customerName,
+          email: updates.customerEmail,
+          phone: updates.customerPhone,
+          location: updates.customerLocation,
+        });
+      }
     } finally {
+      setIsCreatingProfile(false);
       setIsSaving(false);
     }
   };

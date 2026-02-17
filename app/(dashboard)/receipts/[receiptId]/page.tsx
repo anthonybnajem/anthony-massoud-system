@@ -12,7 +12,10 @@ import {
   Trash2,
   Receipt as ReceiptIcon,
 } from "lucide-react";
-import { usePosData, type Sale } from "@/components/pos-data-provider";
+import {
+  usePosData,
+  type Sale,
+} from "@/components/pos-data-provider";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
 import { InvoicePrint } from "@/components/invoice-print";
 import { Button } from "@/components/ui/button";
@@ -53,12 +56,8 @@ export default function ReceiptDetailsPage() {
   const receiptId = params?.receiptId
     ? decodeURIComponent(params.receiptId as string)
     : "";
-  const {
-    sales,
-    updateSale,
-    voidSale,
-    deleteSale,
-  } = usePosData();
+  const { sales, customers, updateSale, voidSale, deleteSale, addCustomerProfile, updateCustomerProfile } =
+    usePosData();
   const { settings } = useReceiptSettings();
   const currencySymbol = settings?.currencySymbol || "$";
 
@@ -293,6 +292,36 @@ export default function ReceiptDetailsPage() {
         sale={isEditOpen ? sale : null}
         onClose={() => setIsEditOpen(false)}
         onSave={handleEditSave}
+        onSaveCustomerProfile={
+          sale
+            ? async (details) => {
+                const profile = customers.find(
+                  (c) =>
+                    c.email?.toLowerCase() === details.email?.toLowerCase() ||
+                    c.phone?.replace(/\D/g, "") ===
+                      details.phone?.replace(/\D/g, "") ||
+                    c.name.toLowerCase() ===
+                      (details.name || sale.customerName || "").toLowerCase()
+                );
+                if (profile) {
+                  await updateCustomerProfile({
+                    ...profile,
+                    name: details.name || profile.name,
+                    email: details.email || profile.email,
+                    phone: details.phone || profile.phone,
+                    location: details.location || profile.location,
+                  });
+                } else if (details.name || details.email || details.phone) {
+                  await addCustomerProfile({
+                    name: details.name || sale.customerName || "",
+                    email: details.email,
+                    phone: details.phone,
+                    location: details.location,
+                  });
+                }
+              }
+            : undefined
+        }
       />
 
       <VoidReceiptDialog

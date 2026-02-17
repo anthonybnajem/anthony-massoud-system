@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   Dialog,
@@ -11,8 +11,28 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { User, Mail, Phone, Users } from "lucide-react";
+import {
+  User,
+  Mail,
+  Phone,
+  Users,
+  ChevronsUpDown,
+  Plus,
+  Minus,
+} from "lucide-react";
 import type { CustomerSummary } from "@/app/(dashboard)/customers/utils";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandGroup,
+  CommandItem,
+  CommandEmpty,
+  CommandInput,
+} from "@/components/ui/command";
 
 interface CustomerDialogProps {
   isOpen: boolean;
@@ -27,6 +47,12 @@ interface CustomerDialogProps {
   setCustomerLocation: (location: string) => void;
   saveCustomerInfo: () => void;
   existingCustomers?: CustomerSummary[];
+  onSaveProfile?: (details: {
+    name: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+  }) => Promise<void>;
 }
 
 export default function CustomerDialog({
@@ -42,29 +68,65 @@ export default function CustomerDialog({
   setCustomerLocation,
   saveCustomerInfo,
   existingCustomers = [],
+  onSaveProfile,
 }: CustomerDialogProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredCustomers = useMemo(() => {
-    if (!searchQuery.trim()) return existingCustomers.slice(0, 6);
-    const query = searchQuery.toLowerCase();
-    return existingCustomers
-      .filter(
-        (customer) =>
-          customer.name.toLowerCase().includes(query) ||
-          customer.email?.toLowerCase().includes(query) ||
-          customer.phone?.toLowerCase().includes(query)
-      )
-      .slice(0, 6);
-  }, [existingCustomers, searchQuery]);
+  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  const [isCreatingProfile, setIsCreatingProfile] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [newProfileName, setNewProfileName] = useState("");
+  const [newProfileEmail, setNewProfileEmail] = useState("");
+  const [newProfilePhone, setNewProfilePhone] = useState("");
+  const [newProfileLocation, setNewProfileLocation] = useState("");
 
   const handleSelectCustomer = (customer: CustomerSummary) => {
     setCustomerName(customer.name || "");
     setCustomerEmail(customer.email || "");
     setCustomerPhone(customer.phone || "");
     setCustomerLocation(customer.location || "");
-    setSearchQuery("");
+    setIsSelectorOpen(false);
   };
+
+  const openCreateProfile = () => {
+    setNewProfileName(customerName || "");
+    setNewProfileEmail(customerEmail || "");
+    setNewProfilePhone(customerPhone || "");
+    setNewProfileLocation(customerLocation || "");
+    setIsCreatingProfile(true);
+  };
+
+  const handleCreateProfile = async () => {
+    if (!onSaveProfile || !newProfileName.trim()) {
+      setIsCreatingProfile(false);
+      return;
+    }
+
+    try {
+      setIsSavingProfile(true);
+      await onSaveProfile({
+        name: newProfileName.trim(),
+        email: newProfileEmail.trim() || undefined,
+        phone: newProfilePhone.trim() || undefined,
+        location: newProfileLocation.trim() || undefined,
+      });
+      setCustomerName(newProfileName.trim());
+      setCustomerEmail(newProfileEmail.trim());
+      setCustomerPhone(newProfilePhone.trim());
+      setCustomerLocation(newProfileLocation.trim());
+      setIsCreatingProfile(false);
+      setIsSelectorOpen(false);
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const selectedLabel =
+    customerName ||
+    customerEmail ||
+    customerPhone ||
+    customerLocation ||
+    "Select customer";
+
+  const hasSavedCustomers = existingCustomers.length > 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -76,106 +138,153 @@ export default function CustomerDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          {existingCustomers.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  Reuse Customer
-                </Label>
+          {(hasSavedCustomers || onSaveProfile) && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Label className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                Saved Customers
+              </Label>
+              <div className="flex items-center gap-2">
                 <Link
                   href="/customers"
                   className="text-xs text-primary hover:underline"
                   onClick={onClose}
                 >
-                  Manage customers
+                  Manage
                 </Link>
-              </div>
-              <Input
-                placeholder="Search saved customers"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <div className="max-h-36 overflow-y-auto rounded-md border border-dashed p-2">
-                {filteredCustomers.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    No matches. Try a different name or add a new customer below.
-                  </p>
-                ) : (
-                  <div className="space-y-1">
-                    {filteredCustomers.map((customer) => (
-                      <button
-                        key={customer.id}
-                        type="button"
-                        className="w-full rounded-md px-2 py-1 text-left text-sm transition hover:bg-primary/10"
-                        onClick={() => handleSelectCustomer(customer)}
-                      >
-                        <p className="font-medium">{customer.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {customer.email ||
-                          customer.phone ||
-                          customer.location ||
-                          "No contact data"}
-                      </p>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() =>
+                    isCreatingProfile ? setIsCreatingProfile(false) : openCreateProfile()
+                  }
+                  title={isCreatingProfile ? "Cancel" : "Add new customer"}
+                  disabled={!onSaveProfile}
+                >
+                  {isCreatingProfile ? (
+                    <Minus className="h-4 w-4" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
             </div>
+            {hasSavedCustomers ? (
+              <div className="flex items-center gap-2">
+                <Popover open={isSelectorOpen} onOpenChange={setIsSelectorOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={isSelectorOpen}
+                      className="flex-1 justify-between"
+                    >
+                      <span className="truncate text-left">{selectedLabel}</span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[360px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search by name, email, or phone" />
+                      <CommandEmpty>No customers found.</CommandEmpty>
+                      <CommandGroup>
+                        {existingCustomers.map((customer) => (
+                          <CommandItem
+                            key={customer.id}
+                            value={`${customer.name} ${customer.email ?? ""} ${customer.phone ?? ""} ${customer.location ?? ""}`}
+                            onSelect={() => handleSelectCustomer(customer)}
+                            className="flex flex-col items-start gap-0.5"
+                          >
+                            <span className="font-medium">{customer.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {customer.email ||
+                                customer.phone ||
+                                customer.location ||
+                                "No contact data"}
+                            </span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                No saved customers yet. Use the plus icon to create one.
+              </p>
+            )}
+        {isCreatingProfile && <div className="grid gap-2">
+                  <Label htmlFor="new-profile-name">Create New Customer</Label>
+                  </div>}
+            {isCreatingProfile && (
+              <div className="rounded-md border border-dashed p-3 space-y-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="new-profile-name">Name</Label>
+                  <Input
+                    id="new-profile-name"
+                    value={newProfileName}
+                    onChange={(e) => setNewProfileName(e.target.value)}
+                    placeholder="Customer name"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="new-profile-email">Email</Label>
+                  <Input
+                    id="new-profile-email"
+                    type="email"
+                    value={newProfileEmail}
+                    onChange={(e) => setNewProfileEmail(e.target.value)}
+                    placeholder="customer@example.com"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="new-profile-phone">Phone</Label>
+                  <Input
+                    id="new-profile-phone"
+                    value={newProfilePhone}
+                    onChange={(e) => setNewProfilePhone(e.target.value)}
+                    placeholder="Phone number"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="new-profile-location">Location</Label>
+                  <Input
+                    id="new-profile-location"
+                    value={newProfileLocation}
+                    onChange={(e) => setNewProfileLocation(e.target.value)}
+                    placeholder="City / Address"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsCreatingProfile(false)}
+                    disabled={isSavingProfile}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreateProfile}
+                    disabled={
+                      isSavingProfile || !newProfileName.trim() || !onSaveProfile
+                    }
+                  >
+                    {isSavingProfile ? "Saving..." : "Save Customer"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
           )}
-          <div className="grid gap-2">
-            <Label htmlFor="customer-name">Name</Label>
-            <div className="flex items-center">
-              <User className="mr-2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="customer-name"
-                placeholder="Customer name"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="customer-email">Email</Label>
-            <div className="flex items-center">
-              <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="customer-email"
-                type="email"
-                placeholder="customer@example.com"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="customer-phone">Phone</Label>
-            <div className="flex items-center">
-              <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="customer-phone"
-                placeholder="Phone number"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="customer-location">Location</Label>
-            <Input
-              id="customer-location"
-              placeholder="City / Address / Notes"
-              value={customerLocation}
-              onChange={(e) => setCustomerLocation(e.target.value)}
-            />
-          </div>
+        
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={saveCustomerInfo}>Save Customer Info</Button>
+          <Button onClick={saveCustomerInfo}>Continue</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

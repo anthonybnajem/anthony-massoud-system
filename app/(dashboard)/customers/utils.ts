@@ -44,11 +44,15 @@ export function buildCustomersFromSales(
   const map = new Map<string, CustomerSummary>();
 
   sales.forEach((sale) => {
+    const fallbackKey =
+      sale.customerName && sale.customerName !== WALK_IN_CUSTOMER_NAME
+        ? `name:${sale.customerName.toLowerCase()}`
+        : "walk-in";
     const key = createCustomerKey({
       name: sale.customerName,
       email: sale.customerEmail,
       phone: sale.customerPhone,
-      fallback: "walk-in",
+      fallback: fallbackKey,
     });
     const saleDate = new Date(sale.date);
     const existing = map.get(key);
