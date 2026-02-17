@@ -21,6 +21,33 @@ export const getReceiptStyles = (
   const { fontFamily, fontSize, receiptWidth, logoSize } = withDefaults(config);
 
   return `
+    @page {
+      size: auto;
+      margin: 0;
+    }
+
+    @media print {
+      ${rootSelector} {
+        padding: 0;
+        margin: 0;
+        width: ${receiptWidth}px;
+        background: #ffffff;
+      }
+
+      ${rootSelector} .receipt-preview {
+        padding: 0;
+        margin: 0 auto;
+        width: ${receiptWidth}px;
+      }
+
+      ${rootSelector} .receipt-table,
+      ${rootSelector} .receipt-summary,
+      ${rootSelector} .receipt-footer {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+    }
+
     ${rootSelector}, ${rootSelector} * {
       box-sizing: border-box;
     }
