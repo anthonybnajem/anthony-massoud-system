@@ -22,8 +22,9 @@ import { ImageUpload } from "@/components/image-upload";
 import { Loader2, Save, RefreshCw, Printer, Eye } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { ReceiptContent } from "@/components/receipt-content";
-import { openReceiptPrintWindow } from "@/lib/receipt-print";
-
+import { getReceiptStyles } from "@/lib/receipt-print";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 export function ReceiptDesigner() {
   const { settings, isLoading, updateSettings } = useReceiptSettings();
@@ -146,21 +147,118 @@ export function ReceiptDesigner() {
     console.log("Resetting settings to default");
   };
 
-  const handlePrintPreview = () => {
-    if (!receiptRef.current) return;
+  const [isPrinting, setIsPrinting] = useState(false);
 
-    const success = openReceiptPrintWindow(
-      receiptRef.current.outerHTML,
-      "Receipt Preview",
-      formData
-    );
-
-    if (!success) {
+  const handlePrintPreview = async () => {
+    if (!receiptRef.current) {
       toast({
-        title: "Error",
-        description: "Could not open print preview window.",
+        title: "Print Error",
+        description: "No receipt content available.",
         variant: "destructive",
       });
+      return;
+    }
+
+    let receiptContainer: HTMLDivElement | null = null;
+
+    try {
+      setIsPrinting(true);
+      toast({
+        title: "Preparing Print",
+        description: "Generating a printable preview...",
+      });
+
+      const originalReceipt = receiptRef.current;
+      const receiptClone = originalReceipt.cloneNode(true) as HTMLElement;
+
+      receiptContainer = document.createElement("div");
+      const measuredWidth =
+        originalReceipt.getBoundingClientRect().width ||
+        originalReceipt.offsetWidth ||
+        originalReceipt.scrollWidth ||
+        0;
+
+      receiptContainer.style.position = "fixed";
+      receiptContainer.style.left = "0";
+      receiptContainer.style.top = "0";
+      receiptContainer.style.width = `${measuredWidth}px`;
+      receiptContainer.style.zIndex = "-1";
+      receiptContainer.style.pointerEvents = "none";
+      receiptContainer.style.opacity = "0";
+      receiptContainer.style.backgroundColor = "#ffffff";
+      receiptContainer.style.margin = "0";
+      receiptContainer.style.padding = "0";
+
+      receiptClone.style.maxHeight = "none";
+      receiptClone.style.height = "auto";
+      receiptClone.style.overflow = "visible";
+      receiptClone.style.width = "100%";
+      receiptClone.style.margin = "0 auto";
+
+      const captureStyles = document.createElement("style");
+      captureStyles.textContent = getReceiptStyles(formData, ".pdf-capture");
+
+      receiptContainer.classList.add("pdf-capture");
+      receiptContainer.appendChild(captureStyles);
+      receiptContainer.appendChild(receiptClone);
+      document.body.appendChild(receiptContainer);
+
+      const canvas = await html2canvas(receiptClone, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        scrollX: 0,
+        scrollY: -window.scrollY,
+        useCORS: true,
+        windowWidth: receiptClone.scrollWidth,
+        windowHeight: receiptClone.scrollHeight,
+      });
+
+      const imageData = canvas.toDataURL("image/png");
+      const pxToPt = (px: number) => (px * 72) / 96;
+      const contentWidth = pxToPt(canvas.width);
+      const contentHeight = pxToPt(canvas.height);
+      const marginPx = 18;
+      const margin = pxToPt(marginPx);
+      const pageWidth = contentWidth + margin * 2;
+      const pageHeight = contentHeight + margin * 2;
+      const orientation = pageWidth > pageHeight ? "landscape" : "portrait";
+
+      const pdf = new jsPDF({
+        orientation,
+        unit: "pt",
+        format: [pageWidth, pageHeight],
+      });
+
+      pdf.addImage(
+        imageData,
+        "PNG",
+        margin,
+        margin,
+        contentWidth,
+        contentHeight,
+        undefined,
+        "FAST"
+      );
+
+      pdf.autoPrint();
+      pdf.output("dataurlnewwindow");
+
+      toast({
+        title: "Preview Ready",
+        description: "The receipt preview has been opened in a print window.",
+      });
+    } catch (error) {
+      console.error("Print preview failed:", error);
+      toast({
+        title: "Print Failed",
+        description: "Unable to generate the receipt preview.",
+        variant: "destructive",
+      });
+    } finally {
+      if (receiptContainer?.parentNode) {
+        receiptContainer.parentNode.removeChild(receiptContainer);
+      }
+      setIsPrinting(false);
     }
   };
 
