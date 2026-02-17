@@ -112,7 +112,7 @@ export default function CustomerDetailPage() {
           <Button asChild variant="ghost" size="sm">
             <Link href="/customers">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Customers
+     
             </Link>
           </Button>
         </div>
@@ -137,7 +137,7 @@ export default function CustomerDetailPage() {
         <Button asChild variant="ghost" size="sm">
           <Link href="/customers">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Customers
+        
           </Link>
         </Button>
         <div>

@@ -100,7 +100,7 @@ export default function ReceiptDetailsPage() {
         <Button asChild variant="ghost" size="sm">
           <Link href="/receipts">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Receipts
+            
           </Link>
         </Button>
         <Empty>
