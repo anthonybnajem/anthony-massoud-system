@@ -27,6 +27,7 @@ interface CartProps {
   discountValue: number;
   discountType: "percentage" | "fixed";
   discountAmount: number;
+  discountLabel?: string;
   taxRate: number;
   taxAmount: number;
   cartTotal: number;
@@ -53,6 +54,7 @@ const CartContent = ({
   discountValue,
   discountType,
   discountAmount,
+  discountLabel,
   taxRate,
   taxAmount,
   cartTotal,
@@ -149,6 +151,7 @@ const CartContent = ({
           discountValue={discountValue}
           discountType={discountType}
           discountAmount={discountAmount}
+          discountLabel={discountLabel}
           taxRate={taxRate}
           taxAmount={taxAmount}
           cartTotal={cartTotal}
@@ -171,6 +174,7 @@ export function Cart({
   discountValue,
   discountType,
   discountAmount,
+  discountLabel,
   taxRate,
   taxAmount,
   cartTotal,
@@ -197,6 +201,7 @@ export function Cart({
       discountValue={discountValue}
       discountType={discountType}
       discountAmount={discountAmount}
+      discountLabel={discountLabel}
       taxRate={taxRate}
       taxAmount={taxAmount}
       cartTotal={cartTotal}

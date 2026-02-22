@@ -17,7 +17,7 @@ import {
 } from "./product-constants";
 
 // Current database version - increment when schema changes
-export const CURRENT_VERSION = 9;
+export const CURRENT_VERSION = 10;
 
 // Schema definitions for each version
 // Each version includes ALL stores that should exist at that version
@@ -158,6 +158,24 @@ export const SCHEMA_VERSIONS: Record<number, Record<string, string>> = {
     closingReports: "id, shiftId, employeeId, date, createdAt",
     customers: "id, name, email, phone, location, notes, createdAt, updatedAt",
   },
+  10: {
+    // Version 10: Track discount assignment on sales/customers
+    products:
+      "id, name, price, category, categoryId, barcode, stock, description, sku, cost, taxable, taxRate, tags, attributes, variations, saleType, unitLabel, unitIncrement",
+    categories: "id, name, description, color, icon",
+    sales:
+      "id, items, total, subtotal, tax, discount, discountType, discountId, paymentMethod, date, customerName, customerEmail, customerPhone, customerLocation, notes, receiptNumber, employeeId, shiftId, status, updatedAt, voidReason, voidedAt",
+    discounts:
+      "id, name, code, type, value, minOrderAmount, maxDiscount, startDate, endDate, isActive, appliesTo, categoryIds, productIds, usageLimit, usageCount",
+    settings: "id",
+    stockMovements:
+      "id, productId, type, quantity, previousStock, newStock, date",
+    employees: "id, name, email, role, isActive, hireDate, password",
+    shifts: "id, employeeId, startTime, endTime, status",
+    closingReports: "id, shiftId, employeeId, date, createdAt",
+    customers:
+      "id, name, email, phone, location, notes, defaultDiscountId, createdAt, updatedAt",
+  },
 };
 
 // Migration functions for data transformations
@@ -289,6 +307,12 @@ export const MIGRATIONS: Record<number, (tx: any) => Promise<void> | void> = {
     console.log("Running migration to version 9: Adding customers table");
     // No data migration needed - new table is empty
   },
+  10: async () => {
+    console.log(
+      "Running migration to version 10: Tracking discount links on sales/customers"
+    );
+    // Optional fields only, nothing to migrate
+  },
 };
 
 /**
@@ -355,6 +379,7 @@ export function getMigrationDescription(version: number): string {
     7: "Added sale status and audit metadata",
     8: "Added customer location field to sales records",
     9: "Added reusable customers table",
+    10: "Added discount linking metadata on sales/customers",
   };
   return descriptions[version] || `Migration to version ${version}`;
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { type Sale } from "@/components/pos-data-provider";
+import type { Discount } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,6 +38,7 @@ export function EditReceiptDialog({
   onClose,
   onSave,
   onSaveCustomerProfile,
+  availableDiscounts = [],
 }: {
   sale: Sale | null;
   onClose: () => void;
@@ -47,6 +49,7 @@ export function EditReceiptDialog({
     phone?: string;
     location?: string;
   }) => Promise<void>;
+  availableDiscounts?: Discount[];
 }) {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
@@ -54,6 +57,7 @@ export function EditReceiptDialog({
   const [customerLocation, setCustomerLocation] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [notes, setNotes] = useState("");
+  const [discountId, setDiscountId] = useState<string | undefined>(undefined);
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
 
@@ -65,6 +69,7 @@ export function EditReceiptDialog({
       setCustomerLocation(sale.customerLocation || "");
       setPaymentMethod(sale.paymentMethod || "cash");
       setNotes(sale.notes || "");
+      setDiscountId(sale.discountId || undefined);
     }
   }, [sale]);
 
@@ -79,6 +84,7 @@ export function EditReceiptDialog({
         customerLocation: customerLocation.trim() || undefined,
         paymentMethod,
         notes: notes.trim() || undefined,
+        discountId,
       };
       await onSave(sale.id, updates);
       if (onSaveCustomerProfile) {
@@ -147,6 +153,33 @@ export function EditReceiptDialog({
                 <SelectItem value="cash">Cash</SelectItem>
                 <SelectItem value="credit">Credit Card</SelectItem>
                 <SelectItem value="mobile">Mobile Payment</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Discount</Label>
+            <Select
+              value={discountId ?? "none"}
+              onValueChange={(value) =>
+                setDiscountId(value === "none" ? undefined : value)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="No discount" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No discount</SelectItem>
+                {availableDiscounts.length === 0 ? (
+                  <SelectItem value="placeholder" disabled>
+                    No saved discounts yet
+                  </SelectItem>
+                ) : (
+                  availableDiscounts.map((discount) => (
+                    <SelectItem key={discount.id} value={discount.id}>
+                      {discount.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>

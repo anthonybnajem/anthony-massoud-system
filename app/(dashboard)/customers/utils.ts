@@ -10,6 +10,7 @@ export type CustomerSummary = {
   email?: string;
   phone?: string;
   location?: string;
+  defaultDiscountId?: string;
   totalSpent: number;
   purchaseCount: number;
   lastPurchase: Date;
@@ -37,23 +38,37 @@ const createCustomerKey = ({
   );
 };
 
+const getIdentityKey = (name?: string | null, email?: string | null, phone?: string | null) => {
+  const fallback =
+    name && name !== WALK_IN_CUSTOMER_NAME
+      ? `name:${name.toLowerCase()}`
+      : "walk-in";
+  return createCustomerKey({
+    name,
+    email,
+    phone,
+    fallback,
+  });
+};
+
 export function buildCustomersFromSales(
   sales: Sale[],
   manualProfiles: CustomerProfile[] = []
 ): CustomerSummary[] {
   const map = new Map<string, CustomerSummary>();
 
+  const hiddenKeys = new Set(
+    manualProfiles
+      .filter((profile) => profile.deleted)
+      .map((profile) => getIdentityKey(profile.name, profile.email, profile.phone))
+  );
+  const activeProfiles = manualProfiles.filter((profile) => !profile.deleted);
+
   sales.forEach((sale) => {
-    const fallbackKey =
-      sale.customerName && sale.customerName !== WALK_IN_CUSTOMER_NAME
-        ? `name:${sale.customerName.toLowerCase()}`
-        : "walk-in";
-    const key = createCustomerKey({
-      name: sale.customerName,
-      email: sale.customerEmail,
-      phone: sale.customerPhone,
-      fallback: fallbackKey,
-    });
+    const key = getIdentityKey(sale.customerName, sale.customerEmail, sale.customerPhone);
+    if (hiddenKeys.has(key)) {
+      return;
+    }
     const saleDate = new Date(sale.date);
     const existing = map.get(key);
 
@@ -73,6 +88,9 @@ export function buildCustomersFromSales(
       if (sale.customerLocation && !existing.location) {
         existing.location = sale.customerLocation;
       }
+      if (sale.discountId && !existing.defaultDiscountId) {
+        existing.defaultDiscountId = sale.discountId;
+      }
     } else {
       map.set(key, {
         id: key,
@@ -84,12 +102,15 @@ export function buildCustomersFromSales(
         purchaseCount: 1,
         lastPurchase: saleDate,
         sales: [sale],
+        defaultDiscountId: sale.discountId || undefined,
         profileId: undefined,
       });
     }
   });
 
-  manualProfiles.forEach((profile) => {
+  activeProfiles
+    .filter((profile) => !profile.deleted)
+    .forEach((profile) => {
     const key = createCustomerKey({
       name: profile.name,
       email: profile.email,
@@ -109,6 +130,7 @@ export function buildCustomersFromSales(
       existing.email = profile.email || existing.email;
       existing.phone = profile.phone || existing.phone;
       existing.location = profile.location || existing.location;
+      existing.defaultDiscountId = profile.defaultDiscountId || existing.defaultDiscountId;
       if (existing.sales.length === 0) {
         existing.lastPurchase = lastUpdate;
       }
@@ -120,6 +142,7 @@ export function buildCustomersFromSales(
         email: profile.email || undefined,
         phone: profile.phone || undefined,
         location: profile.location || undefined,
+        defaultDiscountId: profile.defaultDiscountId || undefined,
         totalSpent: 0,
         purchaseCount: 0,
         lastPurchase: lastUpdate,

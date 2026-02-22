@@ -9,6 +9,7 @@ interface CartSummaryProps {
   discountValue: number;
   discountType: "percentage" | "fixed";
   discountAmount: number;
+  discountLabel?: string;
   taxRate: number;
   taxAmount: number;
   cartTotal: number;
@@ -25,6 +26,7 @@ export function CartSummary({
   discountValue,
   discountType,
   discountAmount,
+  discountLabel,
   taxRate,
   taxAmount,
   cartTotal,
@@ -46,13 +48,17 @@ export function CartSummary({
           </span>
         </div>
 
-        {discountValue > 0 && (
+        {discountAmount > 0 && (
           <>
             <Separator className="my-2" />
             <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground">
                 Discount{" "}
-                {discountType === "percentage" ? `(${discountValue}%)` : ""}
+                {discountLabel
+                  ? `(${discountLabel})`
+                  : discountType === "percentage"
+                  ? `(${discountValue}%)`
+                  : ""}
               </span>
               <span className="text-destructive font-semibold">
                 -{currencySymbol}

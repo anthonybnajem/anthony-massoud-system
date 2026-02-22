@@ -7,6 +7,7 @@ import { ArrowLeft, Users, UserCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { usePosData } from "@/components/pos-data-provider";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
+import { useDiscount } from "@/components/discount-provider";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -34,6 +35,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { buildCustomersFromSales } from "../utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function CustomerDetailPage() {
   const params = useParams();
@@ -47,6 +55,7 @@ export default function CustomerDetailPage() {
     updateCustomerProfile,
   } = usePosData();
   const { settings } = useReceiptSettings();
+  const { discounts } = useDiscount();
   const currencySymbol = settings?.currencySymbol || "$";
 
   const customers = useMemo(
@@ -54,12 +63,26 @@ export default function CustomerDetailPage() {
     [sales, customerProfiles]
   );
   const customer = customers.find((c) => c.id === customerIdParam);
+  const discountLookup = useMemo(
+    () =>
+      discounts.reduce<Record<string, string>>((acc, discount) => {
+        acc[discount.id] = discount.name;
+        return acc;
+      }, {}),
+    [discounts]
+  );
+  const assignedDiscountLabel = customer?.defaultDiscountId
+    ? discountLookup[customer.defaultDiscountId] || "Discount removed"
+    : "No discount";
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [pendingName, setPendingName] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
   const [pendingPhone, setPendingPhone] = useState("");
   const [pendingLocation, setPendingLocation] = useState("");
+  const [pendingDiscountId, setPendingDiscountId] = useState<
+    string | undefined
+  >(undefined);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -68,6 +91,7 @@ export default function CustomerDetailPage() {
       setPendingEmail(customer.email || "");
       setPendingPhone(customer.phone || "");
       setPendingLocation(customer.location || "");
+      setPendingDiscountId(customer.defaultDiscountId || undefined);
     }
   }, [customer, isEditOpen]);
 
@@ -82,6 +106,7 @@ export default function CustomerDetailPage() {
             customerEmail: pendingEmail.trim() || undefined,
             customerPhone: pendingPhone.trim() || undefined,
             customerLocation: pendingLocation.trim() || undefined,
+            discountId: pendingDiscountId || sale.discountId,
           })
         )
       );
@@ -96,6 +121,7 @@ export default function CustomerDetailPage() {
             email: pendingEmail.trim() || undefined,
             phone: pendingPhone.trim() || undefined,
             location: pendingLocation.trim() || undefined,
+            defaultDiscountId: pendingDiscountId || undefined,
           });
         }
       }
@@ -156,7 +182,7 @@ export default function CustomerDetailPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
@@ -198,6 +224,17 @@ export default function CustomerDetailPage() {
               {customer.location || "Not provided"}
             </p>
             <CardDescription>Saved customer location</CardDescription>
+          </CardContent>
+        </Card>
+        <Card className="border-2 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Preferred Discount
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{assignedDiscountLabel}</p>
+            <CardDescription>Applied during checkout</CardDescription>
           </CardContent>
         </Card>
       </div>
@@ -303,6 +340,33 @@ export default function CustomerDetailPage() {
               value={pendingLocation}
               onChange={(e) => setPendingLocation(e.target.value)}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-discount">Preferred Discount</Label>
+            <Select
+              value={pendingDiscountId ?? "none"}
+              onValueChange={(value) =>
+                setPendingDiscountId(value === "none" ? undefined : value)
+              }
+            >
+              <SelectTrigger id="edit-discount">
+                <SelectValue placeholder="No discount" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No discount</SelectItem>
+                {discounts.length === 0 ? (
+                  <SelectItem value="placeholder" disabled>
+                    Create a discount first
+                  </SelectItem>
+                ) : (
+                  discounts.map((discount) => (
+                    <SelectItem key={discount.id} value={discount.id}>
+                      {discount.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
           </div>
           <DialogFooter>

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useDiscount } from "@/components/discount-provider";
+import { usePosData } from "@/components/pos-data-provider";
+import { useReceiptSettings } from "@/components/receipt-settings-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -12,6 +14,8 @@ import { EditDiscountDialog } from "./components/EditDiscountDialog";
 export default function DiscountsPage() {
   const { discounts, addDiscount, updateDiscount, removeDiscount } =
     useDiscount();
+  const { products, categories } = usePosData();
+  const { settings } = useReceiptSettings();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentDiscount, setCurrentDiscount] = useState<Discount | null>(null);
@@ -24,7 +28,10 @@ export default function DiscountsPage() {
     value: 0,
     isActive: true,
     appliesTo: "all",
+    productIds: [],
+    categoryIds: [],
   });
+  const currencySymbol = settings?.currencySymbol || "$";
 
   const handleAddDiscount = () => {
     addDiscount(newDiscount);
@@ -35,6 +42,8 @@ export default function DiscountsPage() {
       value: 0,
       isActive: true,
       appliesTo: "all",
+      productIds: [],
+      categoryIds: [],
     });
     setIsAddDialogOpen(false);
   };
@@ -49,8 +58,6 @@ export default function DiscountsPage() {
   const handleRemoveDiscount = (id: string) => {
     removeDiscount(id);
   };
-
-  return  <h1 className="text-2xl font-bold tracking-tight">Coming Soon!</h1>
 
   return (
     <div className="space-y-6 overflow-hidden min-w-0">
@@ -74,6 +81,9 @@ export default function DiscountsPage() {
         <CardContent className="overflow-hidden min-w-0">
           <DiscountTable
             discounts={discounts}
+            products={products}
+            categories={categories}
+            currencySymbol={currencySymbol}
             onEdit={(discount) => {
               setCurrentDiscount(discount);
               setIsEditDialogOpen(true);
@@ -89,6 +99,9 @@ export default function DiscountsPage() {
         discount={newDiscount}
         onDiscountChange={setNewDiscount}
         onSubmit={handleAddDiscount}
+        products={products}
+        categories={categories}
+        currencySymbol={currencySymbol}
       />
 
       <EditDiscountDialog
@@ -100,6 +113,9 @@ export default function DiscountsPage() {
         discount={currentDiscount}
         onDiscountChange={setCurrentDiscount}
         onSubmit={handleEditDiscount}
+        products={products}
+        categories={categories}
+        currencySymbol={currencySymbol}
       />
     </div>
   );

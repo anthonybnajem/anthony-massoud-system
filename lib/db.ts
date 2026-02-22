@@ -65,6 +65,7 @@ export type Sale = {
   tax?: number;
   discount?: number;
   discountType?: "percentage" | "fixed";
+  discountId?: string;
   paymentMethod: string;
   date: Date;
   status?: SaleStatus;
@@ -88,8 +89,10 @@ export type CustomerProfile = {
   phone?: string;
   location?: string;
   notes?: string;
+  defaultDiscountId?: string;
   createdAt: Date;
   updatedAt: Date;
+  deleted?: boolean;
 };
 
 export type ReceiptSettings = {
@@ -1097,10 +1100,16 @@ export const customersApi = {
       throw error;
     }
   },
-  delete: async (id: string): Promise<void> => {
+  softDelete: async (id: string): Promise<void> => {
     try {
       const db = getDB();
-      await db.customers.delete(id);
+      const existing = await db.customers.get(id);
+      if (!existing) return;
+      await db.customers.put({
+        ...existing,
+        deleted: true,
+        updatedAt: new Date(),
+      });
     } catch (error) {
       console.error("Error deleting customer:", error);
       throw error;

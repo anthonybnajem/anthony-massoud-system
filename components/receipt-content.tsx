@@ -33,6 +33,10 @@ interface ReceiptContentProps {
   }[];
   receiptId: string;
   subtotal: number;
+  discount?: {
+    amount: number;
+    label?: string;
+  };
   tax: number;
   total: number;
   meta?: {
@@ -44,7 +48,7 @@ interface ReceiptContentProps {
 }
 
 export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
-  ({ data, item, subtotal, tax, total, receiptId, meta }, ref) => {
+  ({ data, item, subtotal, discount, tax, total, receiptId, meta }, ref) => {
     const now = new Date();
     const displayDate = meta?.date || now.toLocaleDateString();
     const displayTime = meta?.time || now.toLocaleTimeString();
@@ -185,6 +189,18 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
                 {subtotal.toFixed(2)}
               </span>
             </div>
+            {discount && discount.amount > 0 && data.showDiscounts !== false && (
+              <div className="flex justify-between">
+                <span>
+                  Discount
+                  {discount.label ? ` (${discount.label})` : ""}
+                </span>
+                <span>
+                  -{data.currencySymbol}
+                  {discount.amount.toFixed(2)}
+                </span>
+              </div>
+            )}
             {data.showTax && (
               <div className="flex justify-between">
                 <span>Tax ({data.taxRate}%):</span>

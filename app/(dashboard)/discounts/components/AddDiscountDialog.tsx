@@ -10,6 +10,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { DiscountForm } from "./DiscountForm";
 import { type Discount } from "@/lib/db";
+import {
+  type Product,
+  type Category,
+} from "@/components/pos-data-provider";
 
 interface AddDiscountDialogProps {
   isOpen: boolean;
@@ -17,6 +21,9 @@ interface AddDiscountDialogProps {
   discount: Omit<Discount, "id" | "usageCount">;
   onDiscountChange: (discount: Omit<Discount, "id" | "usageCount">) => void;
   onSubmit: () => void;
+  products: Product[];
+  categories: Category[];
+  currencySymbol: string;
 }
 
 export function AddDiscountDialog({
@@ -25,6 +32,9 @@ export function AddDiscountDialog({
   discount,
   onDiscountChange,
   onSubmit,
+  products,
+  categories,
+  currencySymbol,
 }: AddDiscountDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -32,7 +42,13 @@ export function AddDiscountDialog({
         <DialogHeader>
           <DialogTitle>Add New Discount</DialogTitle>
         </DialogHeader>
-        <DiscountForm discount={discount} onChange={onDiscountChange} />
+        <DiscountForm
+          discount={discount}
+          onChange={onDiscountChange}
+          products={products}
+          categories={categories}
+          currencySymbol={currencySymbol}
+        />
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cancel

@@ -2,6 +2,10 @@
 
 import { type Discount } from "@/lib/db";
 import {
+  type Product,
+  type Category,
+} from "@/components/pos-data-provider";
+import {
   Table,
   TableBody,
   TableCell,
@@ -23,13 +27,24 @@ interface DiscountTableProps {
   discounts: Discount[];
   onEdit: (discount: Discount) => void;
   onDelete: (id: string) => void;
+  products: Product[];
+  categories: Category[];
+  currencySymbol: string;
 }
 
 export function DiscountTable({
   discounts,
   onEdit,
   onDelete,
+  products,
+  categories,
+  currencySymbol,
 }: DiscountTableProps) {
+  const productMap = new Map(products.map((product) => [product.id, product]));
+  const categoryMap = new Map(
+    categories.map((category) => [category.id, category])
+  );
+
   return (
     <div className="overflow-x-auto min-w-0">
       <Table>
@@ -39,6 +54,7 @@ export function DiscountTable({
             <TableHead>Code</TableHead>
             <TableHead>Value</TableHead>
             <TableHead>Applies To</TableHead>
+            <TableHead>Targets</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
@@ -51,11 +67,14 @@ export function DiscountTable({
                 discount={discount}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                productMap={productMap}
+                categoryMap={categoryMap}
+                currencySymbol={currencySymbol}
               />
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={6} className="py-8">
+              <TableCell colSpan={7} className="py-8">
                 <Empty>
                   <EmptyHeader>
                     <EmptyMedia variant="icon">

@@ -7,6 +7,7 @@ import { format, subDays } from "date-fns";
 import { InvoicePrint } from "@/components/invoice-print";
 import { usePosData, type Sale } from "@/components/pos-data-provider";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
+import { useDiscount } from "@/components/discount-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -67,6 +68,7 @@ export default function RecentReceiptsPage() {
   const router = useRouter();
   const { sales, updateSale, voidSale, deleteSale } = usePosData();
   const { settings } = useReceiptSettings();
+  const { discounts } = useDiscount();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -130,6 +132,14 @@ export default function RecentReceiptsPage() {
           new Date(b.date).getTime() - new Date(a.date).getTime()
       );
   }, [sales, searchQuery, statusFilter, dateFilter]);
+  const discountLookup = useMemo(
+    () =>
+      discounts.reduce<Record<string, string>>((acc, discount) => {
+        acc[discount.id] = discount.name;
+        return acc;
+      }, {}),
+    [discounts]
+  );
 
   const numericRows = Number(rowsPerPage) || 10;
   const totalPages = Math.max(1, Math.ceil(filteredSales.length / numericRows));
@@ -241,6 +251,7 @@ export default function RecentReceiptsPage() {
                   <TableHead>Customer</TableHead>
                   <TableHead>Items</TableHead>
                   <TableHead>Payment</TableHead>
+                  <TableHead>Discount</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -249,7 +260,7 @@ export default function RecentReceiptsPage() {
               <TableBody>
                 {paginatedSales.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-10">
+                  <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-10">
                       No receipts match the selected filters.
                     </TableCell>
                   </TableRow>
@@ -322,6 +333,24 @@ export default function RecentReceiptsPage() {
                           <div className="text-sm capitalize">
                             {sale.paymentMethod}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {sale.discount && sale.discount > 0 ? (
+                            <div className="text-sm">
+                              -{currencySymbol}
+                              {sale.discount.toFixed(2)}
+                              {sale.discountId && (
+                                <p className="text-xs text-muted-foreground">
+                                  {discountLookup[sale.discountId] ||
+                                    "Saved discount"}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">
+                              —
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="font-semibold">
                           {currencySymbol}
@@ -484,6 +513,7 @@ export default function RecentReceiptsPage() {
         sale={editTarget}
         onClose={() => setEditTarget(null)}
         onSave={handleEditSave}
+        availableDiscounts={discounts}
       />
 
       <VoidReceiptDialog

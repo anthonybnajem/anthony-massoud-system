@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +15,7 @@ import type { Product } from "@/lib/db";
 import { formatQuantityWithLabel } from "@/lib/product-measurements";
 import { useToast } from "@/components/ui/use-toast";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
+import { useDiscount } from "@/components/discount-provider";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { ReceiptContent } from "./receipt-content";
@@ -30,9 +31,15 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
   const invoiceRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { settings } = useReceiptSettings();
+  const { discounts } = useDiscount();
   const [receiptNumber, setReceiptNumber] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const appliedDiscountName = useMemo(() => {
+    if (!sale?.discountId) return undefined;
+    const match = discounts.find((discount) => discount.id === sale.discountId);
+    return match?.name;
+  }, [sale, discounts]);
 
   useEffect(() => {
     if (sale) {
@@ -338,12 +345,20 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
       instagramUrl,
     } = settings || {};
 
-    const subtotal = sale.items.reduce(
+    const computedSubtotal = sale.items.reduce(
       (sum, item) => sum + item.product.price * item.quantity,
       0
     );
-    const tax = showTax ? subtotal * (taxRate / 100) : 0;
-    const total = subtotal + tax;
+    const subtotal =
+      typeof sale.subtotal === "number" ? sale.subtotal : computedSubtotal;
+    const tax =
+      typeof sale.tax === "number"
+        ? sale.tax
+        : showTax
+        ? subtotal * (taxRate / 100)
+        : 0;
+    const total = sale.total;
+    const discountAmount = sale.discount ?? 0;
 
     const receiptItems = sale.items.map((item) => ({
       name: item.product.name,
@@ -406,6 +421,11 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
           item={receiptItems}
           receiptId={receiptNumber}
           subtotal={subtotal}
+          discount={
+            discountAmount > 0
+              ? { amount: discountAmount, label: appliedDiscountName }
+              : undefined
+          }
           tax={tax}
           total={total}
           meta={meta}

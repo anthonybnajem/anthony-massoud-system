@@ -8,6 +8,7 @@ import {
   type CartItem,
   type Sale,
 } from "@/components/pos-data-provider";
+import { useDiscount } from "@/components/discount-provider";
 import { Badge } from "@/components/ui/badge";
 import { Tag, ShoppingCart } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -42,7 +43,10 @@ import {
   isWeightBased,
 } from "@/lib/product-measurements";
 import { Label } from "@/components/ui/label";
-import { buildCustomersFromSales } from "@/app/(dashboard)/customers/utils";
+import {
+  buildCustomersFromSales,
+  type CustomerSummary,
+} from "@/app/(dashboard)/customers/utils";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
@@ -59,6 +63,7 @@ export default function SalesPage() {
     getActiveShiftForEmployee,
   } = usePosData();
   const { settings } = useReceiptSettings();
+  const { discounts } = useDiscount();
   const taxRate = settings?.taxRate || 0;
   const currencySymbol = settings?.currencySymbol || "$";
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,6 +85,9 @@ export default function SalesPage() {
     "percentage"
   );
   const [discountValue, setDiscountValue] = useState(0);
+  const [selectedDiscountId, setSelectedDiscountId] = useState<string | null>(
+    null
+  );
   const [isNotesDialogOpen, setIsNotesDialogOpen] = useState(false);
   const [isCustomerDialogOpen, setIsCustomerDialogOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -89,6 +97,19 @@ export default function SalesPage() {
     () => buildCustomersFromSales(sales, customers),
     [sales, customers]
   );
+  const selectedDiscount = useMemo(
+    () =>
+      selectedDiscountId
+        ? discounts.find((discount) => discount.id === selectedDiscountId) ||
+          null
+        : null,
+    [selectedDiscountId, discounts]
+  );
+  useEffect(() => {
+    if (selectedDiscountId && !selectedDiscount) {
+      setSelectedDiscountId(null);
+    }
+  }, [selectedDiscountId, selectedDiscount]);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const router = useRouter();
@@ -164,18 +185,185 @@ export default function SalesPage() {
     (total, item) => total + item.product.price * item.quantity,
     0
   );
+  const discountAnalysis = useMemo(() => {
+    if (!selectedDiscount) {
+      const manualBase =
+        discountType === "percentage"
+          ? cartSubtotal * (discountValue / 100)
+          : discountValue;
+      const manualAmount = Math.min(Math.max(manualBase, 0), cartSubtotal);
+      return {
+        amount: manualAmount,
+        eligibleSubtotal: cartSubtotal,
+        eligibleMatchCount: cart.length,
+      };
+    }
 
-  // Calculate discount
+    let eligibleSubtotal = 0;
+    let eligibleMatchCount = 0;
+    let amount = 0;
+
+    const applyLineDiscount = (lineTotal: number, quantity: number) => {
+      if (lineTotal <= 0) return;
+      eligibleSubtotal += lineTotal;
+      eligibleMatchCount += 1;
+      let lineDiscount =
+        selectedDiscount.type === "percentage"
+          ? lineTotal * (selectedDiscount.value / 100)
+          : selectedDiscount.value * quantity;
+      lineDiscount = Math.min(lineDiscount, lineTotal);
+      amount += lineDiscount;
+    };
+
+    if (selectedDiscount.appliesTo === "product") {
+      cart.forEach((item) => {
+        if (selectedDiscount.productIds?.includes(item.product.id)) {
+          applyLineDiscount(item.product.price * item.quantity, item.quantity);
+        }
+      });
+    } else if (selectedDiscount.appliesTo === "category") {
+      cart.forEach((item) => {
+        if (
+          item.product.categoryId &&
+          selectedDiscount.categoryIds?.includes(item.product.categoryId)
+        ) {
+          applyLineDiscount(item.product.price * item.quantity, item.quantity);
+        }
+      });
+    } else {
+      applyLineDiscount(cartSubtotal, 1);
+    }
+
+    if (selectedDiscount.maxDiscount) {
+      amount = Math.min(amount, selectedDiscount.maxDiscount);
+    }
+
+    const cappedAmount = Math.min(
+      Math.max(amount, 0),
+      eligibleSubtotal || cartSubtotal
+    );
+
+    return {
+      amount: cappedAmount,
+      eligibleSubtotal,
+      eligibleMatchCount,
+    };
+  }, [
+    cart,
+    cartSubtotal,
+    discountType,
+    discountValue,
+    selectedDiscount,
+  ]);
+
+  const {
+    amount: computedDiscountAmount,
+    eligibleSubtotal: eligibleDiscountSubtotal,
+    eligibleMatchCount: eligibleDiscountMatches,
+  } = discountAnalysis;
+
+  const savedDiscountError = useMemo(() => {
+    if (!selectedDiscount) return null;
+    if (!selectedDiscount.isActive) {
+      return "Discount is inactive";
+    }
+    const now = new Date();
+    if (
+      selectedDiscount.startDate &&
+      new Date(selectedDiscount.startDate) > now
+    ) {
+      return "Discount not available yet";
+    }
+    if (selectedDiscount.endDate && new Date(selectedDiscount.endDate) < now) {
+      return "Discount has expired";
+    }
+    if (
+      selectedDiscount.usageLimit &&
+      selectedDiscount.usageCount >= selectedDiscount.usageLimit
+    ) {
+      return "Usage limit reached";
+    }
+    if (
+      (selectedDiscount.appliesTo === "product" ||
+        selectedDiscount.appliesTo === "category") &&
+      eligibleDiscountMatches === 0
+    ) {
+      return "This discount doesn't apply to items in the cart.";
+    }
+    const thresholdSubtotal =
+      selectedDiscount.appliesTo === "product" ||
+      selectedDiscount.appliesTo === "category"
+        ? eligibleDiscountSubtotal
+        : cartSubtotal;
+    if (
+      selectedDiscount.minOrderAmount &&
+      thresholdSubtotal < selectedDiscount.minOrderAmount
+    ) {
+      return `Requires minimum order of ${currencySymbol}${selectedDiscount.minOrderAmount.toFixed(
+        2
+      )}`;
+    }
+    return null;
+  }, [
+    selectedDiscount,
+    eligibleDiscountMatches,
+    eligibleDiscountSubtotal,
+    cartSubtotal,
+    currencySymbol,
+  ]);
+
   const discountAmount =
-    discountType === "percentage"
-      ? cartSubtotal * (discountValue / 100)
-      : discountValue;
+    selectedDiscount && savedDiscountError
+      ? 0
+      : computedDiscountAmount;
 
   // Calculate tax
   const taxAmount = (cartSubtotal - discountAmount) * (taxRate / 100);
 
   // Calculate total
   const cartTotal = cartSubtotal - discountAmount + taxAmount;
+  const appliedDiscountLabel = useMemo(() => {
+    if (selectedDiscount) {
+      if (savedDiscountError) {
+        return `${selectedDiscount.name} (not eligible)`;
+      }
+      const matchDetails =
+        (selectedDiscount.appliesTo === "product" ||
+          selectedDiscount.appliesTo === "category") &&
+        eligibleDiscountMatches > 0
+          ? `${eligibleDiscountMatches} matching item${
+              eligibleDiscountMatches === 1 ? "" : "s"
+            }`
+          : null;
+      return matchDetails
+        ? `${selectedDiscount.name} (${matchDetails})`
+        : selectedDiscount.name;
+    }
+    if (discountAmount > 0) {
+      return discountType === "percentage"
+        ? `${discountValue}% off`
+        : `${currencySymbol}${discountValue.toFixed(2)} off`;
+    }
+    return undefined;
+  }, [
+    selectedDiscount,
+    savedDiscountError,
+    discountAmount,
+    discountType,
+    discountValue,
+    currencySymbol,
+    eligibleDiscountMatches,
+  ]);
+  const appliedDiscountId =
+    selectedDiscount && !savedDiscountError ? selectedDiscount.id : undefined;
+  const effectiveDiscountType =
+    selectedDiscount && !savedDiscountError
+      ? selectedDiscount.type
+      : discountType;
+  const effectiveDiscountValue =
+    selectedDiscount && !savedDiscountError
+      ? selectedDiscount.value
+      : discountValue;
 
   // Calculate cart item count
   const cartItemCount = cart.length;
@@ -295,10 +483,12 @@ export default function SalesPage() {
   const clearCart = () => {
     setCart([]);
     setDiscountValue(0);
+    setSelectedDiscountId(null);
     setSaleNotes("");
     setCustomerName("");
     setCustomerEmail("");
     setCustomerPhone("");
+    setCustomerLocation("");
     toast({
       title: "Cart Cleared",
       description: "All items have been removed from the cart.",
@@ -339,7 +529,8 @@ export default function SalesPage() {
         subtotal: cartSubtotal,
         tax: taxAmount,
         discount: discountAmount,
-        discountType: discountType,
+        discountType: effectiveDiscountType,
+        discountId: appliedDiscountId,
         total: cartTotal,
         paymentMethod,
         customerName: customerName.trim() || undefined,
@@ -366,6 +557,7 @@ export default function SalesPage() {
       setCustomerLocation("");
       setSaleNotes("");
       setDiscountValue(0);
+      setSelectedDiscountId(null);
     } catch (error) {
       console.error("Error recording sale:", error);
       toast({
@@ -400,6 +592,22 @@ export default function SalesPage() {
   const applyDiscount = () => {
     setIsDiscountDialogOpen(false);
 
+    if (selectedDiscount) {
+      if (savedDiscountError) {
+        toast({
+          title: "Discount unavailable",
+          description: savedDiscountError,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Discount Applied",
+          description: `${selectedDiscount.name} is applied to this sale.`,
+        });
+      }
+      return;
+    }
+
     if (discountValue > 0) {
       toast({
         title: "Discount Applied",
@@ -421,6 +629,35 @@ export default function SalesPage() {
         title: "Notes Saved",
         description: "Your notes have been saved to this sale.",
       });
+    }
+  };
+
+  const handleSavedDiscountSelect = (discountId: string) => {
+    setSelectedDiscountId(discountId);
+  };
+
+  const handleSavedDiscountClear = () => {
+    setSelectedDiscountId(null);
+  };
+
+  const handleCustomerSelection = (customer: CustomerSummary) => {
+    if (!customer.defaultDiscountId) return;
+    const discountRecord = discounts.find(
+      (discount) => discount.id === customer.defaultDiscountId
+    );
+    if (discountRecord) {
+      setSelectedDiscountId(discountRecord.id);
+      toast({
+        title: "Customer Discount Applied",
+        description: `Using ${discountRecord.name} for ${customer.name}.`,
+      });
+    } else {
+      toast({
+        title: "Discount unavailable",
+        description: "This customer's discount could not be found.",
+        variant: "destructive",
+      });
+      setSelectedDiscountId(null);
     }
   };
 
@@ -620,9 +857,10 @@ export default function SalesPage() {
             cart={cart}
             cartItemCount={cartItemCount}
             cartSubtotal={cartSubtotal}
-            discountValue={discountValue}
-            discountType={discountType}
+            discountValue={effectiveDiscountValue}
+            discountType={effectiveDiscountType}
             discountAmount={discountAmount}
+            discountLabel={appliedDiscountLabel}
             taxRate={taxRate}
             taxAmount={taxAmount}
             cartTotal={cartTotal}
@@ -647,9 +885,10 @@ export default function SalesPage() {
             cart={cart}
             cartItemCount={cartItemCount}
             cartSubtotal={cartSubtotal}
-            discountValue={discountValue}
-            discountType={discountType}
+            discountValue={effectiveDiscountValue}
+            discountType={effectiveDiscountType}
             discountAmount={discountAmount}
+            discountLabel={appliedDiscountLabel}
             taxRate={taxRate}
             taxAmount={taxAmount}
             cartTotal={cartTotal}
@@ -691,6 +930,12 @@ export default function SalesPage() {
           cartTotal={cartTotal}
           currencySymbol={currencySymbol}
           applyDiscount={applyDiscount}
+          savedDiscounts={discounts}
+          selectedDiscountId={selectedDiscountId}
+          onSelectSavedDiscount={handleSavedDiscountSelect}
+          onClearSavedDiscount={handleSavedDiscountClear}
+          appliedDiscount={selectedDiscount}
+          savedDiscountError={savedDiscountError}
         />
 
         {/* Notes Dialog */}
@@ -716,13 +961,25 @@ export default function SalesPage() {
           setCustomerLocation={setCustomerLocation}
           saveCustomerInfo={saveCustomerInfo}
           existingCustomers={customerDirectory}
-          onSaveProfile={async ({ name, email, phone, location }) => {
+          availableDiscounts={discounts}
+          onCustomerSelect={handleCustomerSelection}
+          onSaveProfile={async ({
+            name,
+            email,
+            phone,
+            location,
+            defaultDiscountId,
+          }) => {
             const profile = await addCustomerProfile({
               name,
               email,
               phone,
               location,
+              defaultDiscountId,
             });
+            if (defaultDiscountId) {
+              setSelectedDiscountId(defaultDiscountId);
+            }
             toast({
               title: "Customer Saved",
               description: `${profile.name} is now available for future sales.`,
@@ -741,9 +998,10 @@ export default function SalesPage() {
           paymentMethod={paymentMethod}
           setPaymentMethod={setPaymentMethod}
           cartSubtotal={cartSubtotal}
-          discountValue={discountValue}
-          discountType={discountType}
+          discountValue={effectiveDiscountValue}
+          discountType={effectiveDiscountType}
           discountAmount={discountAmount}
+          discountLabel={appliedDiscountLabel}
           taxRate={taxRate}
           taxAmount={taxAmount}
           cartTotal={cartTotal}

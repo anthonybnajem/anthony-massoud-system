@@ -19,6 +19,7 @@ import {
   ChevronsUpDown,
   Plus,
   Minus,
+  Percent,
 } from "lucide-react";
 import type { CustomerSummary } from "@/app/(dashboard)/customers/utils";
 import {
@@ -33,6 +34,14 @@ import {
   CommandEmpty,
   CommandInput,
 } from "@/components/ui/command";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { Discount } from "@/lib/db";
 
 interface CustomerDialogProps {
   isOpen: boolean;
@@ -52,7 +61,10 @@ interface CustomerDialogProps {
     email?: string;
     phone?: string;
     location?: string;
+    defaultDiscountId?: string;
   }) => Promise<void>;
+  availableDiscounts?: Discount[];
+  onCustomerSelect?: (customer: CustomerSummary) => void;
 }
 
 export default function CustomerDialog({
@@ -69,6 +81,8 @@ export default function CustomerDialog({
   saveCustomerInfo,
   existingCustomers = [],
   onSaveProfile,
+  availableDiscounts = [],
+  onCustomerSelect,
 }: CustomerDialogProps) {
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
@@ -77,6 +91,9 @@ export default function CustomerDialog({
   const [newProfileEmail, setNewProfileEmail] = useState("");
   const [newProfilePhone, setNewProfilePhone] = useState("");
   const [newProfileLocation, setNewProfileLocation] = useState("");
+  const [newProfileDiscountId, setNewProfileDiscountId] = useState<
+    string | undefined
+  >(undefined);
 
   const handleSelectCustomer = (customer: CustomerSummary) => {
     setCustomerName(customer.name || "");
@@ -84,6 +101,7 @@ export default function CustomerDialog({
     setCustomerPhone(customer.phone || "");
     setCustomerLocation(customer.location || "");
     setIsSelectorOpen(false);
+    onCustomerSelect?.(customer);
   };
 
   const openCreateProfile = () => {
@@ -91,6 +109,7 @@ export default function CustomerDialog({
     setNewProfileEmail(customerEmail || "");
     setNewProfilePhone(customerPhone || "");
     setNewProfileLocation(customerLocation || "");
+    setNewProfileDiscountId(undefined);
     setIsCreatingProfile(true);
   };
 
@@ -107,6 +126,7 @@ export default function CustomerDialog({
         email: newProfileEmail.trim() || undefined,
         phone: newProfilePhone.trim() || undefined,
         location: newProfileLocation.trim() || undefined,
+        defaultDiscountId: newProfileDiscountId || undefined,
       });
       setCustomerName(newProfileName.trim());
       setCustomerEmail(newProfileEmail.trim());
@@ -203,6 +223,12 @@ export default function CustomerDialog({
                                 customer.location ||
                                 "No contact data"}
                             </span>
+                            {customer.defaultDiscountId && (
+                              <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                <Percent className="h-3 w-3" />
+                                Discount assigned
+                              </span>
+                            )}
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -256,6 +282,35 @@ export default function CustomerDialog({
                     onChange={(e) => setNewProfileLocation(e.target.value)}
                     placeholder="City / Address"
                   />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="new-profile-discount">Default Discount</Label>
+                  <Select
+                    value={newProfileDiscountId ?? "none"}
+                    onValueChange={(value) =>
+                      setNewProfileDiscountId(
+                        value === "none" ? undefined : value
+                      )
+                    }
+                  >
+                    <SelectTrigger id="new-profile-discount">
+                      <SelectValue placeholder="Choose discount" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No discount</SelectItem>
+                      {availableDiscounts.length === 0 ? (
+                        <SelectItem value="placeholder" disabled>
+                          Create discounts to reuse them
+                        </SelectItem>
+                      ) : (
+                        availableDiscounts.map((discount) => (
+                          <SelectItem key={discount.id} value={discount.id}>
+                            {discount.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <Button

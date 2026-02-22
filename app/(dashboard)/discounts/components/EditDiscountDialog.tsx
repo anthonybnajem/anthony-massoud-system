@@ -10,6 +10,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { DiscountForm } from "./DiscountForm";
 import { type Discount } from "@/lib/db";
+import {
+  type Product,
+  type Category,
+} from "@/components/pos-data-provider";
 
 interface EditDiscountDialogProps {
   isOpen: boolean;
@@ -17,6 +21,9 @@ interface EditDiscountDialogProps {
   discount: Discount | null;
   onDiscountChange: (discount: Discount) => void;
   onSubmit: () => void;
+  products: Product[];
+  categories: Category[];
+  currencySymbol: string;
 }
 
 export function EditDiscountDialog({
@@ -25,6 +32,9 @@ export function EditDiscountDialog({
   discount,
   onDiscountChange,
   onSubmit,
+  products,
+  categories,
+  currencySymbol,
 }: EditDiscountDialogProps) {
   if (!discount) return null;
 
@@ -35,6 +45,8 @@ export function EditDiscountDialog({
     value: discount.value,
     isActive: discount.isActive,
     appliesTo: discount.appliesTo,
+    productIds: discount.productIds || [],
+    categoryIds: discount.categoryIds || [],
   };
 
   return (
@@ -49,6 +61,9 @@ export function EditDiscountDialog({
           showUsageCount={true}
           usageCount={discount.usageCount}
           usageLimit={discount.usageLimit}
+          products={products}
+          categories={categories}
+          currencySymbol={currencySymbol}
         />
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>

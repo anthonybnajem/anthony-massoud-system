@@ -275,7 +275,8 @@ export function ReceiptDesigner() {
     0
   );
   const tax = subtotal * (formData.taxRate / 100);
-  const total = subtotal + tax;
+  const previewDiscount = subtotal * 0.1;
+  const total = subtotal - previewDiscount + tax;
 
   if (isLoading) {
     return (
@@ -673,6 +674,7 @@ export function ReceiptDesigner() {
               receiptId={`INV-${Math.floor(Math.random() * 100000)}-${new Date().getTime()}`}
               item={sampleItems}
               subtotal={subtotal}
+              discount={{ amount: previewDiscount, label: "Sample Discount" }}
               tax={tax}
               total={total}
               meta={{

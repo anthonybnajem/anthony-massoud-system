@@ -23,6 +23,7 @@ interface CheckoutDialogProps {
   discountValue: number;
   discountType: "percentage" | "fixed";
   discountAmount: number;
+  discountLabel?: string;
   taxRate: number;
   taxAmount: number;
   cartTotal: number;
@@ -43,6 +44,7 @@ export default function CheckoutDialog({
   discountValue,
   discountType,
   discountAmount,
+  discountLabel,
   taxRate,
   taxAmount,
   cartTotal,
@@ -156,13 +158,17 @@ export default function CheckoutDialog({
                 {cartSubtotal.toFixed(2)}
               </span>
             </div>
-            {discountValue > 0 && (
+            {discountAmount > 0 && (
               <>
                 <Separator className="my-2" />
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">
                     Discount{" "}
-                    {discountType === "percentage" ? `(${discountValue}%)` : ""}
+                    {discountLabel
+                      ? `(${discountLabel})`
+                      : discountType === "percentage"
+                      ? `(${discountValue}%)`
+                      : ""}
                   </span>
                   <span className="text-destructive font-semibold">
                     -{currencySymbol}

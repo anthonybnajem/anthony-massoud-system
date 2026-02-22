@@ -30,6 +30,7 @@ export type Employee = EmployeeType;
 export type Shift = ShiftType;
 export type ClosingReport = ClosingReportType;
 export type CustomerProfile = CustomerProfileType;
+const WALK_IN_CUSTOMER_NAME = "Walk-in Customer";
 
 export type CartItem = {
   product: Product;
@@ -91,6 +92,9 @@ type PosDataContextType = {
     profile: CustomerProfile
   ) => Promise<CustomerProfile>;
   removeCustomerProfile: (id: string) => Promise<void>;
+  hideCustomerIdentity: (
+    identity: { name?: string; email?: string; phone?: string; location?: string }
+  ) => Promise<void>;
   syncToCloud: () => Promise<void>;
   fetchData: () => Promise<void>;
 };
@@ -183,6 +187,7 @@ const PosDataContext = createContext<PosDataContextType>({
     updatedAt: new Date(),
   }),
   removeCustomerProfile: async () => {},
+  hideCustomerIdentity: async () => {},
   syncToCloud: async () => {},
   fetchData: async () => {},
 });
@@ -204,7 +209,9 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       const storedProducts = await productsApi.getAll();
       const storedCategories = await categoriesApi.getAll();
       const storedSales = await salesApi.getAll();
-      const storedCustomers = await customersApi.getAll();
+      const storedCustomers = await customersApi
+        .getAll()
+        .then((list) => list.filter((customer) => !customer.deleted));
       const storedStockMovements = await stockMovementsApi.getAll();
       const storedEmployees = await employeesApi.getAll();
       const storedShifts = await shiftsApi.getAll();
@@ -1113,6 +1120,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         phone: profile.phone?.trim() || undefined,
         location: profile.location?.trim() || undefined,
         notes: profile.notes?.trim() || undefined,
+        defaultDiscountId: profile.defaultDiscountId || undefined,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -1145,6 +1153,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         phone: profile.phone?.trim() || undefined,
         location: profile.location?.trim() || undefined,
         notes: profile.notes?.trim() || undefined,
+        defaultDiscountId: profile.defaultDiscountId || undefined,
         updatedAt: new Date(),
       };
       await customersApi.update(updatedProfile);
@@ -1167,7 +1176,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
 
   const removeCustomerProfile = async (id: string): Promise<void> => {
     try {
-      await customersApi.delete(id);
+      await customersApi.softDelete(id);
       setCustomers(await customersApi.getAll());
       toast({
         title: "Customer Removed",
@@ -1178,6 +1187,46 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       toast({
         title: "Error",
         description: error.message || "Failed to delete customer",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const hideCustomerIdentity = async ({
+    name,
+    email,
+    phone,
+    location,
+  }: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    location?: string;
+  }): Promise<void> => {
+    try {
+      const hiddenProfile: CustomerProfile = {
+        id: crypto.randomUUID(),
+        name: (name && name.trim()) || WALK_IN_CUSTOMER_NAME,
+        email: email?.trim() || undefined,
+        phone: phone?.trim() || undefined,
+        location: location?.trim() || undefined,
+        notes: "hidden",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deleted: true,
+      };
+      await customersApi.add(hiddenProfile);
+      setCustomers(await customersApi.getAll());
+      toast({
+        title: "Customer Hidden",
+        description: `${hiddenProfile.name} will no longer appear in the directory.`,
+      });
+    } catch (error: any) {
+      console.error("Failed to hide customer:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to hide customer",
         variant: "destructive",
       });
       throw error;
@@ -1298,6 +1347,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         addCustomerProfile,
         updateCustomerProfile,
         removeCustomerProfile,
+        hideCustomerIdentity,
         syncToCloud,
         fetchData,
       }}
