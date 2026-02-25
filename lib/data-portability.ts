@@ -2,17 +2,26 @@ import {
   type AppSettings,
   categoriesApi,
   Category,
+  projectWorkerAssignmentsApi,
   Product,
   productsApi,
+  projectsApi,
   ReceiptSettings,
   Sale,
   salesApi,
   settingsApi,
+  type CustomerProject,
+  type ProjectWorkerAssignment,
+  type Worker,
+  workersApi,
 } from "./db";
-type ExportData = {
+export type ExportData = {
   products: Product[];
   categories: Category[];
   sales: Sale[];
+  projects?: CustomerProject[];
+  workers?: Worker[];
+  projectWorkerAssignments?: ProjectWorkerAssignment[];
   appSettings: AppSettings;
   exportDate: string;
   version: string;
@@ -24,12 +33,18 @@ export const exportAllData = async (): Promise<ExportData> => {
     const products = await productsApi.getAll();
     const categories = await categoriesApi.getAll();
     const sales = await salesApi.getAll();
+    const projects = await projectsApi.getAll();
+    const workers = await workersApi.getAll();
+    const projectWorkerAssignments = await projectWorkerAssignmentsApi.getAll();
     const appSettings = await settingsApi.getAppSettings();
 
     return {
       products,
       categories,
       sales,
+      projects,
+      workers,
+      projectWorkerAssignments,
       appSettings,
       exportDate: new Date().toISOString(),
       version: "1.0",
@@ -77,6 +92,22 @@ export const importAllData = async (data: ExportData | File): Promise<void> => {
     // Import sales
     for (const sale of importData.sales) {
       await salesApi.add(sale);
+    }
+
+    if (importData.projects) {
+      for (const project of importData.projects) {
+        await projectsApi.add(project);
+      }
+    }
+    if (importData.workers) {
+      for (const worker of importData.workers) {
+        await workersApi.add(worker);
+      }
+    }
+    if (importData.projectWorkerAssignments) {
+      for (const assignment of importData.projectWorkerAssignments) {
+        await projectWorkerAssignmentsApi.add(assignment);
+      }
     }
 
     // Import receipt settings (if present)

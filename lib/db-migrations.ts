@@ -12,12 +12,14 @@ import Dexie from "dexie";
 import {
   DEFAULT_ITEM_INCREMENT,
   DEFAULT_ITEM_UNIT_LABEL,
+  DEFAULT_RENTAL_INCREMENT,
+  DEFAULT_RENTAL_UNIT_LABEL,
   DEFAULT_WEIGHT_INCREMENT,
   DEFAULT_WEIGHT_UNIT_LABEL,
 } from "./product-constants";
 
 // Current database version - increment when schema changes
-export const CURRENT_VERSION = 10;
+export const CURRENT_VERSION = 13;
 
 // Schema definitions for each version
 // Each version includes ALL stores that should exist at that version
@@ -176,6 +178,67 @@ export const SCHEMA_VERSIONS: Record<number, Record<string, string>> = {
     customers:
       "id, name, email, phone, location, notes, defaultDiscountId, createdAt, updatedAt",
   },
+  11: {
+    // Version 11: Added projects table and sale links to customer/project
+    products:
+      "id, name, price, category, categoryId, barcode, stock, description, sku, cost, taxable, taxRate, tags, attributes, variations, saleType, unitLabel, unitIncrement",
+    categories: "id, name, description, color, icon",
+    sales:
+      "id, items, total, subtotal, tax, discount, discountType, discountId, paymentMethod, date, customerId, projectId, customerName, customerEmail, customerPhone, customerLocation, notes, receiptNumber, employeeId, shiftId, status, updatedAt, voidReason, voidedAt",
+    discounts:
+      "id, name, code, type, value, minOrderAmount, maxDiscount, startDate, endDate, isActive, appliesTo, categoryIds, productIds, usageLimit, usageCount",
+    settings: "id",
+    stockMovements:
+      "id, productId, type, quantity, previousStock, newStock, date",
+    employees: "id, name, email, role, isActive, hireDate, password",
+    shifts: "id, employeeId, startTime, endTime, status",
+    closingReports: "id, shiftId, employeeId, date, createdAt",
+    customers:
+      "id, name, email, phone, location, notes, defaultDiscountId, createdAt, updatedAt",
+    projects: "id, customerId, name, location, notes, isActive, createdAt, updatedAt",
+  },
+  12: {
+    // Version 12: Added rental lifecycle fields on sales
+    products:
+      "id, name, price, category, categoryId, barcode, stock, description, sku, cost, taxable, taxRate, tags, attributes, variations, saleType, unitLabel, unitIncrement",
+    categories: "id, name, description, color, icon",
+    sales:
+      "id, items, total, subtotal, tax, discount, discountType, discountId, paymentMethod, date, customerId, projectId, customerName, customerEmail, customerPhone, customerLocation, rentalStartDate, rentalEndDate, rentalStatus, rentalReturnedAt, rentalReturnMode, notes, receiptNumber, employeeId, shiftId, status, updatedAt, voidReason, voidedAt",
+    discounts:
+      "id, name, code, type, value, minOrderAmount, maxDiscount, startDate, endDate, isActive, appliesTo, categoryIds, productIds, usageLimit, usageCount",
+    settings: "id",
+    stockMovements:
+      "id, productId, type, quantity, previousStock, newStock, date",
+    employees: "id, name, email, role, isActive, hireDate, password",
+    shifts: "id, employeeId, startTime, endTime, status",
+    closingReports: "id, shiftId, employeeId, date, createdAt",
+    customers:
+      "id, name, email, phone, location, notes, defaultDiscountId, createdAt, updatedAt",
+    projects: "id, customerId, name, location, notes, isActive, createdAt, updatedAt",
+  },
+  13: {
+    // Version 13: Added workers and project worker assignment tables
+    products:
+      "id, name, price, category, categoryId, barcode, stock, description, sku, cost, taxable, taxRate, tags, attributes, variations, saleType, unitLabel, unitIncrement",
+    categories: "id, name, description, color, icon",
+    sales:
+      "id, items, total, subtotal, tax, discount, discountType, discountId, paymentMethod, date, customerId, projectId, customerName, customerEmail, customerPhone, customerLocation, rentalStartDate, rentalEndDate, rentalStatus, rentalReturnedAt, rentalReturnMode, notes, receiptNumber, employeeId, shiftId, status, updatedAt, voidReason, voidedAt",
+    discounts:
+      "id, name, code, type, value, minOrderAmount, maxDiscount, startDate, endDate, isActive, appliesTo, categoryIds, productIds, usageLimit, usageCount",
+    settings: "id",
+    stockMovements:
+      "id, productId, type, quantity, previousStock, newStock, date",
+    employees: "id, name, email, role, isActive, hireDate, password",
+    shifts: "id, employeeId, startTime, endTime, status",
+    closingReports: "id, shiftId, employeeId, date, createdAt",
+    customers:
+      "id, name, email, phone, location, notes, defaultDiscountId, createdAt, updatedAt",
+    projects: "id, customerId, name, location, notes, isActive, createdAt, updatedAt",
+    workers:
+      "id, name, phone, email, specialty, dailyRate, isActive, createdAt, updatedAt",
+    projectWorkerAssignments:
+      "id, projectId, workerId, status, startDate, endDate, createdAt, updatedAt",
+  },
 };
 
 // Migration functions for data transformations
@@ -252,17 +315,26 @@ export const MIGRATIONS: Record<number, (tx: any) => Promise<void> | void> = {
     const productsTable = tx.table("products");
     const allProducts = await productsTable.toArray();
     for (const product of allProducts) {
-      const saleType = product.saleType === "weight" ? "weight" : "item";
+      const saleType =
+        product.saleType === "weight"
+          ? "weight"
+          : product.saleType === "rental"
+          ? "rental"
+          : "item";
       const unitLabel =
         product.unitLabel ||
         (saleType === "weight"
           ? DEFAULT_WEIGHT_UNIT_LABEL
+          : saleType === "rental"
+          ? DEFAULT_RENTAL_UNIT_LABEL
           : DEFAULT_ITEM_UNIT_LABEL);
       const unitIncrement =
         typeof product.unitIncrement === "number" && product.unitIncrement > 0
           ? product.unitIncrement
           : saleType === "weight"
           ? DEFAULT_WEIGHT_INCREMENT
+          : saleType === "rental"
+          ? DEFAULT_RENTAL_INCREMENT
           : DEFAULT_ITEM_INCREMENT;
 
       await productsTable.update(product.id, {
@@ -312,6 +384,22 @@ export const MIGRATIONS: Record<number, (tx: any) => Promise<void> | void> = {
       "Running migration to version 10: Tracking discount links on sales/customers"
     );
     // Optional fields only, nothing to migrate
+  },
+  11: async () => {
+    console.log(
+      "Running migration to version 11: Adding projects and sale customer/project links"
+    );
+    // Optional fields + new table, nothing to migrate
+  },
+  12: async () => {
+    console.log(
+      "Running migration to version 12: Adding rental lifecycle fields on sales"
+    );
+  },
+  13: async () => {
+    console.log(
+      "Running migration to version 13: Adding workers and project worker assignments"
+    );
   },
 };
 
@@ -380,6 +468,9 @@ export function getMigrationDescription(version: number): string {
     8: "Added customer location field to sales records",
     9: "Added reusable customers table",
     10: "Added discount linking metadata on sales/customers",
+    11: "Added projects table and customer/project links on sales",
+    12: "Added rental lifecycle fields and return tracking on sales",
+    13: "Added workers and worker-to-project assignment tables",
   };
   return descriptions[version] || `Migration to version ${version}`;
 }

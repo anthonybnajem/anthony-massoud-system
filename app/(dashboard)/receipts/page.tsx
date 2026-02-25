@@ -39,6 +39,7 @@ import {
   Edit2,
   MoreVertical,
   Printer,
+  RotateCcw,
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -66,7 +67,8 @@ const dateFilterOptions = [
 
 export default function RecentReceiptsPage() {
   const router = useRouter();
-  const { sales, updateSale, voidSale, deleteSale } = usePosData();
+  const { sales, updateSale, voidSale, deleteSale, returnRentalSale } =
+    usePosData();
   const { settings } = useReceiptSettings();
   const { discounts } = useDiscount();
 
@@ -196,6 +198,10 @@ export default function RecentReceiptsPage() {
     setDeleteTarget(null);
   };
 
+  const handleReturnRental = async (saleId: string) => {
+    await returnRentalSale(saleId, { mode: "manual" });
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -269,6 +275,10 @@ export default function RecentReceiptsPage() {
                     const status = sale.status || "completed";
                     const statusInfo = statusMeta[status];
                     const detailHref = `/receipts/${encodeURIComponent(sale.id)}`;
+                    const isReturnableRental =
+                      status !== "voided" &&
+                      sale.rentalStatus === "active" &&
+                      sale.items.some((item) => item.isRental || item.product?.saleType === "rental");
                     return (
                       <TableRow
                         key={sale.id}
@@ -379,32 +389,46 @@ export default function RecentReceiptsPage() {
                             event.preventDefault();
                           }}
                         >
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label="Open receipt actions"
-                                className="receipt-menu-trigger"
-                                onClick={(event) => {
-                                  event.preventDefault();
-                                  event.stopPropagation();
-                                }}
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onSelect={(event) => {
-                                  event.preventDefault();
-                                  openInvoice(sale);
-                                }}
-                                className="gap-2"
-                              >
-                                <Printer className="h-4 w-4" />
-                                View / Print
-                              </DropdownMenuItem>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 px-2.5"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                openInvoice(sale);
+                              }}
+                            >
+                              <Printer className="h-4 w-4 mr-1.5" />
+                              Print
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Open receipt actions"
+                                  className="receipt-menu-trigger"
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                  }}
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onSelect={(event) => {
+                                    event.preventDefault();
+                                    openInvoice(sale);
+                                  }}
+                                  className="gap-2"
+                                >
+                                  <Printer className="h-4 w-4" />
+                                  View / Print
+                                </DropdownMenuItem>
                               <DropdownMenuItem
                                 onSelect={(event) => {
                                   event.preventDefault();
@@ -427,6 +451,17 @@ export default function RecentReceiptsPage() {
                                 Void
                               </DropdownMenuItem>
                               <DropdownMenuItem
+                                disabled={!isReturnableRental}
+                                onSelect={async (event) => {
+                                  event.preventDefault();
+                                  await handleReturnRental(sale.id);
+                                }}
+                                className="gap-2"
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                                Return Rental
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
                                 className="gap-2 text-destructive focus:text-destructive"
                                 onSelect={(event) => {
                                   event.preventDefault();
@@ -436,8 +471,9 @@ export default function RecentReceiptsPage() {
                                 <Trash2 className="h-4 w-4" />
                                 Delete
                               </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );

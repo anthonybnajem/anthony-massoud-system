@@ -36,13 +36,19 @@ import Link from "next/link";
 import {
   DEFAULT_ITEM_INCREMENT,
   DEFAULT_ITEM_UNIT_LABEL,
+  DEFAULT_RENTAL_INCREMENT,
+  DEFAULT_RENTAL_UNIT_LABEL,
   DEFAULT_WEIGHT_INCREMENT,
   DEFAULT_WEIGHT_UNIT_LABEL,
 } from "@/lib/product-constants";
 
 const productSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  price: z.number().min(0, "Price must be a positive number"),
+  price: z.number().min(0, "Selling price must be a positive number"),
+  rentalPrice: z
+    .number()
+    .min(0, "Rental price must be a positive number")
+    .optional(),
   stock: z.number().min(0, "Stock must be a positive number"),
   categoryId: z.string().min(1, "Category is required"),
   barcode: z.string().optional(),
@@ -54,7 +60,7 @@ const productSchema = z.object({
   taxRate: z.number().min(0, "Tax rate must be a positive number").optional(),
   tags: z.array(z.string()).optional(),
   attributes: z.record(z.string(), z.string()).optional(),
-  saleType: z.enum(["item", "weight"]),
+  saleType: z.enum(["item", "weight", "rental"]),
   unitLabel: z.string().min(1, "Unit label is required"),
   unitIncrement: z
     .number()
@@ -65,6 +71,9 @@ const productSchema = z.object({
         id: z.string(),
         name: z.string().min(1, "Variation name is required"),
         price: z.number().min(0, "Price must be a positive number"),
+        rentalPrice: z
+          .number()
+          .min(0, "Rental price must be a positive number"),
         stock: z.number().min(0, "Stock must be a positive number"),
       })
     )
@@ -84,6 +93,7 @@ export default function NewProductPage() {
     defaultValues: {
       name: "",
       price: 0,
+      rentalPrice: 0,
       stock: 0,
       categoryId: "",
       barcode: "",
@@ -106,12 +116,16 @@ export default function NewProductPage() {
     fields: variationFields,
     append: addVariation,
     remove: removeVariation,
+    replace: replaceVariations,
   } = useFieldArray({
     control: form.control,
     name: "variations",
   });
 
   const [attributes, setAttributes] = useState<Record<string, string>>({});
+  const [pricingMode, setPricingMode] = useState<"stable" | "variation">(
+    "stable"
+  );
   const saleType = form.watch("saleType");
 
   useEffect(() => {
@@ -128,16 +142,33 @@ export default function NewProductPage() {
       ) {
         form.setValue("unitIncrement", DEFAULT_WEIGHT_INCREMENT);
       }
+    } else if (saleType === "rental") {
+      if (
+        !form.getValues("unitLabel") ||
+        form.getValues("unitLabel") === DEFAULT_ITEM_UNIT_LABEL ||
+        form.getValues("unitLabel") === DEFAULT_WEIGHT_UNIT_LABEL
+      ) {
+        form.setValue("unitLabel", DEFAULT_RENTAL_UNIT_LABEL);
+      }
+      if (
+        !form.getValues("unitIncrement") ||
+        form.getValues("unitIncrement") === DEFAULT_ITEM_INCREMENT ||
+        form.getValues("unitIncrement") === DEFAULT_WEIGHT_INCREMENT
+      ) {
+        form.setValue("unitIncrement", DEFAULT_RENTAL_INCREMENT);
+      }
     } else {
       if (
         !form.getValues("unitLabel") ||
-        form.getValues("unitLabel") === DEFAULT_WEIGHT_UNIT_LABEL
+        form.getValues("unitLabel") === DEFAULT_WEIGHT_UNIT_LABEL ||
+        form.getValues("unitLabel") === DEFAULT_RENTAL_UNIT_LABEL
       ) {
         form.setValue("unitLabel", DEFAULT_ITEM_UNIT_LABEL);
       }
       if (
         !form.getValues("unitIncrement") ||
-        form.getValues("unitIncrement") === DEFAULT_WEIGHT_INCREMENT
+        form.getValues("unitIncrement") === DEFAULT_WEIGHT_INCREMENT ||
+        form.getValues("unitIncrement") === DEFAULT_RENTAL_INCREMENT
       ) {
         form.setValue("unitIncrement", DEFAULT_ITEM_INCREMENT);
       }
@@ -160,9 +191,28 @@ export default function NewProductPage() {
     setAttributes((prev) => ({ ...prev, [key]: value }));
   };
 
+  useEffect(() => {
+    if (pricingMode === "stable") {
+      replaceVariations([]);
+    }
+  }, [pricingMode, replaceVariations]);
+
   const onSubmit = async (data: ProductFormValues) => {
+    if (pricingMode === "variation" && (!data.variations || data.variations.length === 0)) {
+      form.setError("variations", {
+        type: "manual",
+        message: "Add at least one variation",
+      });
+      return;
+    }
     try {
-      const finalData = { ...data, attributes, image: data.image || "" };
+      const finalData = {
+        ...data,
+        rentalPrice: data.price,
+        variations: pricingMode === "variation" ? data.variations || [] : [],
+        attributes,
+        image: data.image || "",
+      };
       addNewProduct(finalData);
 
       toast({
@@ -286,7 +336,8 @@ export default function NewProductPage() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>
-                              Price <span className="text-destructive">*</span>
+                              Selling Price{" "}
+                              <span className="text-destructive">*</span>
                             </FormLabel>
                             <FormControl>
                               <Input
@@ -332,6 +383,36 @@ export default function NewProductPage() {
                       />
                     </div>
 
+                    <FormItem>
+                      <FormLabel>Pricing Setup</FormLabel>
+                      <Select
+                        value={pricingMode}
+                        onValueChange={(value) =>
+                          setPricingMode(
+                            value === "variation" ? "variation" : "stable"
+                          )
+                        }
+                      >
+                        <FormControl>
+                          <SelectTrigger className="border-2">
+                            <SelectValue placeholder="Select pricing setup" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="stable">
+                            Stable (Single Price)
+                          </SelectItem>
+                          <SelectItem value="variation">
+                            Variations (Size/Type Pricing)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Stable uses one product price. Variation mode sets
+                        separate sell/rental prices per variation.
+                      </FormDescription>
+                    </FormItem>
+
                     <FormField
                       control={form.control}
                       name="saleType"
@@ -350,11 +431,12 @@ export default function NewProductPage() {
                             <SelectContent>
                               <SelectItem value="item">Per Item</SelectItem>
                               <SelectItem value="weight">By Weight</SelectItem>
+                              <SelectItem value="rental">Rental</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormDescription>
-                            Choose whether this product is sold individually or
-                            by weight.
+                            Choose whether this product is sold individually, by
+                            weight, or rented.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -370,13 +452,14 @@ export default function NewProductPage() {
                             <FormLabel>Unit Label</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="e.g. unit, kg, gram"
+                                placeholder="e.g. unit, kg, m (meters)"
                                 {...field}
                                 className="border-2 focus:border-primary"
                               />
                             </FormControl>
                             <FormDescription>
-                              Displayed next to quantity totals (e.g. kg, pcs).
+                              Displayed next to quantity totals (e.g. kg, pcs,
+                              m for height).
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -676,22 +759,23 @@ export default function NewProductPage() {
                   </TabsContent>
 
                   <TabsContent value="advanced" className="space-y-4 mt-4">
-                    <FormField
-                      control={form.control}
-                      name="variations"
-                      render={() => (
-                        <FormItem>
-                          <FormLabel>Product Variations</FormLabel>
-                          <FormDescription>
-                            Add different variations of this product (e.g.,
-                            sizes, colors).
-                          </FormDescription>
-                          <div className="space-y-4">
-                            {variationFields.map((field, index) => (
-                              <div
-                                key={field.id}
-                                className="flex gap-4 p-4 border rounded-lg bg-muted/50"
-                              >
+                    {pricingMode === "variation" && (
+                      <FormField
+                        control={form.control}
+                        name="variations"
+                        render={() => (
+                          <FormItem>
+                            <FormLabel>Product Variations</FormLabel>
+                            <FormDescription>
+                              Add size/material variations (e.g., 4mm, 10mm,
+                              12mm), each with selling and rental prices.
+                            </FormDescription>
+                            <div className="space-y-4">
+                              {variationFields.map((field, index) => (
+                                <div
+                                  key={field.id}
+                                  className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg bg-muted/50"
+                                >
                                 <FormField
                                   control={form.control}
                                   name={`variations.${index}.name`}
@@ -700,7 +784,7 @@ export default function NewProductPage() {
                                       <FormLabel>Variation Name</FormLabel>
                                       <FormControl>
                                         <Input
-                                          placeholder="e.g., Small, Red"
+                                          placeholder="e.g., Rebar 10mm"
                                           {...field}
                                           className="border-2 focus:border-primary"
                                         />
@@ -713,8 +797,32 @@ export default function NewProductPage() {
                                   control={form.control}
                                   name={`variations.${index}.price`}
                                   render={({ field }) => (
-                                    <FormItem className="w-32">
-                                      <FormLabel>Price</FormLabel>
+                                    <FormItem className="w-full">
+                                      <FormLabel>Sell Price</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          type="number"
+                                          step="0.01"
+                                          placeholder="0.00"
+                                          {...field}
+                                          onChange={(e) =>
+                                            field.onChange(
+                                              parseFloat(e.target.value) || 0
+                                            )
+                                          }
+                                          className="border-2 focus:border-primary"
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name={`variations.${index}.rentalPrice`}
+                                  render={({ field }) => (
+                                    <FormItem className="w-full">
+                                      <FormLabel>Rental Price</FormLabel>
                                       <FormControl>
                                         <Input
                                           type="number"
@@ -737,7 +845,7 @@ export default function NewProductPage() {
                                   control={form.control}
                                   name={`variations.${index}.stock`}
                                   render={({ field }) => (
-                                    <FormItem className="w-32">
+                                    <FormItem className="w-full">
                                       <FormLabel>Stock</FormLabel>
                                       <FormControl>
                                     <Input
@@ -756,37 +864,40 @@ export default function NewProductPage() {
                                     </FormItem>
                                   )}
                                 />
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="mt-8"
-                                  onClick={() => removeVariation(index)}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))}
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() =>
-                                addVariation({
-                                  id: Date.now().toString(),
-                                  name: "",
-                                  price: 0,
-                                  stock: 0,
-                                })
-                              }
-                              className="w-full gap-2"
-                            >
-                              <Plus className="h-4 w-4" />
-                              Add Variation
-                            </Button>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="md:mt-8"
+                                    onClick={() => removeVariation(index)}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() =>
+                                  addVariation({
+                                    id: Date.now().toString(),
+                                    name: "",
+                                    price: 0,
+                                    rentalPrice: 0,
+                                    stock: 0,
+                                  })
+                                }
+                                className="w-full gap-2"
+                              >
+                                <Plus className="h-4 w-4" />
+                                Add Variation
+                              </Button>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
 
                     <FormItem>
                       <FormLabel>Custom Attributes</FormLabel>

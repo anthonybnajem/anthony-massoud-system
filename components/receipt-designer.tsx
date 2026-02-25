@@ -60,7 +60,7 @@ export function ReceiptDesigner() {
     returnPolicy: "",
     showBarcode: false, // Add this field
     showInstagramQr: false,
-    instagramUrl: "https://www.instagram.com/carnico.lb/",
+    instagramUrl: "https://www.instagram.com/massoudsystem.lb/",
   });
 
   // Update form data when settings change

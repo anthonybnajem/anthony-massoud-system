@@ -2,13 +2,17 @@ import type { Product } from "./db";
 import {
   DEFAULT_ITEM_INCREMENT,
   DEFAULT_ITEM_UNIT_LABEL,
+  DEFAULT_RENTAL_INCREMENT,
+  DEFAULT_RENTAL_UNIT_LABEL,
   DEFAULT_WEIGHT_INCREMENT,
   DEFAULT_WEIGHT_UNIT_LABEL,
   type ProductSaleType,
 } from "./product-constants";
 
 export function getSaleType(product?: Product | null): ProductSaleType {
-  return product?.saleType === "weight" ? "weight" : "item";
+  if (product?.saleType === "weight") return "weight";
+  if (product?.saleType === "rental") return "rental";
+  return "item";
 }
 
 export function isWeightBased(product?: Product | null): boolean {
@@ -21,9 +25,9 @@ export function getUnitLabel(product?: Product | null): string {
   if (label) {
     return label;
   }
-  return saleType === "weight"
-    ? DEFAULT_WEIGHT_UNIT_LABEL
-    : DEFAULT_ITEM_UNIT_LABEL;
+  if (saleType === "weight") return DEFAULT_WEIGHT_UNIT_LABEL;
+  if (saleType === "rental") return DEFAULT_RENTAL_UNIT_LABEL;
+  return DEFAULT_ITEM_UNIT_LABEL;
 }
 
 export function getUnitIncrement(product?: Product | null): number {
@@ -32,9 +36,9 @@ export function getUnitIncrement(product?: Product | null): number {
   if (increment && increment > 0) {
     return increment;
   }
-  return saleType === "weight"
-    ? DEFAULT_WEIGHT_INCREMENT
-    : DEFAULT_ITEM_INCREMENT;
+  if (saleType === "weight") return DEFAULT_WEIGHT_INCREMENT;
+  if (saleType === "rental") return DEFAULT_RENTAL_INCREMENT;
+  return DEFAULT_ITEM_INCREMENT;
 }
 
 export function formatMeasurementValue(
@@ -45,6 +49,36 @@ export function formatMeasurementValue(
     return value.toString();
   }
   return value.toFixed(maxDecimals).replace(/\.?0+$/, "");
+}
+
+export function getProductUnitPrice(product?: Product | null): number {
+  const saleType = getSaleType(product);
+  const sellingPrice =
+    typeof product?.price === "number" && product.price >= 0 ? product.price : 0;
+  const rentalPrice =
+    typeof product?.rentalPrice === "number" && product.rentalPrice >= 0
+      ? product.rentalPrice
+      : sellingPrice;
+  return saleType === "rental" ? rentalPrice : sellingPrice;
+}
+
+export function getProductUnitPriceForVariation(
+  product?: Product | null,
+  variation?: { price?: number; rentalPrice?: number } | null
+): number {
+  if (!product) return 0;
+  if (!variation) return getProductUnitPrice(product);
+  const saleType = getSaleType(product);
+  const base = getProductUnitPrice(product);
+  const variationSell =
+    typeof variation.price === "number" && variation.price >= 0
+      ? variation.price
+      : base;
+  const variationRent =
+    typeof variation.rentalPrice === "number" && variation.rentalPrice >= 0
+      ? variation.rentalPrice
+      : variationSell;
+  return saleType === "rental" ? variationRent : variationSell;
 }
 
 export function formatQuantityWithLabel(

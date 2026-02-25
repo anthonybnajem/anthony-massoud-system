@@ -12,6 +12,9 @@ import {
   shiftsApi,
   closingReportsApi,
   customersApi,
+  projectWorkerAssignmentsApi,
+  projectsApi,
+  workersApi,
   type Product as ProductType,
   type Category as CategoryType,
   type Sale as SaleType,
@@ -20,6 +23,9 @@ import {
   type Shift as ShiftType,
   type ClosingReport as ClosingReportType,
   type CustomerProfile as CustomerProfileType,
+  type CustomerProject as CustomerProjectType,
+  type ProjectWorkerAssignment as ProjectWorkerAssignmentType,
+  type Worker as WorkerType,
 } from "@/lib/db";
 
 export type Product = ProductType;
@@ -30,10 +36,20 @@ export type Employee = EmployeeType;
 export type Shift = ShiftType;
 export type ClosingReport = ClosingReportType;
 export type CustomerProfile = CustomerProfileType;
+export type CustomerProject = CustomerProjectType;
+export type Worker = WorkerType;
+export type ProjectWorkerAssignment = ProjectWorkerAssignmentType;
 const WALK_IN_CUSTOMER_NAME = "Walk-in Customer";
 
 export type CartItem = {
+  id: string;
   product: Product;
+  variationId?: string;
+  variationName?: string;
+  unitPrice?: number;
+  isRental?: boolean;
+  rentalStartDate?: string;
+  rentalEndDate?: string;
   quantity: number;
 };
 
@@ -42,6 +58,9 @@ type PosDataContextType = {
   categories: Category[];
   sales: Sale[];
   customers: CustomerProfile[];
+  projects: CustomerProject[];
+  workers: Worker[];
+  projectWorkerAssignments: ProjectWorkerAssignment[];
   stockMovements: StockMovement[];
   employees: Employee[];
   shifts: Shift[];
@@ -60,6 +79,10 @@ type PosDataContextType = {
   updateSale: (saleId: string, updates: Partial<Sale>) => Promise<Sale>;
   deleteSale: (saleId: string) => Promise<void>;
   voidSale: (saleId: string, reason?: string) => Promise<Sale>;
+  returnRentalSale: (
+    saleId: string,
+    options?: { mode?: "manual" | "auto"; suppressToast?: boolean }
+  ) => Promise<Sale>;
   adjustStock: (
     productId: string,
     quantity: number,
@@ -88,9 +111,29 @@ type PosDataContextType = {
   addCustomerProfile: (
     profile: Omit<CustomerProfile, "id" | "createdAt" | "updatedAt">
   ) => Promise<CustomerProfile>;
+  addCustomerProject: (
+    project: Omit<CustomerProject, "id" | "createdAt" | "updatedAt" | "isActive">
+  ) => Promise<CustomerProject>;
+  addWorker: (
+    worker: Omit<Worker, "id" | "createdAt" | "updatedAt">
+  ) => Promise<Worker>;
+  updateWorker: (worker: Worker) => Promise<Worker>;
+  removeWorker: (id: string) => Promise<void>;
+  assignWorkerToProject: (
+    assignment: Omit<
+      ProjectWorkerAssignment,
+      "id" | "createdAt" | "updatedAt" | "status"
+    >
+  ) => Promise<ProjectWorkerAssignment>;
+  updateProjectWorkerAssignment: (
+    assignment: ProjectWorkerAssignment
+  ) => Promise<ProjectWorkerAssignment>;
   updateCustomerProfile: (
     profile: CustomerProfile
   ) => Promise<CustomerProfile>;
+  updateCustomerProject: (
+    project: CustomerProject
+  ) => Promise<CustomerProject>;
   removeCustomerProfile: (id: string) => Promise<void>;
   hideCustomerIdentity: (
     identity: { name?: string; email?: string; phone?: string; location?: string }
@@ -104,6 +147,9 @@ const PosDataContext = createContext<PosDataContextType>({
   categories: [],
   sales: [],
   customers: [],
+  projects: [],
+  workers: [],
+  projectWorkerAssignments: [],
   stockMovements: [],
   employees: [],
   shifts: [],
@@ -130,6 +176,13 @@ const PosDataContext = createContext<PosDataContextType>({
   }),
   deleteSale: async () => {},
   voidSale: async () => ({
+    id: "",
+    items: [],
+    total: 0,
+    paymentMethod: "",
+    date: new Date(),
+  }),
+  returnRentalSale: async () => ({
     id: "",
     items: [],
     total: 0,
@@ -180,9 +233,62 @@ const PosDataContext = createContext<PosDataContextType>({
     createdAt: new Date(),
     updatedAt: new Date(),
   }),
+  addCustomerProject: async () => ({
+    id: "",
+    customerId: "",
+    name: "",
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
+  addWorker: async () => ({
+    id: "",
+    name: "",
+    dailyRate: 0,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
+  updateWorker: async () => ({
+    id: "",
+    name: "",
+    dailyRate: 0,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
+  removeWorker: async () => {},
+  assignWorkerToProject: async () => ({
+    id: "",
+    projectId: "",
+    workerId: "",
+    startDate: new Date(),
+    dailyRate: 0,
+    status: "active",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
+  updateProjectWorkerAssignment: async () => ({
+    id: "",
+    projectId: "",
+    workerId: "",
+    startDate: new Date(),
+    dailyRate: 0,
+    status: "active",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
   updateCustomerProfile: async () => ({
     id: "",
     name: "",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
+  updateCustomerProject: async () => ({
+    id: "",
+    customerId: "",
+    name: "",
+    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   }),
@@ -197,11 +303,23 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [customers, setCustomers] = useState<CustomerProfile[]>([]);
+  const [projects, setProjects] = useState<CustomerProject[]>([]);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [projectWorkerAssignments, setProjectWorkerAssignments] = useState<
+    ProjectWorkerAssignment[]
+  >([]);
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [closingReports, setClosingReports] = useState<ClosingReport[]>([]);
   const { toast } = useToast();
+
+  const isRentalItem = (item: Sale["items"][number]): boolean => {
+    if (typeof item.isRental === "boolean") return item.isRental;
+    if (item.product?.saleType) return item.product.saleType === "rental";
+    const matched = products.find((product) => product.id === item.productId);
+    return matched?.saleType === "rental";
+  };
 
   // Fetch all data
   const fetchData = async () => {
@@ -212,6 +330,14 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       const storedCustomers = await customersApi
         .getAll()
         .then((list) => list.filter((customer) => !customer.deleted));
+      const storedProjects = await projectsApi
+        .getAll()
+        .then((list) => list.filter((project) => project.isActive));
+      const storedWorkers = await workersApi
+        .getAll()
+        .then((list) => list.filter((worker) => worker.isActive));
+      const storedProjectWorkerAssignments =
+        await projectWorkerAssignmentsApi.getAll();
       const storedStockMovements = await stockMovementsApi.getAll();
       const storedEmployees = await employeesApi.getAll();
       const storedShifts = await shiftsApi.getAll();
@@ -222,6 +348,9 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       setCategories(storedCategories);
       setSales(storedSales);
       setCustomers(storedCustomers);
+      setProjects(storedProjects);
+      setWorkers(storedWorkers);
+      setProjectWorkerAssignments(storedProjectWorkerAssignments);
       setStockMovements(storedStockMovements);
       setEmployees(storedEmployees);
       setShifts(storedShifts);
@@ -244,6 +373,48 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
   // Initialize database
   useEffect(() => {
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    let isRunning = false;
+    const processDueRentals = async () => {
+      if (isRunning) return;
+      isRunning = true;
+      try {
+        const allSales = await salesApi.getAll();
+        const now = new Date();
+        const dueRentals = allSales.filter((sale) => {
+          if (sale.status === "voided") return false;
+          if (sale.rentalStatus !== "active") return false;
+          if (!sale.rentalEndDate) return false;
+          return new Date(sale.rentalEndDate) <= now;
+        });
+
+        for (const sale of dueRentals) {
+          try {
+            await returnRentalSale(sale.id, {
+              mode: "auto",
+              suppressToast: true,
+            });
+          } catch (error) {
+            console.error("Auto rental return failed:", error);
+          }
+        }
+
+        if (dueRentals.length > 0) {
+          toast({
+            title: "Rental Auto-Return",
+            description: `${dueRentals.length} rental receipt(s) were automatically returned to stock.`,
+          });
+        }
+      } finally {
+        isRunning = false;
+      }
+    };
+
+    processDueRentals();
+    const timer = setInterval(processDueRentals, 60 * 1000);
+    return () => clearInterval(timer);
   }, []);
 
   // Add a new product
@@ -878,13 +1049,40 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         );
       }
 
+      const normalizedItems = saleData.items.map((item, index) => ({
+        ...item,
+        isRental:
+          typeof item.isRental === "boolean"
+            ? item.isRental
+            : productStockChecks[index]?.product.saleType === "rental",
+      }));
+      const hasRentalItems = normalizedItems.some((item) => item.isRental);
+
+      if (hasRentalItems) {
+        if (!saleData.rentalStartDate || !saleData.rentalEndDate) {
+          throw new Error(
+            "Rental dates are required when cart includes rental items."
+          );
+        }
+        const start = new Date(saleData.rentalStartDate);
+        const end = new Date(saleData.rentalEndDate);
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+          throw new Error("Rental dates are invalid.");
+        }
+        if (end <= start) {
+          throw new Error("Rental end date must be after start date.");
+        }
+      }
+
       // Create sale record with proper employeeId and shiftId
       const newSale: Sale = {
         ...saleData,
+        items: normalizedItems,
         id: crypto.randomUUID(),
         date: new Date(),
         employeeId: resolvedEmployeeId,
         shiftId: resolvedShiftId,
+        rentalStatus: hasRentalItems ? "active" : undefined,
         status: "completed",
         updatedAt: new Date(),
       };
@@ -962,9 +1160,23 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
     {
       reason,
       movementType = "return",
-    }: { reason: string; movementType?: StockMovement["type"] }
+      includeRentalItems = true,
+      includeNonRentalItems = true,
+    }: {
+      reason: string;
+      movementType?: StockMovement["type"];
+      includeRentalItems?: boolean;
+      includeNonRentalItems?: boolean;
+    }
   ) => {
     for (const item of sale.items) {
+      const rentalItem = isRentalItem(item);
+      if (rentalItem && !includeRentalItems) {
+        continue;
+      }
+      if (!rentalItem && !includeNonRentalItems) {
+        continue;
+      }
       const product = await productsApi.getById(item.productId);
       if (!product) {
         throw new Error(`Product ${item.productId} not found while updating stock`);
@@ -991,6 +1203,73 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       };
 
       await stockMovementsApi.add(movement);
+    }
+  };
+
+  const returnRentalSale = async (
+    saleId: string,
+    options?: { mode?: "manual" | "auto"; suppressToast?: boolean }
+  ): Promise<Sale> => {
+    const mode = options?.mode || "manual";
+    const suppressToast = options?.suppressToast || false;
+
+    try {
+      const existingSale = await salesApi.getById(saleId);
+      if (!existingSale) {
+        throw new Error("Sale not found");
+      }
+      if (existingSale.status === "voided") {
+        throw new Error("Cannot return rental from a voided receipt");
+      }
+      if (existingSale.rentalStatus === "returned") {
+        return existingSale;
+      }
+      const hasRentalItems = existingSale.items.some((item) => isRentalItem(item));
+      if (!hasRentalItems) {
+        throw new Error("This receipt has no rental items to return");
+      }
+
+      await restockFromSale(existingSale, {
+        reason:
+          mode === "auto"
+            ? "Automatic rental return on due date"
+            : "Rental returned",
+        movementType: "return",
+        includeRentalItems: true,
+        includeNonRentalItems: false,
+      });
+
+      const updatedSale: Sale = {
+        ...existingSale,
+        rentalStatus: "returned",
+        rentalReturnedAt: new Date(),
+        rentalReturnMode: mode,
+        updatedAt: new Date(),
+      };
+
+      await salesApi.update(updatedSale);
+      setProducts(await productsApi.getAll());
+      setStockMovements(await stockMovementsApi.getAll());
+      setSales(await salesApi.getAll());
+
+      if (!suppressToast) {
+        toast({
+          title: mode === "auto" ? "Rental Auto-Returned" : "Rental Returned",
+          description: `Receipt ${updatedSale.id.slice(0, 6)} has been returned to stock.`,
+        });
+      }
+
+      return updatedSale;
+    } catch (error: any) {
+      console.error("Failed to return rental:", error);
+      if (!suppressToast) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to return rental",
+          variant: "destructive",
+        });
+      }
+      throw error;
     }
   };
 
@@ -1044,6 +1323,8 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       await restockFromSale(existingSale, {
         reason: reason || "Sale voided",
         movementType: "return",
+        includeRentalItems: existingSale.rentalStatus !== "returned",
+        includeNonRentalItems: true,
       });
 
       const updatedSale: Sale = {
@@ -1086,6 +1367,8 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       await restockFromSale(existingSale, {
         reason: "Sale deleted",
         movementType: "adjustment",
+        includeRentalItems: existingSale.rentalStatus !== "returned",
+        includeNonRentalItems: true,
       });
 
       await salesApi.delete(saleId);
@@ -1168,6 +1451,233 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       toast({
         title: "Error",
         description: error.message || "Failed to update customer",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const addCustomerProject = async (
+    project: Omit<CustomerProject, "id" | "createdAt" | "updatedAt" | "isActive">
+  ): Promise<CustomerProject> => {
+    try {
+      const newProject: CustomerProject = {
+        id: crypto.randomUUID(),
+        customerId: project.customerId,
+        name: project.name.trim(),
+        location: project.location?.trim() || undefined,
+        notes: project.notes?.trim() || undefined,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await projectsApi.add(newProject);
+      setProjects(await projectsApi.getAll());
+      toast({
+        title: "Project Added",
+        description: `${newProject.name} has been saved.`,
+      });
+      return newProject;
+    } catch (error: any) {
+      console.error("Failed to add project:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add project",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const updateCustomerProject = async (
+    project: CustomerProject
+  ): Promise<CustomerProject> => {
+    try {
+      const updatedProject: CustomerProject = {
+        ...project,
+        name: project.name.trim(),
+        location: project.location?.trim() || undefined,
+        notes: project.notes?.trim() || undefined,
+        updatedAt: new Date(),
+      };
+      await projectsApi.update(updatedProject);
+      setProjects(await projectsApi.getAll());
+      toast({
+        title: "Project Updated",
+        description: `${updatedProject.name} has been updated.`,
+      });
+      return updatedProject;
+    } catch (error: any) {
+      console.error("Failed to update project:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update project",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const addWorker = async (
+    worker: Omit<Worker, "id" | "createdAt" | "updatedAt">
+  ): Promise<Worker> => {
+    try {
+      const newWorker: Worker = {
+        id: crypto.randomUUID(),
+        name: worker.name.trim(),
+        phone: worker.phone?.trim() || undefined,
+        email: worker.email?.trim() || undefined,
+        specialty: worker.specialty?.trim() || undefined,
+        dailyRate: Number(worker.dailyRate) || 0,
+        notes: worker.notes?.trim() || undefined,
+        isActive: worker.isActive !== false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await workersApi.add(newWorker);
+      setWorkers((await workersApi.getAll()).filter((item) => item.isActive));
+      toast({
+        title: "Worker Added",
+        description: `${newWorker.name} is now available for project assignment.`,
+      });
+      return newWorker;
+    } catch (error: any) {
+      console.error("Failed to add worker:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add worker",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const updateWorker = async (worker: Worker): Promise<Worker> => {
+    try {
+      const updatedWorker: Worker = {
+        ...worker,
+        name: worker.name.trim(),
+        phone: worker.phone?.trim() || undefined,
+        email: worker.email?.trim() || undefined,
+        specialty: worker.specialty?.trim() || undefined,
+        notes: worker.notes?.trim() || undefined,
+        dailyRate: Number(worker.dailyRate) || 0,
+        updatedAt: new Date(),
+      };
+      await workersApi.update(updatedWorker);
+      setWorkers((await workersApi.getAll()).filter((item) => item.isActive));
+      toast({
+        title: "Worker Updated",
+        description: `${updatedWorker.name} has been updated.`,
+      });
+      return updatedWorker;
+    } catch (error: any) {
+      console.error("Failed to update worker:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update worker",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const removeWorker = async (id: string): Promise<void> => {
+    try {
+      const worker = workers.find((item) => item.id === id);
+      if (!worker) return;
+      await workersApi.update({
+        ...worker,
+        isActive: false,
+        updatedAt: new Date(),
+      });
+      setWorkers((await workersApi.getAll()).filter((item) => item.isActive));
+      toast({
+        title: "Worker Archived",
+        description: `${worker.name} has been archived.`,
+      });
+    } catch (error: any) {
+      console.error("Failed to archive worker:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to archive worker",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const assignWorkerToProject = async (
+    assignment: Omit<
+      ProjectWorkerAssignment,
+      "id" | "createdAt" | "updatedAt" | "status"
+    >
+  ): Promise<ProjectWorkerAssignment> => {
+    try {
+      if (!assignment.projectId && !assignment.customJobName?.trim()) {
+        throw new Error("Select a project or provide a custom job name.");
+      }
+      const newAssignment: ProjectWorkerAssignment = {
+        id: crypto.randomUUID(),
+        projectId: assignment.projectId || undefined,
+        workerId: assignment.workerId,
+        customJobName: assignment.customJobName?.trim() || undefined,
+        customCustomerName: assignment.customCustomerName?.trim() || undefined,
+        customLocation: assignment.customLocation?.trim() || undefined,
+        role: assignment.role?.trim() || undefined,
+        startDate: new Date(assignment.startDate),
+        endDate: assignment.endDate ? new Date(assignment.endDate) : undefined,
+        dailyRate: Number(assignment.dailyRate) || 0,
+        status: "active",
+        notes: assignment.notes?.trim() || undefined,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await projectWorkerAssignmentsApi.add(newAssignment);
+      setProjectWorkerAssignments(await projectWorkerAssignmentsApi.getAll());
+      const workerName =
+        workers.find((worker) => worker.id === newAssignment.workerId)?.name ||
+        "Worker";
+      toast({
+        title: "Worker Assigned",
+        description: `${workerName} was assigned successfully.`,
+      });
+      return newAssignment;
+    } catch (error: any) {
+      console.error("Failed to assign worker to project:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to assign worker",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const updateProjectWorkerAssignment = async (
+    assignment: ProjectWorkerAssignment
+  ): Promise<ProjectWorkerAssignment> => {
+    try {
+      const updatedAssignment: ProjectWorkerAssignment = {
+        ...assignment,
+        customJobName: assignment.customJobName?.trim() || undefined,
+        customCustomerName: assignment.customCustomerName?.trim() || undefined,
+        customLocation: assignment.customLocation?.trim() || undefined,
+        role: assignment.role?.trim() || undefined,
+        notes: assignment.notes?.trim() || undefined,
+        dailyRate: Number(assignment.dailyRate) || 0,
+        startDate: new Date(assignment.startDate),
+        endDate: assignment.endDate ? new Date(assignment.endDate) : undefined,
+        updatedAt: new Date(),
+      };
+      await projectWorkerAssignmentsApi.update(updatedAssignment);
+      setProjectWorkerAssignments(await projectWorkerAssignmentsApi.getAll());
+      return updatedAssignment;
+    } catch (error: any) {
+      console.error("Failed to update worker assignment:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update assignment",
         variant: "destructive",
       });
       throw error;
@@ -1317,6 +1827,9 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         sales,
         stockMovements,
         customers,
+        projects,
+        workers,
+        projectWorkerAssignments,
         employees,
         shifts,
         closingReports,
@@ -1330,6 +1843,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         updateSale,
         deleteSale,
         voidSale,
+        returnRentalSale,
         adjustStock,
         getStockMovements,
         addEmployee,
@@ -1345,7 +1859,14 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         generateClosingReport,
         getClosingReports,
         addCustomerProfile,
+        addCustomerProject,
+        addWorker,
+        updateWorker,
+        removeWorker,
+        assignWorkerToProject,
+        updateProjectWorkerAssignment,
         updateCustomerProfile,
+        updateCustomerProject,
         removeCustomerProfile,
         hideCustomerIdentity,
         syncToCloud,

@@ -142,11 +142,6 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
               </thead>
               <tbody>
                 {item.map((lineItem, index) => {
-                  const maxLength = 13;
-                  const displayName =
-                    lineItem.name.length > maxLength
-                      ? `${lineItem.name.slice(0, maxLength - 3)}...`
-                      : lineItem.name;
                   const baseCellStyle = {
                     border: "none",
                     borderBottom: "1px dashed #e5e7eb",
@@ -158,8 +153,15 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
 
                   return (
                     <tr key={index}>
-                      <td className="text-left" style={cellStyle}>
-                        {displayName}
+                      <td
+                        className="text-left"
+                        style={{
+                          ...cellStyle,
+                          whiteSpace: "normal",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {lineItem.name}
                       </td>
                       <td className="text-center" style={cellStyle}>
                         {lineItem.quantityDisplay ?? lineItem.quantity}

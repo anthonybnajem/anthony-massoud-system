@@ -17,9 +17,9 @@ export const TEST_EMPLOYEES = [
     hireDate: new Date("2024-01-01"),
     notes: "Test admin account",
   },
-   {
+  {
     name: "Admin User",
-    email: "admin@carnico.com",
+    email: "admin@massoudsystem.com",
     password: "admin123",
     role: "admin" as const,
     phone: "+961 70008175",

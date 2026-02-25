@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   usePosData,
@@ -28,6 +28,7 @@ import { Cart } from "./components/Cart";
 import { MobileCartButton } from "./components/MobileCartButton";
 import { useBarcodeScanner } from "./hooks/useBarcodeScanner";
 import { WeightQuantityDialog } from "./components/WeightQuantityDialog";
+import { VariationSelectionDialog } from "./components/VariationSelectionDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsTablet } from "@/hooks/use-tablet";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -39,10 +40,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  getProductUnitPrice,
+  getProductUnitPriceForVariation,
   formatQuantityWithLabel,
   isWeightBased,
 } from "@/lib/product-measurements";
-import { Label } from "@/components/ui/label";
 import {
   buildCustomersFromSales,
   type CustomerSummary,
@@ -56,7 +58,9 @@ export default function SalesPage() {
     categories,
     sales,
     customers,
+    projects,
     addCustomerProfile,
+    addCustomerProject,
     recordSale,
     employees,
     shifts,
@@ -76,6 +80,10 @@ export default function SalesPage() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerLocation, setCustomerLocation] = useState("");
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [rentalStartDate, setRentalStartDate] = useState("");
+  const [rentalEndDate, setRentalEndDate] = useState("");
   const [saleNotes, setSaleNotes] = useState("");
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
@@ -93,6 +101,8 @@ export default function SalesPage() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
   const [weightDialogProduct, setWeightDialogProduct] = useState<Product | null>(null);
+  const [variationDialogProduct, setVariationDialogProduct] =
+    useState<Product | null>(null);
   const customerDirectory = useMemo(
     () => buildCustomersFromSales(sales, customers),
     [sales, customers]
@@ -104,6 +114,14 @@ export default function SalesPage() {
           null
         : null,
     [selectedDiscountId, discounts]
+  );
+  const customerProjects = useMemo(
+    () => projects.filter((project) => project.customerId === selectedCustomerId),
+    [projects, selectedCustomerId]
+  );
+  const hasRentalItemsInCart = useMemo(
+    () => cart.some((item) => item.isRental === true),
+    [cart]
   );
   useEffect(() => {
     if (selectedDiscountId && !selectedDiscount) {
@@ -131,6 +149,10 @@ export default function SalesPage() {
   useBarcodeScanner({
     products,
     onScanProduct: (scannedProduct) => {
+      if ((scannedProduct.variations || []).length > 0) {
+        setVariationDialogProduct(scannedProduct);
+        return;
+      }
       if (isWeightBased(scannedProduct)) {
         openWeightDialog(scannedProduct);
         return;
@@ -182,7 +204,12 @@ export default function SalesPage() {
 
   // Calculate cart subtotal
   const cartSubtotal = cart.reduce(
-    (total, item) => total + item.product.price * item.quantity,
+    (total, item) =>
+      total +
+      (typeof item.unitPrice === "number"
+        ? item.unitPrice
+        : getProductUnitPrice(item.product)) *
+        item.quantity,
     0
   );
   const discountAnalysis = useMemo(() => {
@@ -218,7 +245,12 @@ export default function SalesPage() {
     if (selectedDiscount.appliesTo === "product") {
       cart.forEach((item) => {
         if (selectedDiscount.productIds?.includes(item.product.id)) {
-          applyLineDiscount(item.product.price * item.quantity, item.quantity);
+          applyLineDiscount(
+            (typeof item.unitPrice === "number"
+              ? item.unitPrice
+              : getProductUnitPrice(item.product)) * item.quantity,
+            item.quantity
+          );
         }
       });
     } else if (selectedDiscount.appliesTo === "category") {
@@ -227,7 +259,12 @@ export default function SalesPage() {
           item.product.categoryId &&
           selectedDiscount.categoryIds?.includes(item.product.categoryId)
         ) {
-          applyLineDiscount(item.product.price * item.quantity, item.quantity);
+          applyLineDiscount(
+            (typeof item.unitPrice === "number"
+              ? item.unitPrice
+              : getProductUnitPrice(item.product)) * item.quantity,
+            item.quantity
+          );
         }
       });
     } else {
@@ -368,43 +405,135 @@ export default function SalesPage() {
   // Calculate cart item count
   const cartItemCount = cart.length;
 
+  const getLineUnitPrice = (
+    product: Product,
+    {
+      variationId,
+      isRental,
+    }: {
+      variationId?: string;
+      isRental?: boolean;
+    } = {}
+  ): number => {
+    const variation = variationId
+      ? product.variations?.find((item) => item.id === variationId)
+      : undefined;
+    const rentalMode =
+      typeof isRental === "boolean"
+        ? isRental
+        : product.saleType === "rental";
+    if (rentalMode) {
+      if (variation && typeof variation.rentalPrice === "number") {
+        return variation.rentalPrice;
+      }
+      if (typeof product.rentalPrice === "number") {
+        return product.rentalPrice;
+      }
+      return variation?.price ?? product.price;
+    }
+    if (variation && typeof variation.price === "number") {
+      return variation.price;
+    }
+    return product.price;
+  };
+
+  const getDefaultRentalWindow = () => {
+    const now = new Date();
+    const start = now.toISOString().slice(0, 16);
+    const endDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const end = endDate.toISOString().slice(0, 16);
+    return { start, end };
+  };
+
   // Add product to cart
-  const addProductToCart = (product: Product, quantity = 1) => {
-    if (product.stock <= 0) {
+  const addProductToCart = (
+    product: Product,
+    quantity = 1,
+    options?: {
+      variationId?: string;
+      variationName?: string;
+      unitPrice?: number;
+      maxStock?: number;
+      isRental?: boolean;
+      rentalStartDate?: string;
+      rentalEndDate?: string;
+    }
+  ) => {
+    const availableStock = options?.maxStock ?? product.stock;
+    if (availableStock <= 0) {
       toast({
         title: "Out of Stock",
-        description: `${product.name} is out of stock.`,
+        description: `${product.name}${
+          options?.variationName ? ` (${options.variationName})` : ""
+        } is out of stock.`,
         variant: "destructive",
       });
       return;
     }
 
+    const isRental = options?.isRental ?? product.saleType === "rental";
+    const defaultRentalWindow = getDefaultRentalWindow();
+    const lineRentalStartDate =
+      options?.rentalStartDate || rentalStartDate || defaultRentalWindow.start;
+    const lineRentalEndDate =
+      options?.rentalEndDate || rentalEndDate || defaultRentalWindow.end;
+    const lineId = `${product.id}::${options?.variationId || "base"}::${
+      isRental ? "rental" : "sale"
+    }`;
+    const lineUnitPrice =
+      typeof options?.unitPrice === "number"
+        ? options.unitPrice
+        : getLineUnitPrice(product, {
+            variationId: options?.variationId,
+            isRental,
+          });
+
     setCart((prevCart) => {
-      const existingItem = prevCart.find(
-        (item) => item.product.id === product.id
-      );
+      const existingItem = prevCart.find((item) => item.id === lineId);
 
       if (existingItem) {
         // Check if we have enough stock
-        if (existingItem.quantity + quantity > product.stock) {
+        if (existingItem.quantity + quantity > availableStock) {
           toast({
             title: "Stock Limit Reached",
             description: `Only ${formatQuantityWithLabel(
               product,
-              product.stock
-            )} of ${product.name} available.`,
+              availableStock
+            )} of ${product.name}${
+              options?.variationName ? ` (${options.variationName})` : ""
+            } available.`,
             variant: "destructive",
           });
           return prevCart;
         }
 
         return prevCart.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
+          item.id === lineId
+            ? {
+                ...item,
+                quantity: item.quantity + quantity,
+                rentalStartDate:
+                  item.rentalStartDate || (isRental ? lineRentalStartDate : undefined),
+                rentalEndDate:
+                  item.rentalEndDate || (isRental ? lineRentalEndDate : undefined),
+              }
             : item
         );
       } else {
-        return [...prevCart, { product, quantity }];
+        return [
+          ...prevCart,
+          {
+            id: lineId,
+            product,
+            variationId: options?.variationId,
+            variationName: options?.variationName,
+            unitPrice: lineUnitPrice,
+            quantity,
+            isRental,
+            rentalStartDate: isRental ? lineRentalStartDate : undefined,
+            rentalEndDate: isRental ? lineRentalEndDate : undefined,
+          },
+        ];
       }
     });
 
@@ -413,7 +542,7 @@ export default function SalesPage() {
       title: "Added to Cart",
       description: `${formatQuantityWithLabel(product, quantity)} of ${
         product.name
-      } added to cart.`,
+      }${options?.variationName ? ` (${options.variationName})` : ""} added to cart.`,
     });
 
     // Auto-open cart drawer on mobile when item is added
@@ -435,6 +564,10 @@ export default function SalesPage() {
   };
 
   const handleProductSelection = (product: Product) => {
+    if ((product.variations || []).length > 0) {
+      setVariationDialogProduct(product);
+      return;
+    }
     if (isWeightBased(product)) {
       openWeightDialog(product);
       return;
@@ -443,29 +576,41 @@ export default function SalesPage() {
   };
 
   // Update cart item quantity
-  const updateQuantity = (productId: string, newQuantity: number) => {
-    const product = products.find((p) => p.id === productId);
+  const updateQuantity = (lineId: string, newQuantity: number) => {
+    const targetLine = cart.find((item) => item.id === lineId);
+    if (!targetLine) return;
+    const variation = targetLine.variationId
+      ? targetLine.product.variations?.find(
+          (item) => item.id === targetLine.variationId
+        )
+      : undefined;
+    const maxStock = Math.min(
+      targetLine.product.stock,
+      variation?.stock ?? targetLine.product.stock
+    );
 
-    if (product && newQuantity > product.stock) {
+    if (newQuantity > maxStock) {
       toast({
         title: "Stock Limit Reached",
         description: `Only ${formatQuantityWithLabel(
-          product,
-          product.stock
-        )} of ${product.name} available.`,
+          targetLine.product,
+          maxStock
+        )} of ${targetLine.product.name}${
+          targetLine.variationName ? ` (${targetLine.variationName})` : ""
+        } available.`,
         variant: "destructive",
       });
       return;
     }
 
     if (newQuantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(lineId);
       return;
     }
 
     setCart((prevCart) =>
       prevCart.map((item) =>
-        item.product.id === productId
+        item.id === lineId
           ? { ...item, quantity: newQuantity }
           : item
       )
@@ -473,11 +618,126 @@ export default function SalesPage() {
   };
 
   // Remove from cart
-  const removeFromCart = (productId: string) => {
+  const removeFromCart = (lineId: string) => {
+    setCart((prevCart) => prevCart.filter((item) => item.id !== lineId));
+  };
+
+  const setItemRentalMode = (lineId: string, isRental: boolean) => {
+    setCart((prevCart) => {
+      const current = prevCart.find((item) => item.id === lineId);
+      if (!current || current.isRental === isRental) return prevCart;
+
+      const modeSuffix = isRental ? "rental" : "sale";
+      const nextId = `${current.product.id}::${
+        current.variationId || "base"
+      }::${modeSuffix}`;
+
+      const variation = current.variationId
+        ? current.product.variations?.find(
+            (entry) => entry.id === current.variationId
+          )
+        : undefined;
+      const maxStock = Math.min(
+        current.product.stock,
+        variation?.stock ?? current.product.stock
+      );
+
+      const sameModeItem = prevCart.find((item) => item.id === nextId);
+      if (sameModeItem) {
+        const mergedQty = sameModeItem.quantity + current.quantity;
+        if (mergedQty > maxStock + 0.0001) {
+          toast({
+            title: "Stock Limit Reached",
+            description: `Cannot merge to ${formatQuantityWithLabel(
+              current.product,
+              mergedQty
+            )}. Available is ${formatQuantityWithLabel(
+              current.product,
+              maxStock
+            )}.`,
+            variant: "destructive",
+          });
+          return prevCart;
+        }
+        return prevCart
+          .map((item) => {
+            if (item.id === sameModeItem.id) {
+              return {
+                ...item,
+                quantity: mergedQty,
+                unitPrice: getLineUnitPrice(item.product, {
+                  variationId: item.variationId,
+                  isRental,
+                }),
+              };
+            }
+            return item;
+          })
+          .filter((item) => item.id !== lineId);
+      }
+
+      return prevCart.map((item) => {
+        if (item.id !== lineId) return item;
+        const defaultRentalWindow = getDefaultRentalWindow();
+        return {
+          ...item,
+          id: nextId,
+          isRental,
+          unitPrice: getLineUnitPrice(item.product, {
+            variationId: item.variationId,
+            isRental,
+          }),
+          rentalStartDate: isRental
+            ? item.rentalStartDate || rentalStartDate || defaultRentalWindow.start
+            : undefined,
+          rentalEndDate: isRental
+            ? item.rentalEndDate || rentalEndDate || defaultRentalWindow.end
+            : undefined,
+        };
+      });
+    });
+  };
+
+  const setItemRentalDates = (
+    lineId: string,
+    rentalDates: { rentalStartDate?: string; rentalEndDate?: string }
+  ) => {
     setCart((prevCart) =>
-      prevCart.filter((item) => item.product.id !== productId)
+      prevCart.map((item) =>
+        item.id === lineId
+          ? {
+              ...item,
+              rentalStartDate:
+                rentalDates.rentalStartDate ?? item.rentalStartDate,
+              rentalEndDate: rentalDates.rentalEndDate ?? item.rentalEndDate,
+            }
+          : item
+      )
     );
   };
+
+  const applyRentalDatesToAll = useCallback(() => {
+    if (!rentalStartDate || !rentalEndDate) return;
+    setCart((prevCart) => {
+      let changed = false;
+      const nextCart = prevCart.map((item) => {
+        if (!item.isRental) return item;
+        if (
+          item.rentalStartDate === rentalStartDate &&
+          item.rentalEndDate === rentalEndDate
+        ) {
+          return item;
+        }
+        changed = true;
+        return {
+          ...item,
+          rentalStartDate,
+          rentalEndDate,
+        };
+      });
+      return changed ? nextCart : prevCart;
+    });
+  }, [rentalStartDate, rentalEndDate]);
 
   // Clear the entire cart
   const clearCart = () => {
@@ -489,6 +749,10 @@ export default function SalesPage() {
     setCustomerEmail("");
     setCustomerPhone("");
     setCustomerLocation("");
+    setSelectedCustomerId("");
+    setSelectedProjectId("");
+    setRentalStartDate("");
+    setRentalEndDate("");
     toast({
       title: "Cart Cleared",
       description: "All items have been removed from the cart.",
@@ -506,6 +770,47 @@ export default function SalesPage() {
       return;
     }
 
+    if (hasRentalItemsInCart) {
+      if (!selectedCustomerId) {
+        toast({
+          title: "Customer Required",
+          description: "Select a customer for rental items.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!selectedProjectId) {
+        toast({
+          title: "Project Required",
+          description: "Select a project for rental items.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const invalidRentalLine = cart.find((item) => {
+        if (!item.isRental) return false;
+        const lineStart = item.rentalStartDate || rentalStartDate;
+        const lineEnd = item.rentalEndDate || rentalEndDate;
+        if (!lineStart || !lineEnd) return true;
+        const start = new Date(lineStart);
+        const end = new Date(lineEnd);
+        return (
+          Number.isNaN(start.getTime()) ||
+          Number.isNaN(end.getTime()) ||
+          end <= start
+        );
+      });
+      if (invalidRentalLine) {
+        toast({
+          title: "Invalid Rental Dates",
+          description:
+            "Please set valid start/end dates for each rental line in checkout.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     // Validate active shift exists
     // if (!activeShift) {
     //   toast({
@@ -519,11 +824,26 @@ export default function SalesPage() {
 
     try {
       // Prepare the sale data with the format expected by IndexedDB
+      const rentalItems = cart.filter((item) => item.isRental === true);
       const saleData = {
         items: cart.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
-          price: item.product.price,
+          price:
+            typeof item.unitPrice === "number"
+              ? item.unitPrice
+              : getProductUnitPrice(item.product),
+          variationId: item.variationId,
+          variationName: item.variationName,
+          isRental: item.isRental === true,
+          rentalStartDate:
+            item.isRental && (item.rentalStartDate || rentalStartDate)
+              ? new Date(item.rentalStartDate || rentalStartDate)
+              : undefined,
+          rentalEndDate:
+            item.isRental && (item.rentalEndDate || rentalEndDate)
+              ? new Date(item.rentalEndDate || rentalEndDate)
+              : undefined,
           product: item.product,
         })),
         subtotal: cartSubtotal,
@@ -533,6 +853,27 @@ export default function SalesPage() {
         discountId: appliedDiscountId,
         total: cartTotal,
         paymentMethod,
+        customerId: selectedCustomerId || undefined,
+        projectId: selectedProjectId || undefined,
+        rentalStartDate:
+          rentalItems.length > 0
+            ? new Date(
+                rentalItems
+                  .map((item) => item.rentalStartDate || rentalStartDate)
+                  .filter((date): date is string => Boolean(date))
+                  .sort()[0]
+              )
+            : undefined,
+        rentalEndDate:
+          rentalItems.length > 0
+            ? new Date(
+                rentalItems
+                  .map((item) => item.rentalEndDate || rentalEndDate)
+                  .filter((date): date is string => Boolean(date))
+                  .sort()
+                  .slice(-1)[0]
+              )
+            : undefined,
         customerName: customerName.trim() || undefined,
         customerEmail: customerEmail.trim() || undefined,
         customerPhone: customerPhone.trim() || undefined,
@@ -555,6 +896,10 @@ export default function SalesPage() {
       setCustomerEmail("");
       setCustomerPhone("");
       setCustomerLocation("");
+      setSelectedCustomerId("");
+      setSelectedProjectId("");
+      setRentalStartDate("");
+      setRentalEndDate("");
       setSaleNotes("");
       setDiscountValue(0);
       setSelectedDiscountId(null);
@@ -571,6 +916,10 @@ export default function SalesPage() {
   // Quick add functionality - directly add 1 quantity
   const handleQuickAdd = (e: React.MouseEvent, product: Product) => {
     e.stopPropagation();
+    if ((product.variations || []).length > 0) {
+      setVariationDialogProduct(product);
+      return;
+    }
     if (isWeightBased(product)) {
       openWeightDialog(product);
       return;
@@ -586,6 +935,34 @@ export default function SalesPage() {
 
   const handleWeightDialogClose = () => {
     setWeightDialogProduct(null);
+  };
+
+  const handleVariationConfirm = (variationId: string, quantity: number) => {
+    if (!variationDialogProduct) return;
+    const variation = variationDialogProduct.variations?.find(
+      (item) => item.id === variationId
+    );
+    if (!variation) return;
+    const availableStock = Math.min(
+      variationDialogProduct.stock,
+      variation.stock
+    );
+    const linePrice = getProductUnitPriceForVariation(
+      variationDialogProduct,
+      variation
+    );
+    addProductToCart(variationDialogProduct, quantity, {
+      variationId: variation.id,
+      variationName: variation.name,
+      unitPrice: linePrice,
+      maxStock: availableStock,
+      isRental: variationDialogProduct.saleType === "rental",
+    });
+    setVariationDialogProduct(null);
+  };
+
+  const handleVariationDialogClose = () => {
+    setVariationDialogProduct(null);
   };
 
   // Apply discount
@@ -641,6 +1018,8 @@ export default function SalesPage() {
   };
 
   const handleCustomerSelection = (customer: CustomerSummary) => {
+    setSelectedCustomerId(customer.profileId || "");
+    setSelectedProjectId("");
     if (!customer.defaultDiscountId) return;
     const discountRecord = discounts.find(
       (discount) => discount.id === customer.defaultDiscountId
@@ -867,6 +1246,8 @@ export default function SalesPage() {
             currencySymbol={currencySymbol}
             onClearCart={clearCart}
             onUpdateQuantity={updateQuantity}
+            onToggleRentalMode={setItemRentalMode}
+            onUpdateRentalDates={setItemRentalDates}
             onRemoveFromCart={removeFromCart}
             onDiscountClick={() => setIsDiscountDialogOpen(true)}
             onNotesClick={() => setIsNotesDialogOpen(true)}
@@ -895,6 +1276,8 @@ export default function SalesPage() {
             currencySymbol={currencySymbol}
             onClearCart={clearCart}
             onUpdateQuantity={updateQuantity}
+            onToggleRentalMode={setItemRentalMode}
+            onUpdateRentalDates={setItemRentalDates}
             onRemoveFromCart={removeFromCart}
             onDiscountClick={() => setIsDiscountDialogOpen(true)}
             onNotesClick={() => setIsNotesDialogOpen(true)}
@@ -948,7 +1331,7 @@ export default function SalesPage() {
         />
 
         {/* Customer Dialog */}
-        <CustomerDialog
+      <CustomerDialog
           isOpen={isCustomerDialogOpen}
           onClose={() => setIsCustomerDialogOpen(false)}
           customerName={customerName}
@@ -963,6 +1346,12 @@ export default function SalesPage() {
           existingCustomers={customerDirectory}
           availableDiscounts={discounts}
           onCustomerSelect={handleCustomerSelection}
+          selectedCustomerId={selectedCustomerId}
+          onCustomerIdChange={setSelectedCustomerId}
+          selectedProjectId={selectedProjectId}
+          onProjectIdChange={setSelectedProjectId}
+          projects={customerProjects}
+          onAddProject={addCustomerProject}
           onSaveProfile={async ({
             name,
             email,
@@ -977,6 +1366,8 @@ export default function SalesPage() {
               location,
               defaultDiscountId,
             });
+            setSelectedCustomerId(profile.id);
+            setSelectedProjectId("");
             if (defaultDiscountId) {
               setSelectedDiscountId(defaultDiscountId);
             }
@@ -995,6 +1386,12 @@ export default function SalesPage() {
           customerEmail={customerEmail}
           customerPhone={customerPhone}
           setIsCustomerDialogOpen={setIsCustomerDialogOpen}
+          hasRentalItems={hasRentalItemsInCart}
+          rentalStartDate={rentalStartDate}
+          rentalEndDate={rentalEndDate}
+          setRentalStartDate={setRentalStartDate}
+          setRentalEndDate={setRentalEndDate}
+          onApplyRentalDatesToAll={applyRentalDatesToAll}
           paymentMethod={paymentMethod}
           setPaymentMethod={setPaymentMethod}
           cartSubtotal={cartSubtotal}
@@ -1005,6 +1402,34 @@ export default function SalesPage() {
           taxRate={taxRate}
           taxAmount={taxAmount}
           cartTotal={cartTotal}
+          receiptItems={cart.map((item) => ({
+            id: item.id,
+            name: item.product.name,
+            variationName: item.variationName,
+            quantity: item.quantity,
+            unitLabel: item.product.unitLabel,
+            stock:
+              item.variationId
+                ? item.product.variations?.find(
+                    (variation) => variation.id === item.variationId
+                  )?.stock ?? item.product.stock
+                : item.product.stock,
+            unitPrice:
+              typeof item.unitPrice === "number"
+                ? item.unitPrice
+                : getProductUnitPrice(item.product),
+            isRental: item.isRental === true,
+            rentalStartDate: item.rentalStartDate,
+            rentalEndDate: item.rentalEndDate,
+            lineTotal:
+              (typeof item.unitPrice === "number"
+                ? item.unitPrice
+                : getProductUnitPrice(item.product)) * item.quantity,
+          }))}
+          onReceiptItemRentalDatesChange={setItemRentalDates}
+          onReceiptItemQuantityChange={updateQuantity}
+          onReceiptItemModeChange={setItemRentalMode}
+          onReceiptItemRemove={removeFromCart}
           currencySymbol={currencySymbol}
           handleCheckout={handleCheckout}
         />
@@ -1014,6 +1439,14 @@ export default function SalesPage() {
           isOpen={Boolean(weightDialogProduct)}
           onClose={handleWeightDialogClose}
           onConfirm={handleWeightConfirm}
+          currencySymbol={currencySymbol}
+        />
+
+        <VariationSelectionDialog
+          product={variationDialogProduct}
+          isOpen={Boolean(variationDialogProduct)}
+          onClose={handleVariationDialogClose}
+          onConfirm={handleVariationConfirm}
           currencySymbol={currencySymbol}
         />
 

@@ -33,8 +33,13 @@ interface CartProps {
   cartTotal: number;
   currencySymbol: string;
   onClearCart: () => void;
-  onUpdateQuantity: (productId: string, quantity: number) => void;
-  onRemoveFromCart: (productId: string) => void;
+  onUpdateQuantity: (lineId: string, quantity: number) => void;
+  onToggleRentalMode: (lineId: string, isRental: boolean) => void;
+  onUpdateRentalDates: (
+    lineId: string,
+    rentalDates: { rentalStartDate?: string; rentalEndDate?: string }
+  ) => void;
+  onRemoveFromCart: (lineId: string) => void;
   onDiscountClick: () => void;
   onNotesClick: () => void;
   onCustomerClick: () => void;
@@ -61,6 +66,8 @@ const CartContent = ({
   currencySymbol,
   onClearCart,
   onUpdateQuantity,
+  onToggleRentalMode,
+  onUpdateRentalDates,
   onRemoveFromCart,
   onDiscountClick,
   onNotesClick,
@@ -111,10 +118,12 @@ const CartContent = ({
             >
               {cart.map((item) => (
                 <CartItem
-                  key={item.product.id}
+                  key={item.id}
                   item={item}
                   currencySymbol={currencySymbol}
                   onUpdateQuantity={onUpdateQuantity}
+                  onToggleRentalMode={onToggleRentalMode}
+                  onUpdateRentalDates={onUpdateRentalDates}
                   onRemove={onRemoveFromCart}
                   variants={itemVariants}
                 />
@@ -181,6 +190,8 @@ export function Cart({
   currencySymbol,
   onClearCart,
   onUpdateQuantity,
+  onToggleRentalMode,
+  onUpdateRentalDates,
   onRemoveFromCart,
   onDiscountClick,
   onNotesClick,
@@ -208,6 +219,8 @@ export function Cart({
       currencySymbol={currencySymbol}
       onClearCart={onClearCart}
       onUpdateQuantity={onUpdateQuantity}
+      onToggleRentalMode={onToggleRentalMode}
+      onUpdateRentalDates={onUpdateRentalDates}
       onRemoveFromCart={onRemoveFromCart}
       onDiscountClick={onDiscountClick}
       onNotesClick={onNotesClick}

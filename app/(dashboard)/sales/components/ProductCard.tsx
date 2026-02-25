@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Package } from "lucide-react";
 import {
   formatStockDisplay,
+  getProductUnitPrice,
   getSaleType,
   getUnitLabel,
 } from "@/lib/product-measurements";
@@ -31,7 +32,9 @@ export function ProductCard({
 }: ProductCardProps) {
   const saleType = getSaleType(product);
   const unitLabel = getUnitLabel(product);
+  const unitPrice = getProductUnitPrice(product);
   const stockLabel = formatStockDisplay(product);
+  const hasVariations = (product.variations || []).length > 0;
 
   return (
     <motion.div variants={variants} className="h-full">
@@ -108,7 +111,7 @@ export function ProductCard({
               } font-bold text-primary`}
             >
               {currencySymbol}
-              {product.price.toFixed(2)}
+              {unitPrice.toFixed(2)}
               <span className="ml-1 text-xs font-medium text-muted-foreground">
                 / {unitLabel}
               </span>
@@ -116,6 +119,11 @@ export function ProductCard({
             {saleType === "weight" && (
               <Badge variant="outline" className="mt-1 text-[10px] uppercase">
                 Sold by weight
+              </Badge>
+            )}
+            {saleType === "rental" && (
+              <Badge variant="outline" className="mt-1 text-[10px] uppercase">
+                Rental item
               </Badge>
             )}
           </div>
@@ -146,7 +154,13 @@ export function ProductCard({
               } ${isTablet ? "mr-1.5" : "mr-1 sm:mr-1.5"}`}
             />
             <span className="hidden xs:inline">
-              {saleType === "weight" ? "Enter Weight" : "Quick Add"}
+              {hasVariations
+                ? "Choose Size"
+                : saleType === "weight"
+                ? "Enter Weight"
+                : saleType === "rental"
+                ? "Add Rental"
+                : "Quick Add"}
             </span>
             <span className="xs:hidden">
               {/* {saleType === "weight" ? "Weight" : "Add"} */}

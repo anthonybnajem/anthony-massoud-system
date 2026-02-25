@@ -16,7 +16,7 @@ Title: Electron + Local Sync Architecture plan
    - Security: Hamachi tunnels are encrypted but still authenticate API calls with signed tokens. Optionally add a central “hub” PC/server that merges incoming changes before rebroadcasting.
 
 4. TXT Reporting
-   - Within Electron we can use Node’s filesystem module to generate plain text files (shift reports, daily summaries). The workflow: query SQLite with the date range, format the output (tabular plain text), and write to `~/Documents/CarnicoReports/<report>.txt`.
+   - Within Electron we can use Node’s filesystem module to generate plain text files (shift reports, daily summaries). The workflow: query SQLite with the date range, format the output (tabular plain text), and write to `~/Documents/MassoudSystemReports/<report>.txt`.
    - The browser build can still create text exports by generating a Blob; Electron simply adds the ability to drop files without user interaction.
 
 Summary

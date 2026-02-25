@@ -9,6 +9,8 @@ import {
 import {
   DEFAULT_ITEM_INCREMENT,
   DEFAULT_ITEM_UNIT_LABEL,
+  DEFAULT_RENTAL_INCREMENT,
+  DEFAULT_RENTAL_UNIT_LABEL,
   DEFAULT_WEIGHT_INCREMENT,
   DEFAULT_WEIGHT_UNIT_LABEL,
   type ProductSaleType,
@@ -19,6 +21,7 @@ export type Product = {
   id: string;
   name: string;
   price: number;
+  rentalPrice?: number;
   category: Category;
   categoryId: string;
   image: string;
@@ -35,6 +38,7 @@ export type Product = {
     id: string;
     name: string;
     price: number;
+    rentalPrice?: number;
     stock: number;
   }>;
   saleType: ProductSaleType;
@@ -58,6 +62,11 @@ export type Sale = {
     productId: string;
     quantity: number;
     price: number;
+    variationId?: string;
+    variationName?: string;
+    isRental?: boolean;
+    rentalStartDate?: Date;
+    rentalEndDate?: Date;
     product?: any;
   }>;
   total: number;
@@ -69,10 +78,17 @@ export type Sale = {
   paymentMethod: string;
   date: Date;
   status?: SaleStatus;
+  customerId?: string;
+  projectId?: string;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
   customerLocation?: string;
+  rentalStartDate?: Date;
+  rentalEndDate?: Date;
+  rentalStatus?: "active" | "returned";
+  rentalReturnedAt?: Date;
+  rentalReturnMode?: "manual" | "auto";
   notes?: string;
   receiptNumber?: string;
   employeeId?: string;
@@ -93,6 +109,47 @@ export type CustomerProfile = {
   createdAt: Date;
   updatedAt: Date;
   deleted?: boolean;
+};
+
+export type CustomerProject = {
+  id: string;
+  customerId: string;
+  name: string;
+  location?: string;
+  notes?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Worker = {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  specialty?: string;
+  dailyRate: number;
+  isActive: boolean;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ProjectWorkerAssignment = {
+  id: string;
+  projectId?: string;
+  workerId: string;
+  customJobName?: string;
+  customCustomerName?: string;
+  customLocation?: string;
+  role?: string;
+  startDate: Date;
+  endDate?: Date;
+  dailyRate: number;
+  status: "active" | "completed" | "cancelled";
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type ReceiptSettings = {
@@ -220,7 +277,7 @@ export type ClosingReport = {
 // Default settings
 export const DEFAULT_RECEIPT_SETTINGS: ReceiptSettings = {
   id: "receipt_settings",
-  storeName: "Carnico",
+  storeName: "Massoud System",
   storeAddress: "Zgharta",
   storePhone: "+961 70008175",
   storeEmail: "",
@@ -272,6 +329,9 @@ class PosDatabase extends Dexie {
   shifts!: Dexie.Table<Shift, string>;
   closingReports!: Dexie.Table<ClosingReport, string>;
   customers!: Dexie.Table<CustomerProfile, string>;
+  projects!: Dexie.Table<CustomerProject, string>;
+  workers!: Dexie.Table<Worker, string>;
+  projectWorkerAssignments!: Dexie.Table<ProjectWorkerAssignment, string>;
 
   constructor() {
     super("pos_system_db");
@@ -307,6 +367,9 @@ class PosDatabase extends Dexie {
     this.shifts = this.table("shifts");
     this.closingReports = this.table("closingReports");
     this.customers = this.table("customers");
+    this.projects = this.table("projects");
+    this.workers = this.table("workers");
+    this.projectWorkerAssignments = this.table("projectWorkerAssignments");
   }
 
   // Initialize with default settings if needed
@@ -322,6 +385,10 @@ class PosDatabase extends Dexie {
         "employees", // Added in version 3
         "shifts", // Added in version 3
         "closingReports", // Added in version 3
+        "customers", // Added in version 9
+        "projects", // Added in version 11
+        "workers", // Added in version 13
+        "projectWorkerAssignments", // Added in version 13
       ];
 
       for (const tableName of expectedTables) {
@@ -518,12 +585,18 @@ export function getDB(): PosDatabase {
 
 const withProductMeasurementDefaults = (product: Product): Product => {
   const saleType: ProductSaleType =
-    product.saleType === "weight" ? "weight" : "item";
+    product.saleType === "weight"
+      ? "weight"
+      : product.saleType === "rental"
+      ? "rental"
+      : "item";
 
   const unitLabel =
     product.unitLabel?.trim() ||
     (saleType === "weight"
       ? DEFAULT_WEIGHT_UNIT_LABEL
+      : saleType === "rental"
+      ? DEFAULT_RENTAL_UNIT_LABEL
       : DEFAULT_ITEM_UNIT_LABEL);
 
   const rawIncrement = product.unitIncrement;
@@ -532,10 +605,36 @@ const withProductMeasurementDefaults = (product: Product): Product => {
       ? rawIncrement
       : saleType === "weight"
       ? DEFAULT_WEIGHT_INCREMENT
+      : saleType === "rental"
+      ? DEFAULT_RENTAL_INCREMENT
       : DEFAULT_ITEM_INCREMENT;
 
   return {
     ...product,
+    rentalPrice:
+      typeof product.rentalPrice === "number" && product.rentalPrice >= 0
+        ? product.rentalPrice
+        : 0,
+    variations: Array.isArray(product.variations)
+      ? product.variations.map((variation) => ({
+          ...variation,
+          price:
+            typeof variation.price === "number" && variation.price >= 0
+              ? variation.price
+              : 0,
+          rentalPrice:
+            typeof variation.rentalPrice === "number" &&
+            variation.rentalPrice >= 0
+              ? variation.rentalPrice
+              : typeof variation.price === "number" && variation.price >= 0
+              ? variation.price
+              : 0,
+          stock:
+            typeof variation.stock === "number" && variation.stock >= 0
+              ? variation.stock
+              : 0,
+        }))
+      : [],
     saleType,
     unitLabel,
     unitIncrement,
@@ -837,11 +936,57 @@ export const discountsApi = {
 };
 
 // Sales API with error handling
+const normalizeSaleDates = (sale: Sale): Sale => {
+  const normalized: Sale = { ...sale };
+  normalized.items = (normalized.items || []).map((item) => {
+    const normalizedItem = { ...item };
+    if (
+      normalizedItem.rentalStartDate &&
+      !(normalizedItem.rentalStartDate instanceof Date)
+    ) {
+      normalizedItem.rentalStartDate = new Date(normalizedItem.rentalStartDate);
+    }
+    if (
+      normalizedItem.rentalEndDate &&
+      !(normalizedItem.rentalEndDate instanceof Date)
+    ) {
+      normalizedItem.rentalEndDate = new Date(normalizedItem.rentalEndDate);
+    }
+    return normalizedItem;
+  });
+  if (!(normalized.date instanceof Date)) {
+    normalized.date = new Date(normalized.date);
+  }
+  if (normalized.updatedAt && !(normalized.updatedAt instanceof Date)) {
+    normalized.updatedAt = new Date(normalized.updatedAt);
+  }
+  if (normalized.voidedAt && !(normalized.voidedAt instanceof Date)) {
+    normalized.voidedAt = new Date(normalized.voidedAt);
+  }
+  if (
+    normalized.rentalStartDate &&
+    !(normalized.rentalStartDate instanceof Date)
+  ) {
+    normalized.rentalStartDate = new Date(normalized.rentalStartDate);
+  }
+  if (normalized.rentalEndDate && !(normalized.rentalEndDate instanceof Date)) {
+    normalized.rentalEndDate = new Date(normalized.rentalEndDate);
+  }
+  if (
+    normalized.rentalReturnedAt &&
+    !(normalized.rentalReturnedAt instanceof Date)
+  ) {
+    normalized.rentalReturnedAt = new Date(normalized.rentalReturnedAt);
+  }
+  return normalized;
+};
+
 export const salesApi = {
   getAll: async (): Promise<Sale[]> => {
     try {
       const db = getDB();
-      return await db.sales.toArray();
+      const sales = await db.sales.toArray();
+      return sales.map(normalizeSaleDates);
     } catch (error) {
       console.error("Error getting sales:", error);
       return [];
@@ -851,7 +996,8 @@ export const salesApi = {
   getById: async (id: string): Promise<Sale | undefined> => {
     try {
       const db = getDB();
-      return await db.sales.get(id);
+      const sale = await db.sales.get(id);
+      return sale ? normalizeSaleDates(sale) : undefined;
     } catch (error) {
       console.error(`Error getting sale ${id}:`, error);
       return undefined;
@@ -861,23 +1007,17 @@ export const salesApi = {
   add: async (sale: Sale): Promise<string> => {
     try {
       const db = getDB();
-      // Ensure date is a proper Date object
-      if (!(sale.date instanceof Date)) {
-        sale.date = new Date(sale.date);
-      }
+      const normalized = normalizeSaleDates(sale);
       if (sale.updatedAt && !(sale.updatedAt instanceof Date)) {
-        sale.updatedAt = new Date(sale.updatedAt);
-      } else if (!sale.updatedAt) {
-        sale.updatedAt = new Date(sale.date);
+        normalized.updatedAt = new Date(sale.updatedAt);
+      } else if (!normalized.updatedAt) {
+        normalized.updatedAt = new Date(normalized.date);
       }
-      if (sale.voidedAt && !(sale.voidedAt instanceof Date)) {
-        sale.voidedAt = new Date(sale.voidedAt);
+      if (!normalized.status) {
+        normalized.status = "completed";
       }
-      if (!sale.status) {
-        sale.status = "completed";
-      }
-      await db.sales.add(sale);
-      return sale.id;
+      await db.sales.add(normalized);
+      return normalized.id;
     } catch (error) {
       console.error("Error adding sale:", error);
       throw error;
@@ -887,10 +1027,11 @@ export const salesApi = {
   getByDateRange: async (startDate: Date, endDate: Date): Promise<Sale[]> => {
     try {
       const db = getDB();
-      return await db.sales
+      const sales = await db.sales
         .where("date")
         .between(startDate, endDate, true, true)
         .toArray();
+      return sales.map(normalizeSaleDates);
     } catch (error) {
       console.error(`Error getting sales by date range:`, error);
       return [];
@@ -955,18 +1096,13 @@ export const salesApi = {
   update: async (sale: Sale): Promise<void> => {
     try {
       const db = getDB();
-      if (!(sale.date instanceof Date)) {
-        sale.date = new Date(sale.date);
-      }
-      if (sale.updatedAt && !(sale.updatedAt instanceof Date)) {
-        sale.updatedAt = new Date(sale.updatedAt);
+      const normalized = normalizeSaleDates(sale);
+      if (normalized.updatedAt && !(normalized.updatedAt instanceof Date)) {
+        normalized.updatedAt = new Date(normalized.updatedAt);
       } else {
-        sale.updatedAt = new Date();
+        normalized.updatedAt = new Date();
       }
-      if (sale.voidedAt && !(sale.voidedAt instanceof Date)) {
-        sale.voidedAt = new Date(sale.voidedAt);
-      }
-      await db.sales.put(sale);
+      await db.sales.put(normalized);
     } catch (error) {
       console.error(`Error updating sale ${sale.id}:`, error);
       throw error;
@@ -1112,6 +1248,200 @@ export const customersApi = {
       });
     } catch (error) {
       console.error("Error deleting customer:", error);
+      throw error;
+    }
+  },
+};
+
+export const projectsApi = {
+  getAll: async (): Promise<CustomerProject[]> => {
+    try {
+      const db = getDB();
+      const projects = await db.projects.toArray();
+      return projects.map((project) => ({
+        ...project,
+        createdAt: new Date(project.createdAt),
+        updatedAt: new Date(project.updatedAt),
+      }));
+    } catch (error) {
+      console.error("Error getting projects:", error);
+      return [];
+    }
+  },
+  getByCustomerId: async (customerId: string): Promise<CustomerProject[]> => {
+    try {
+      const db = getDB();
+      const projects = await db.projects
+        .where("customerId")
+        .equals(customerId)
+        .toArray();
+      return projects.map((project) => ({
+        ...project,
+        createdAt: new Date(project.createdAt),
+        updatedAt: new Date(project.updatedAt),
+      }));
+    } catch (error) {
+      console.error(`Error getting projects for customer ${customerId}:`, error);
+      return [];
+    }
+  },
+  add: async (project: CustomerProject): Promise<string> => {
+    try {
+      const db = getDB();
+      if (!(project.createdAt instanceof Date)) {
+        project.createdAt = new Date(project.createdAt);
+      }
+      if (!(project.updatedAt instanceof Date)) {
+        project.updatedAt = new Date(project.updatedAt);
+      }
+      await db.projects.add(project);
+      return project.id;
+    } catch (error) {
+      console.error("Error adding project:", error);
+      throw error;
+    }
+  },
+  update: async (project: CustomerProject): Promise<void> => {
+    try {
+      const db = getDB();
+      if (!(project.updatedAt instanceof Date)) {
+        project.updatedAt = new Date(project.updatedAt);
+      }
+      await db.projects.put(project);
+    } catch (error) {
+      console.error("Error updating project:", error);
+      throw error;
+    }
+  },
+};
+
+const normalizeWorkerDates = (worker: Worker): Worker => {
+  const normalized = { ...worker };
+  if (!(normalized.createdAt instanceof Date)) {
+    normalized.createdAt = new Date(normalized.createdAt);
+  }
+  if (!(normalized.updatedAt instanceof Date)) {
+    normalized.updatedAt = new Date(normalized.updatedAt);
+  }
+  return normalized;
+};
+
+const normalizeProjectWorkerAssignmentDates = (
+  assignment: ProjectWorkerAssignment
+): ProjectWorkerAssignment => {
+  const normalized = { ...assignment };
+  if (!(normalized.startDate instanceof Date)) {
+    normalized.startDate = new Date(normalized.startDate);
+  }
+  if (normalized.endDate && !(normalized.endDate instanceof Date)) {
+    normalized.endDate = new Date(normalized.endDate);
+  }
+  if (!(normalized.createdAt instanceof Date)) {
+    normalized.createdAt = new Date(normalized.createdAt);
+  }
+  if (!(normalized.updatedAt instanceof Date)) {
+    normalized.updatedAt = new Date(normalized.updatedAt);
+  }
+  return normalized;
+};
+
+export const workersApi = {
+  getAll: async (): Promise<Worker[]> => {
+    try {
+      const db = getDB();
+      const workers = await db.workers.toArray();
+      return workers.map(normalizeWorkerDates);
+    } catch (error) {
+      console.error("Error getting workers:", error);
+      return [];
+    }
+  },
+  add: async (worker: Worker): Promise<string> => {
+    try {
+      const db = getDB();
+      const normalized = normalizeWorkerDates(worker);
+      await db.workers.add(normalized);
+      return normalized.id;
+    } catch (error) {
+      console.error("Error adding worker:", error);
+      throw error;
+    }
+  },
+  update: async (worker: Worker): Promise<void> => {
+    try {
+      const db = getDB();
+      const normalized = normalizeWorkerDates(worker);
+      await db.workers.put(normalized);
+    } catch (error) {
+      console.error("Error updating worker:", error);
+      throw error;
+    }
+  },
+  delete: async (id: string): Promise<void> => {
+    try {
+      const db = getDB();
+      await db.workers.delete(id);
+    } catch (error) {
+      console.error("Error deleting worker:", error);
+      throw error;
+    }
+  },
+};
+
+export const projectWorkerAssignmentsApi = {
+  getAll: async (): Promise<ProjectWorkerAssignment[]> => {
+    try {
+      const db = getDB();
+      const assignments = await db.projectWorkerAssignments.toArray();
+      return assignments.map(normalizeProjectWorkerAssignmentDates);
+    } catch (error) {
+      console.error("Error getting project worker assignments:", error);
+      return [];
+    }
+  },
+  getByProjectId: async (projectId: string): Promise<ProjectWorkerAssignment[]> => {
+    try {
+      const db = getDB();
+      const assignments = await db.projectWorkerAssignments
+        .where("projectId")
+        .equals(projectId)
+        .toArray();
+      return assignments.map(normalizeProjectWorkerAssignmentDates);
+    } catch (error) {
+      console.error(
+        `Error getting worker assignments for project ${projectId}:`,
+        error
+      );
+      return [];
+    }
+  },
+  add: async (assignment: ProjectWorkerAssignment): Promise<string> => {
+    try {
+      const db = getDB();
+      const normalized = normalizeProjectWorkerAssignmentDates(assignment);
+      await db.projectWorkerAssignments.add(normalized);
+      return normalized.id;
+    } catch (error) {
+      console.error("Error adding project worker assignment:", error);
+      throw error;
+    }
+  },
+  update: async (assignment: ProjectWorkerAssignment): Promise<void> => {
+    try {
+      const db = getDB();
+      const normalized = normalizeProjectWorkerAssignmentDates(assignment);
+      await db.projectWorkerAssignments.put(normalized);
+    } catch (error) {
+      console.error("Error updating project worker assignment:", error);
+      throw error;
+    }
+  },
+  delete: async (id: string): Promise<void> => {
+    try {
+      const db = getDB();
+      await db.projectWorkerAssignments.delete(id);
+    } catch (error) {
+      console.error("Error deleting project worker assignment:", error);
       throw error;
     }
   },

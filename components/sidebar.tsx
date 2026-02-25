@@ -22,6 +22,8 @@ import {
   UserCircle2,
   LogOut,
   BookOpen,
+  FolderKanban,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -64,6 +66,18 @@ const navMain: (NavItem & { roles?: string[] })[] = [
     href: "/customers",
     label: "Customers",
     icon: UserCircle2,
+    roles: ["admin", "manager", "cashier"],
+  },
+  {
+    href: "/projects",
+    label: "Projects",
+    icon: FolderKanban,
+    roles: ["admin", "manager", "cashier"],
+  },
+  {
+    href: "/workers",
+    label: "Workers",
+    icon: Wrench,
     roles: ["admin", "manager", "cashier"],
   },
   { href: "/products", label: "Products", icon: Package },
@@ -248,7 +262,7 @@ export function AppSidebar() {
                   <Package className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Carnico POS System</span>
+                  <span className="truncate font-semibold">Massoud System POS System</span>
                   <span className="truncate text-xs">Point of Sale</span>
                 </div>
               </Link>

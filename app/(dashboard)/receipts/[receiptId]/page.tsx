@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import {
@@ -53,6 +53,7 @@ const fallbackName = "Walk-in customer";
 export default function ReceiptDetailsPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const receiptId = params?.receiptId
     ? decodeURIComponent(params.receiptId as string)
     : "";
@@ -75,6 +76,15 @@ export default function ReceiptDetailsPage() {
     ? sale.receiptNumber ||
       `${format(new Date(sale.date), "yyMMdd")}-${sale.id.slice(0, 4).toUpperCase()}`
     : "";
+  const isPrintMode = searchParams?.get("print") === "1";
+
+  useEffect(() => {
+    if (!sale || !isPrintMode) return;
+    const timer = setTimeout(() => {
+      window.print();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [sale, isPrintMode]);
 
   const handleEditSave = async (saleId: string, updates: Partial<Sale>) => {
     await updateSale(saleId, updates);
@@ -122,7 +132,11 @@ export default function ReceiptDetailsPage() {
 
   return (
     <div className="space-y-6 overflow-hidden min-w-0">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div
+        className={`flex flex-wrap items-center justify-between gap-3 ${
+          isPrintMode ? "print:hidden" : ""
+        }`}
+      >
         <div className="flex items-center gap-3 flex-wrap">
           <Button asChild variant="ghost" size="sm">
             <Link href="/receipts">

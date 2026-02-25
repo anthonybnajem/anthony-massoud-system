@@ -79,14 +79,23 @@ export function ProductTableRow({
         </span>
       </TableCell>
       <TableCell>
-        <span className="font-semibold text-lg">
-          ${product.price.toFixed(2)}
-        </span>
+        <div className="flex flex-col">
+          <span className="font-semibold text-sm">
+            Sell: ${product.price.toFixed(2)}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            Rent: ${((product.rentalPrice ?? product.price) || 0).toFixed(2)}
+          </span>
+        </div>
       </TableCell>
       <TableCell>
         <div className="flex flex-col">
           <span className="font-medium capitalize">
-            {saleType === "weight" ? `By Weight (${unitLabel})` : `Per ${unitLabel}`}
+            {saleType === "weight"
+              ? `By Weight (${unitLabel})`
+              : saleType === "rental"
+              ? `Rental (${unitLabel})`
+              : `Per ${unitLabel}`}
           </span>
           <span className="text-xs text-muted-foreground">
             Step {formatMeasurementValue(unitIncrement)}

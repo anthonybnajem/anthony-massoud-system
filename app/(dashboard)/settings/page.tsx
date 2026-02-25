@@ -31,7 +31,7 @@ export default function SettingsPage() {
     useReceiptSettings();
 
   const [storeSettings, setStoreSettings] = useState({
-    name: "Carnico",
+    name: "Massoud System",
     address: "Zgharta",
     phone: "+961 70008175",
     email: "",
@@ -73,7 +73,7 @@ export default function SettingsPage() {
         // Load receipt settings
         if (receiptSettings) {
           setStoreSettings({
-            name: receiptSettings.storeName || "Carnico",
+            name: receiptSettings.storeName || "Massoud System",
             address:
               receiptSettings.storeAddress || "Zgharta",
             phone: receiptSettings.storePhone || "+961 70008175",

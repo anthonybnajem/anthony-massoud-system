@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { DatabaseTools } from "./database-tools";
 import { SeedEmployeesTool } from "./seed-employees";
+import { SeedConstructionDataTool } from "./seed-construction-data";
 import { Code, Database, Settings } from "lucide-react";
 
 export default function DeveloperPage() {
@@ -47,6 +48,7 @@ export default function DeveloperPage() {
 
         <TabsContent value="database" className="space-y-4">
           <DatabaseTools />
+          <SeedConstructionDataTool />
           <SeedEmployeesTool />
         </TabsContent>
 

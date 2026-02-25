@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
-import { ArrowLeft, Users, UserCircle2 } from "lucide-react";
+import { ArrowLeft, Users, UserCircle2, FolderKanban, Pencil, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { usePosData } from "@/components/pos-data-provider";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
@@ -34,6 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { buildCustomersFromSales } from "../utils";
 import {
   Select,
@@ -51,6 +52,9 @@ export default function CustomerDetailPage() {
   const {
     sales,
     customers: customerProfiles,
+    projects,
+    addCustomerProject,
+    updateCustomerProject,
     updateSale,
     updateCustomerProfile,
   } = usePosData();
@@ -84,6 +88,12 @@ export default function CustomerDetailPage() {
     string | undefined
   >(undefined);
   const [isSaving, setIsSaving] = useState(false);
+  const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
+  const [isEditingProject, setIsEditingProject] = useState(false);
+  const [projectId, setProjectId] = useState("");
+  const [projectName, setProjectName] = useState("");
+  const [projectLocation, setProjectLocation] = useState("");
+  const [projectNotes, setProjectNotes] = useState("");
 
   useEffect(() => {
     if (customer && isEditOpen) {
@@ -126,6 +136,67 @@ export default function CustomerDetailPage() {
         }
       }
       setIsEditOpen(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const customerProfileId = customer?.profileId;
+  const customerProjects = useMemo(
+    () =>
+      customerProfileId
+        ? projects.filter((project) => project.customerId === customerProfileId)
+        : [],
+    [projects, customerProfileId]
+  );
+
+  const resetProjectForm = () => {
+    setProjectId("");
+    setProjectName("");
+    setProjectLocation("");
+    setProjectNotes("");
+    setIsEditingProject(false);
+  };
+
+  const openAddProject = () => {
+    resetProjectForm();
+    setIsProjectDialogOpen(true);
+  };
+
+  const openEditProject = (id: string) => {
+    const project = customerProjects.find((item) => item.id === id);
+    if (!project) return;
+    setProjectId(project.id);
+    setProjectName(project.name);
+    setProjectLocation(project.location || "");
+    setProjectNotes(project.notes || "");
+    setIsEditingProject(true);
+    setIsProjectDialogOpen(true);
+  };
+
+  const handleSaveProject = async () => {
+    if (!customerProfileId || !projectName.trim()) return;
+    try {
+      setIsSaving(true);
+      if (isEditingProject) {
+        const existing = customerProjects.find((item) => item.id === projectId);
+        if (!existing) return;
+        await updateCustomerProject({
+          ...existing,
+          name: projectName,
+          location: projectLocation || undefined,
+          notes: projectNotes || undefined,
+        });
+      } else {
+        await addCustomerProject({
+          customerId: customerProfileId,
+          name: projectName,
+          location: projectLocation || undefined,
+          notes: projectNotes || undefined,
+        });
+      }
+      setIsProjectDialogOpen(false);
+      resetProjectForm();
     } finally {
       setIsSaving(false);
     }
@@ -238,6 +309,73 @@ export default function CustomerDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-2">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <FolderKanban className="h-5 w-5 text-primary" />
+              Projects
+            </CardTitle>
+            <CardDescription>
+              Projects under this customer profile.
+            </CardDescription>
+          </div>
+          <Button
+            size="sm"
+            onClick={openAddProject}
+            disabled={!customerProfileId}
+          >
+            Add Project
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {!customerProfileId ? (
+            <p className="text-sm text-muted-foreground">
+              Save this customer as a profile first before creating projects.
+            </p>
+          ) : customerProjects.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No projects yet for this customer.
+            </p>
+          ) : (
+            customerProjects.map((project) => (
+              <div
+                key={project.id}
+                className="rounded-lg border p-4 flex items-start justify-between gap-3"
+              >
+                <div className="space-y-1">
+                  <p className="font-semibold">{project.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {project.location || "No location"}
+                  </p>
+                  {project.notes && (
+                    <p className="text-xs text-muted-foreground">
+                      {project.notes}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/projects/${encodeURIComponent(project.id)}`}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      View
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEditProject(project.id)}
+                  >
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
 
       <Card className="border-2">
         <CardHeader>
@@ -375,6 +513,65 @@ export default function CustomerDetailPage() {
             </Button>
             <Button onClick={handleSaveCustomer} disabled={isSaving}>
               {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isProjectDialogOpen} onOpenChange={setIsProjectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {isEditingProject ? "Edit Project" : "Add Project"}
+            </DialogTitle>
+            <DialogDescription>
+              {isEditingProject
+                ? "Update this customer project details."
+                : "Create a new project for this customer."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="project-name">Project Name</Label>
+              <Input
+                id="project-name"
+                value={projectName}
+                onChange={(event) => setProjectName(event.target.value)}
+                placeholder="Project name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="project-location">Location</Label>
+              <Input
+                id="project-location"
+                value={projectLocation}
+                onChange={(event) => setProjectLocation(event.target.value)}
+                placeholder="Location"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="project-notes">Notes</Label>
+              <Textarea
+                id="project-notes"
+                rows={3}
+                value={projectNotes}
+                onChange={(event) => setProjectNotes(event.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsProjectDialogOpen(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveProject}
+              disabled={isSaving || !projectName.trim()}
+            >
+              {isSaving ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>

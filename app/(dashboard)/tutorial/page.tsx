@@ -15,7 +15,7 @@ import {
   PlayCircle,
   BookOpenCheck,
   Settings,
-  Beef,
+  Wrench,
   Package2,
   ReceiptText,
 } from "lucide-react";
@@ -30,7 +30,7 @@ const steps = [
   {
     title: "2. Add Categories",
     description:
-      "Create Carnico-specific groupings (e.g., Beef Cuts, Sausages, Ready Meals).",
+      "Create Massoud System-specific groupings (e.g., Steel, Wood, Cement, Sand).",
     details: [
       "Navigate to Products → Categories and add at least one category before moving on.",
       "Categories are required; you cannot create a product without assigning it to a category.",
@@ -40,7 +40,7 @@ const steps = [
   {
     title: "3. Add Products",
     description:
-      "Add items such as Ribeye Steak (sold by kg) or Merguez Sausage (per unit) once categories exist.",
+      "Add items such as Steel Rebar (sold by piece), Plywood Sheet (per board), or River Sand (by bag).",
     details: [
       "Define the selling method (per item or by weight) for each product.",
       "Upload product photos or SKU/barcode data if available for faster sales.",
@@ -50,33 +50,33 @@ const steps = [
   {
     title: "4. Manage Inventory",
     description:
-      "Track meat batches, record adjustments (spoilage, trimming), and review movement history.",
+      "Track stock movements, record adjustments (damage, returns), and review movement history.",
     link: "/inventory",
   },
   {
     title: "5. Configure Receipts",
     description:
-      "Design Carnico-branded receipts (logo, thank-you note, barcode) in the Receipt Designer.",
+      "Design Massoud System-branded receipts (logo, thank-you note, barcode) in the Receipt Designer.",
     link: "/receipt-designer",
   },
   {
     title: "6. Start Selling",
     description:
-      "Use the Sales screen to weigh or scan products, apply discounts, and print receipts for wholesale or retail orders.",
+      "Use the Sales screen to scan products, apply discounts, and print receipts for contractor or retail orders.",
     link: "/sales",
   },
   {
     title: "7. Review Reports",
     description:
-      "Monitor daily revenue, top-selling cuts, and export sales/history data from Reports.",
+      "Monitor daily revenue, top-selling materials, and export sales/history data from Reports.",
     link: "/reports",
   },
 ];
 
 const sampleProducts = [
-  { name: "Ribeye Steak", unit: "Sold by weight (kg)", note: "Premium beef cut for retail display" },
-  { name: "Ground Beef", unit: "Sold by weight (kg)", note: "Batch-tracked for burger production" },
-  { name: "Merguez Sausage", unit: "Sold per unit or packs", note: "Spicy sausage popular in wholesale orders" },
+  { name: "Steel Rebar 12mm", unit: "Sold per piece", note: "High-demand structural steel for reinforced concrete" },
+  { name: "Plywood Sheet 18mm", unit: "Sold per sheet", note: "Commonly used for formwork and interior carpentry" },
+  { name: "River Sand (50kg Bag)", unit: "Sold per bag", note: "Essential for mortar and concrete mixes" },
 ];
 
 export default function TutorialPage() {
@@ -90,11 +90,11 @@ export default function TutorialPage() {
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
             <BookOpenCheck className="h-8 w-8 text-primary" />
-            Carnico POS Tutorial
+            Massoud System POS Tutorial
           </h1>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Beef className="h-4 w-4 text-primary" />
-            Tailored for Carnico’s meat-processing workflows
+            <Wrench className="h-4 w-4 text-primary" />
+            Tailored for Massoud System’s construction-supplies workflows
           </div>
         </div>
         <p className="text-muted-foreground max-w-2xl">
@@ -138,7 +138,7 @@ export default function TutorialPage() {
             Sample Product Setup
           </CardTitle>
           <CardDescription>
-            Examples aligned with Carnico’s meat catalog. Adjust units (by kg or unit) as needed.
+            Examples aligned with Massoud System’s construction catalog. Adjust units (piece, sheet, bag) as needed.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
@@ -159,16 +159,16 @@ export default function TutorialPage() {
             Receipt Setup Tutorial
           </CardTitle>
           <CardDescription>
-            Ensure every Carnico receipt reflects your brand and information clearly.
+            Ensure every Massoud System receipt reflects your brand and information clearly.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 text-sm text-muted-foreground">
         
           <p>
-            1. Enter store details (address, phone, meat-processing certification) under Store Information so they appear on every receipt.
+            1. Enter store details (address, phone, and tax information) under Store Information so they appear on every receipt.
           </p>
           <p>
-            2. Add a thank-you message (e.g., “Thank you for choosing Carnico Meat Factory”) and optional returns policy.
+            2. Add a thank-you message (e.g., “Thank you for choosing Massoud System Construction Supplies”) and optional returns policy.
           </p>
          
         </CardContent>

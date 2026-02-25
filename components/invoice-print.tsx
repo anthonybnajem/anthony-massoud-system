@@ -12,7 +12,7 @@ import { Printer, Download, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import type { Sale } from "./pos-data-provider";
 import type { Product } from "@/lib/db";
-import { formatQuantityWithLabel } from "@/lib/product-measurements";
+import { formatQuantityWithLabel, getProductUnitPrice } from "@/lib/product-measurements";
 import { useToast } from "@/components/ui/use-toast";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
 import { useDiscount } from "@/components/discount-provider";
@@ -29,6 +29,7 @@ interface InvoicePrintProps {
 
 export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const clearReceiptRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { settings } = useReceiptSettings();
   const { discounts } = useDiscount();
@@ -58,9 +59,11 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
 
   const processReceiptPdf = async (
     mode: "download" | "print",
-    toastMessages: { preparing: { title: string; description: string }; success: { title: string; description: string }; error: { title: string; description: string } }
+    toastMessages: { preparing: { title: string; description: string }; success: { title: string; description: string }; error: { title: string; description: string } },
+    source: "standard" | "clear" = "standard"
   ) => {
-    if (!invoiceRef.current) {
+    const sourceRef = source === "clear" ? clearReceiptRef.current : invoiceRef.current;
+    if (!sourceRef) {
       toast({
         title: toastMessages.error.title,
         description: "No receipt content available.",
@@ -77,7 +80,7 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
     });
 
     try {
-      const originalReceipt = invoiceRef.current;
+      const originalReceipt = sourceRef;
       const receiptClone = originalReceipt.cloneNode(true) as HTMLElement;
 
       receiptContainer = document.createElement("div");
@@ -250,9 +253,66 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
     }
   };
 
+  const handleDetailedPdf = async () => {
+    try {
+      setIsDownloading(true);
+      await processReceiptPdf(
+        "download",
+        {
+          preparing: {
+            title: "Preparing Detailed PDF",
+            description: "Rendering a larger and clearer receipt...",
+          },
+          success: {
+            title: "Detailed PDF Ready",
+            description: "Your detailed receipt PDF has been saved.",
+          },
+          error: {
+            title: "Detailed PDF Failed",
+            description: "Unable to generate the detailed receipt PDF.",
+          },
+        },
+        "clear"
+      );
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleDetailedPrint = async () => {
+    try {
+      setIsPrinting(true);
+      await processReceiptPdf(
+        "print",
+        {
+          preparing: {
+            title: "Preparing Detailed Print",
+            description: "Rendering a larger and clearer printable receipt...",
+          },
+          success: {
+            title: "Detailed Print Ready",
+            description: "The detailed receipt has been opened for printing.",
+          },
+          error: {
+            title: "Detailed Print Failed",
+            description: "Unable to generate the detailed printable receipt.",
+          },
+        },
+        "clear"
+      );
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
   const renderOriginalTable = () => {
     const subtotal = sale.items.reduce(
-      (sum, item) => sum + item.product.price * item.quantity,
+      (sum, item) =>
+        sum +
+        (typeof item.price === "number"
+          ? item.price
+          : getProductUnitPrice(item.product as Product)) *
+          item.quantity,
       0
     );
     const taxRate = settings?.taxRate || 0;
@@ -272,25 +332,34 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
             </tr>
           </thead>
           <tbody>
-            {sale.items.map((item, index) => (
-              <tr key={index} className="border-b">
-                <td className="py-2">{item.product.name}</td>
-                <td className="text-center py-2">
-                  {formatQuantityWithLabel(
-                    item.product as Product,
-                    item.quantity
-                  )}
-                </td>
-                <td className="text-right py-2">
-                  {settings?.currencySymbol || "$"}
-                  {item.product.price.toFixed(2)}
-                </td>
-                <td className="text-right py-2">
-                  {settings?.currencySymbol || "$"}
-                  {(item.product.price * item.quantity).toFixed(2)}
-                </td>
-              </tr>
-            ))}
+            {sale.items.map((item, index) => {
+              const unitPrice =
+                typeof item.price === "number"
+                  ? item.price
+                  : getProductUnitPrice(item.product as Product);
+              return (
+                <tr key={index} className="border-b">
+                  <td className="py-2">
+                    {item.product.name}
+                    {item.variationName ? ` - ${item.variationName}` : ""}
+                  </td>
+                  <td className="text-center py-2">
+                    {formatQuantityWithLabel(
+                      item.product as Product,
+                      item.quantity
+                    )}
+                  </td>
+                  <td className="text-right py-2">
+                    {settings?.currencySymbol || "$"}
+                    {unitPrice.toFixed(2)}
+                  </td>
+                  <td className="text-right py-2">
+                    {settings?.currencySymbol || "$"}
+                    {(unitPrice * item.quantity).toFixed(2)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         <div className="mt-4 text-sm">
@@ -325,7 +394,7 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
       fontFamily = "Arial",
       fontSize = 12,
       receiptWidth = 300,
-      storeName = "Carnico",
+      storeName = "Massoud System",
       storeAddress,
       storePhone,
       storeEmail,
@@ -346,7 +415,12 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
     } = settings || {};
 
     const computedSubtotal = sale.items.reduce(
-      (sum, item) => sum + item.product.price * item.quantity,
+      (sum, item) =>
+        sum +
+        (typeof item.price === "number"
+          ? item.price
+          : getProductUnitPrice(item.product as Product)) *
+          item.quantity,
       0
     );
     const subtotal =
@@ -360,16 +434,24 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
     const total = sale.total;
     const discountAmount = sale.discount ?? 0;
 
-    const receiptItems = sale.items.map((item) => ({
-      name: item.product.name,
-      quantity: item.quantity,
-      quantityDisplay: formatQuantityWithLabel(
-        item.product as Product,
-        item.quantity
-      ),
-      price: item.product.price,
-      total: item.product.price * item.quantity,
-    }));
+    const receiptItems = sale.items.map((item) => {
+      const unitPrice =
+        typeof item.price === "number"
+          ? item.price
+          : getProductUnitPrice(item.product as Product);
+      return {
+        name: item.variationName
+          ? `${item.product.name} - ${item.variationName}`
+          : item.product.name,
+        quantity: item.quantity,
+        quantityDisplay: formatQuantityWithLabel(
+          item.product as Product,
+          item.quantity
+        ),
+        price: unitPrice,
+        total: unitPrice * item.quantity,
+      };
+    });
 
     const receiptData = {
       showLogo,
@@ -434,6 +516,138 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
     );
   };
 
+  const renderClearReceiptPreview = () => {
+    const {
+      fontFamily = "Arial",
+      fontSize = 12,
+      storeName = "Massoud System",
+      storeAddress,
+      storePhone,
+      storeEmail,
+      storeWebsite,
+      storeLogo,
+      logoSize = 100,
+      showLogo = true,
+      thankYouMessage,
+      returnPolicy,
+      footerText,
+      headerText,
+      showTax = true,
+      taxRate = 10,
+      currencySymbol = "$",
+      showBarcode = false,
+      showInstagramQr = false,
+      instagramUrl,
+    } = settings || {};
+
+    const largeFontSize = Math.max(fontSize + 2, 14);
+    const largeWidth = 640;
+    const computedSubtotal = sale.items.reduce(
+      (sum, item) =>
+        sum +
+        (typeof item.price === "number"
+          ? item.price
+          : getProductUnitPrice(item.product as Product)) *
+          item.quantity,
+      0
+    );
+    const subtotal =
+      typeof sale.subtotal === "number" ? sale.subtotal : computedSubtotal;
+    const tax =
+      typeof sale.tax === "number"
+        ? sale.tax
+        : showTax
+        ? subtotal * (taxRate / 100)
+        : 0;
+    const total = sale.total;
+    const discountAmount = sale.discount ?? 0;
+
+    const receiptItems = sale.items.map((item) => {
+      const unitPrice =
+        typeof item.price === "number"
+          ? item.price
+          : getProductUnitPrice(item.product as Product);
+      return {
+        name: item.variationName
+          ? `${item.product.name} - ${item.variationName}`
+          : item.product.name,
+        quantity: item.quantity,
+        quantityDisplay: formatQuantityWithLabel(
+          item.product as Product,
+          item.quantity
+        ),
+        price: unitPrice,
+        total: unitPrice * item.quantity,
+      };
+    });
+
+    const receiptData = {
+      showLogo,
+      storeLogo,
+      storeName,
+      fontSize: largeFontSize,
+      logoSize,
+      headerText,
+      storeAddress,
+      storePhone,
+      storeEmail,
+      storeWebsite,
+      currencySymbol,
+      showTax,
+      taxRate,
+      thankYouMessage,
+      returnPolicy,
+      footerText,
+      showBarcode,
+      showInstagramQr,
+      instagramUrl,
+    };
+
+    const meta = {
+      date: format(new Date(sale.date), "MMM dd, yyyy"),
+      time: format(new Date(sale.date), "hh:mm a"),
+      customerName: sale.customerName || "Walk-in Customer",
+      paymentMethod:
+        sale.paymentMethod === "credit"
+          ? "Credit Card"
+          : sale.paymentMethod === "cash"
+          ? "Cash"
+          : "Mobile Payment",
+    };
+
+    return (
+      <div
+        ref={clearReceiptRef}
+        style={{
+          fontFamily,
+          fontSize: `${largeFontSize}px`,
+          width: `${largeWidth}px`,
+          margin: "0 auto",
+          background: "#fff",
+          padding: "24px",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+        }}
+        className="receipt-preview-large"
+      >
+        <ReceiptContent
+          data={receiptData}
+          item={receiptItems}
+          receiptId={receiptNumber}
+          subtotal={subtotal}
+          discount={
+            discountAmount > 0
+              ? { amount: discountAmount, label: appliedDiscountName }
+              : undefined
+          }
+          tax={tax}
+          total={total}
+          meta={meta}
+        />
+      </div>
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -447,6 +661,9 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
           <div className="flex-1 overflow-auto flex justify-center pl-2">
             {renderReceiptPreview()}
           </div>
+        </div>
+        <div className="fixed -left-[99999px] top-0 opacity-0 pointer-events-none">
+          {renderClearReceiptPreview()}
         </div>
 
         <div className="flex justify-end gap-2 mt-4 pt-4 no-print border-t">
@@ -462,9 +679,17 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
             <Download className="mr-2 h-4 w-4" />
             {isDownloading ? "Preparing..." : "Download PDF"}
           </Button>
-          <Button onClick={handlePrint}>
+          <Button variant="outline" onClick={handleDetailedPdf} disabled={isDownloading}>
+            <Download className="mr-2 h-4 w-4" />
+            Detailed PDF
+          </Button>
+          <Button variant="outline" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
             Print Receipt
+          </Button>
+          <Button onClick={handleDetailedPrint} disabled={isPrinting}>
+            <Printer className="mr-2 h-4 w-4" />
+            Print Detailed
           </Button>
         </div>
       </DialogContent>

@@ -39,13 +39,20 @@ import { X, Plus } from "lucide-react";
 import {
   DEFAULT_ITEM_INCREMENT,
   DEFAULT_ITEM_UNIT_LABEL,
+  DEFAULT_RENTAL_INCREMENT,
+  DEFAULT_RENTAL_UNIT_LABEL,
   DEFAULT_WEIGHT_INCREMENT,
   DEFAULT_WEIGHT_UNIT_LABEL,
+  type ProductSaleType,
 } from "@/lib/product-constants";
 
 const productSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  price: z.number().min(0, "Price must be a positive number"),
+  price: z.number().min(0, "Selling price must be a positive number"),
+  rentalPrice: z
+    .number()
+    .min(0, "Rental price must be a positive number")
+    .optional(),
   stock: z.number().min(0, "Stock must be a positive number"),
   categoryId: z.string().min(1, "Category is required"),
   barcode: z.string().optional(),
@@ -57,7 +64,7 @@ const productSchema = z.object({
   taxRate: z.number().min(0, "Tax rate must be a positive number").optional(),
   tags: z.array(z.string()).optional(),
   attributes: z.record(z.string(), z.string()).optional(),
-  saleType: z.enum(["item", "weight"]),
+  saleType: z.enum(["item", "weight", "rental"]),
   unitLabel: z.string().min(1, "Unit label is required"),
   unitIncrement: z.number().positive("Quantity step must be greater than zero"),
   variations: z
@@ -66,6 +73,9 @@ const productSchema = z.object({
         id: z.string(),
         name: z.string().min(1, "Variation name is required"),
         price: z.number().min(0, "Price must be a positive number"),
+        rentalPrice: z
+          .number()
+          .min(0, "Rental price must be a positive number"),
         stock: z.number().min(0, "Stock must be a positive number"),
       })
     )
@@ -90,13 +100,17 @@ export default function EditProductDialog({
   handleEditProduct,
 }: EditProductDialogProps) {
   const [attributes, setAttributes] = useState<Record<string, string>>({});
-  const [saleType, setSaleType] = useState<"item" | "weight">("item");
+  const [saleType, setSaleType] = useState<ProductSaleType>("item");
+  const [pricingMode, setPricingMode] = useState<"stable" | "variation">(
+    "stable"
+  );
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
       name: "",
       price: 0,
+      rentalPrice: 0,
       stock: 0,
       categoryId: "",
       barcode: "",
@@ -137,9 +151,18 @@ export default function EditProductDialog({
   useEffect(() => {
     if (!currentProduct) return;
 
-    const rawSaleType =
-      currentProduct.saleType ;
-    setSaleType(currentProduct.saleType);
+    const rawSaleType: ProductSaleType =
+      currentProduct.saleType === "weight"
+        ? "weight"
+        : currentProduct.saleType === "rental"
+        ? "rental"
+        : "item";
+    setSaleType(rawSaleType);
+    setPricingMode(
+      currentProduct.variations && currentProduct.variations.length > 0
+        ? "variation"
+        : "stable"
+    );
     // alert(rawSaleType)
     const categoryId = String(
       currentProduct.categoryId ?? currentProduct.category?.id ?? ""
@@ -149,6 +172,8 @@ export default function EditProductDialog({
       currentProduct.unitLabel ||
       (rawSaleType === "weight"
         ? DEFAULT_WEIGHT_UNIT_LABEL
+        : rawSaleType === "rental"
+        ? DEFAULT_RENTAL_UNIT_LABEL
         : DEFAULT_ITEM_UNIT_LABEL);
 
     const unitIncrement =
@@ -157,20 +182,31 @@ export default function EditProductDialog({
         ? currentProduct.unitIncrement
         : rawSaleType === "weight"
         ? DEFAULT_WEIGHT_INCREMENT
+        : rawSaleType === "rental"
+        ? DEFAULT_RENTAL_INCREMENT
         : DEFAULT_ITEM_INCREMENT;
 
     form.reset({
       ...currentProduct,
+      rentalPrice: currentProduct.rentalPrice ?? 0,
       saleType: rawSaleType,
       categoryId,
       unitLabel,
       unitIncrement,
       image: currentProduct.image || "",
       tags: currentProduct.tags || [],
-      variations: currentProduct.variations || [],
+      variations: (currentProduct.variations || []).map((variation) => ({
+        ...variation,
+        rentalPrice: variation.rentalPrice ?? variation.price ?? 0,
+      })),
     });
 
-    replaceVariations(currentProduct.variations || []);
+    replaceVariations(
+      (currentProduct.variations || []).map((variation) => ({
+        ...variation,
+        rentalPrice: variation.rentalPrice ?? variation.price ?? 0,
+      }))
+    );
     setAttributes(currentProduct.attributes || {});
     form.setValue("saleType", rawSaleType);
   }, [currentProduct, currentProduct?.saleType]);
@@ -205,9 +241,18 @@ export default function EditProductDialog({
 
   const onSubmit = (data: ProductFormValues) => {
     if (!currentProduct) return;
+    if (pricingMode === "variation" && (!data.variations || data.variations.length === 0)) {
+      form.setError("variations", {
+        type: "manual",
+        message: "Add at least one variation",
+      });
+      return;
+    }
     handleEditProduct({
       ...currentProduct,
       ...data,
+      rentalPrice: data.price,
+      variations: pricingMode === "variation" ? data.variations || [] : [],
       categoryId: String(data.categoryId),
       attributes,
       image: data.image || "",
@@ -255,14 +300,15 @@ export default function EditProductDialog({
                 />
 
                 {/* PRICE / STOCK */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="price"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Price <span className="text-destructive">*</span>
+                          Selling Price{" "}
+                          <span className="text-destructive">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -304,6 +350,38 @@ export default function EditProductDialog({
                   />
                 </div>
 
+                <FormItem>
+                  <FormLabel>Pricing Setup</FormLabel>
+                  <Select
+                    value={pricingMode}
+                    onValueChange={(value) => {
+                      const nextMode =
+                        value === "variation" ? "variation" : "stable";
+                      setPricingMode(nextMode);
+                      if (nextMode === "stable") {
+                        replaceVariations([]);
+                        form.setValue("variations", []);
+                      }
+                    }}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select pricing setup" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="stable">Stable (Single Price)</SelectItem>
+                      <SelectItem value="variation">
+                        Variations (Size/Type Pricing)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Stable uses one product price. Variation mode sets separate
+                    sell/rental prices per variation.
+                  </FormDescription>
+                </FormItem>
+
                 {/* SALE TYPE */}
                 <FormField
                 defaultValue={saleType}
@@ -318,14 +396,21 @@ export default function EditProductDialog({
                         onValueChange={(v) => {
                           // alert(v)
                           if(!v) return;
-                          const typed: "item" | "weight" =
-                            v === "weight" ? "weight" : "item";
+                          const typed: ProductSaleType =
+                            v === "weight"
+                              ? "weight"
+                              : v === "rental"
+                              ? "rental"
+                              : "item";
                           setSaleType(typed);
                           field.onChange(typed);
 
                           if (typed === "weight") {
                             form.setValue("unitLabel", DEFAULT_WEIGHT_UNIT_LABEL);
                             form.setValue("unitIncrement", DEFAULT_WEIGHT_INCREMENT);
+                          } else if (typed === "rental") {
+                            form.setValue("unitLabel", DEFAULT_RENTAL_UNIT_LABEL);
+                            form.setValue("unitIncrement", DEFAULT_RENTAL_INCREMENT);
                           } else {
                             form.setValue("unitLabel", DEFAULT_ITEM_UNIT_LABEL);
                             form.setValue("unitIncrement", DEFAULT_ITEM_INCREMENT);
@@ -340,6 +425,7 @@ export default function EditProductDialog({
                         <SelectContent defaultValue={saleType}>
                           <SelectItem value="item">Per Item</SelectItem>
                           <SelectItem value="weight">By Weight</SelectItem>
+                          <SelectItem value="rental">Rental</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
@@ -360,7 +446,7 @@ export default function EditProductDialog({
                         <FormLabel>Unit Label</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="e.g. unit, kg, gram"
+                            placeholder="e.g. unit, kg, m (meters)"
                             value={field.value ?? ""}
                             onChange={(e) => field.onChange(e.target.value)}
                           />
@@ -508,6 +594,142 @@ export default function EditProductDialog({
 
               {/* ADVANCED TAB (shortened; keep your variations + attributes UI) */}
               <TabsContent value="advanced" className="space-y-4 mt-4">
+                {pricingMode === "variation" && (
+                  <FormField
+                    control={form.control}
+                    name="variations"
+                    render={() => (
+                      <FormItem>
+                        <FormLabel>Product Variations</FormLabel>
+                        <FormDescription>
+                          Add size/material variations (e.g., 4mm, 10mm, 12mm),
+                          each with selling and rental prices.
+                        </FormDescription>
+                        <div className="space-y-4">
+                          {variationFields.map((field, index) => (
+                            <div
+                              key={field.id}
+                              className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg bg-muted/50"
+                            >
+                            <FormField
+                              control={form.control}
+                              name={`variations.${index}.name`}
+                              render={({ field }) => (
+                                <FormItem className="flex-1">
+                                  <FormLabel>Variation Name</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="e.g., Rebar 10mm"
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`variations.${index}.price`}
+                              render={({ field }) => (
+                                <FormItem className="w-full">
+                                  <FormLabel>Sell Price</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      placeholder="0.00"
+                                      {...field}
+                                      onChange={(e) =>
+                                        field.onChange(
+                                          parseFloat(e.target.value) || 0
+                                        )
+                                      }
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`variations.${index}.rentalPrice`}
+                              render={({ field }) => (
+                                <FormItem className="w-full">
+                                  <FormLabel>Rental Price</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      placeholder="0.00"
+                                      {...field}
+                                      onChange={(e) =>
+                                        field.onChange(
+                                          parseFloat(e.target.value) || 0
+                                        )
+                                      }
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`variations.${index}.stock`}
+                              render={({ field }) => (
+                                <FormItem className="w-full">
+                                  <FormLabel>Stock</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="number"
+                                      placeholder="0"
+                                      {...field}
+                                      onChange={(e) =>
+                                        field.onChange(
+                                          parseFloat(e.target.value) || 0
+                                        )
+                                      }
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="md:mt-8"
+                                onClick={() => removeVariation(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                              addVariation({
+                                id: Date.now().toString(),
+                                name: "",
+                                price: 0,
+                                rentalPrice: 0,
+                                stock: 0,
+                              })
+                            }
+                            className="w-full"
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Variation
+                          </Button>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
                 <FormItem>
                   <FormLabel>Custom Attributes</FormLabel>
                   <FormDescription>

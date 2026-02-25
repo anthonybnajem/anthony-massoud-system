@@ -22,6 +22,7 @@ import {
   Percent,
 } from "lucide-react";
 import type { CustomerSummary } from "@/app/(dashboard)/customers/utils";
+import type { CustomerProject } from "@/components/pos-data-provider";
 import {
   Popover,
   PopoverTrigger,
@@ -65,6 +66,17 @@ interface CustomerDialogProps {
   }) => Promise<void>;
   availableDiscounts?: Discount[];
   onCustomerSelect?: (customer: CustomerSummary) => void;
+  selectedCustomerId?: string;
+  onCustomerIdChange?: (customerId: string) => void;
+  selectedProjectId?: string;
+  onProjectIdChange?: (projectId: string) => void;
+  projects?: CustomerProject[];
+  onAddProject?: (project: {
+    customerId: string;
+    name: string;
+    location?: string;
+    notes?: string;
+  }) => Promise<unknown>;
 }
 
 export default function CustomerDialog({
@@ -83,6 +95,12 @@ export default function CustomerDialog({
   onSaveProfile,
   availableDiscounts = [],
   onCustomerSelect,
+  selectedCustomerId = "",
+  onCustomerIdChange,
+  selectedProjectId = "",
+  onProjectIdChange,
+  projects = [],
+  onAddProject,
 }: CustomerDialogProps) {
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
@@ -94,6 +112,9 @@ export default function CustomerDialog({
   const [newProfileDiscountId, setNewProfileDiscountId] = useState<
     string | undefined
   >(undefined);
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [isSavingProject, setIsSavingProject] = useState(false);
 
   const handleSelectCustomer = (customer: CustomerSummary) => {
     setCustomerName(customer.name || "");
@@ -101,7 +122,29 @@ export default function CustomerDialog({
     setCustomerPhone(customer.phone || "");
     setCustomerLocation(customer.location || "");
     setIsSelectorOpen(false);
+    onCustomerIdChange?.(customer.profileId || "");
+    onProjectIdChange?.("");
+    setIsCreatingProject(false);
+    setNewProjectName("");
     onCustomerSelect?.(customer);
+  };
+
+  const handleCreateProject = async () => {
+    if (!selectedCustomerId || !newProjectName.trim() || !onAddProject) {
+      setIsCreatingProject(false);
+      return;
+    }
+    try {
+      setIsSavingProject(true);
+      await onAddProject({
+        customerId: selectedCustomerId,
+        name: newProjectName.trim(),
+      });
+      setNewProjectName("");
+      setIsCreatingProject(false);
+    } finally {
+      setIsSavingProject(false);
+    }
   };
 
   const openCreateProfile = () => {
@@ -240,6 +283,61 @@ export default function CustomerDialog({
               <p className="text-xs text-muted-foreground">
                 No saved customers yet. Use the plus icon to create one.
               </p>
+            )}
+            {selectedCustomerId && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label>Project</Label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    onClick={() => setIsCreatingProject((prev) => !prev)}
+                  >
+                    {isCreatingProject ? "Cancel" : "Add Project"}
+                  </Button>
+                </div>
+                <Select
+                  value={selectedProjectId || "none"}
+                  onValueChange={(value) =>
+                    onProjectIdChange?.(value === "none" ? "" : value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No project</SelectItem>
+                    {projects.length === 0 ? (
+                      <SelectItem value="no-projects" disabled>
+                        No projects for this customer
+                      </SelectItem>
+                    ) : (
+                      projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {isCreatingProject && (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={newProjectName}
+                      onChange={(e) => setNewProjectName(e.target.value)}
+                      placeholder="Project name"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleCreateProject}
+                      disabled={isSavingProject || !newProjectName.trim()}
+                    >
+                      {isSavingProject ? "Saving..." : "Save"}
+                    </Button>
+                  </div>
+                )}
+              </div>
             )}
         {isCreatingProfile && <div className="grid gap-2">
                   <Label htmlFor="new-profile-name">Create New Customer</Label>
