@@ -18,6 +18,7 @@ interface CartSummaryProps {
   onDiscountClick: () => void;
   onNotesClick: () => void;
   onCustomerClick: () => void;
+  onAddCustomLine?: () => void;
   onCheckoutClick: () => void;
 }
 
@@ -35,6 +36,7 @@ export function CartSummary({
   onDiscountClick,
   onNotesClick,
   onCustomerClick,
+  onAddCustomLine,
   onCheckoutClick,
 }: CartSummaryProps) {
   return (
@@ -91,6 +93,17 @@ export function CartSummary({
         </div>
       </div>
 
+      {onAddCustomLine && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full h-9 mb-3"
+          onClick={onAddCustomLine}
+        >
+          Add Custom Item / Service
+        </Button>
+      )}
+
       <div className="grid grid-cols-3 gap-2 mb-3">
         <Button
           variant="outline"
@@ -131,7 +144,7 @@ export function CartSummary({
         onClick={onCheckoutClick}
       >
         <span>Complete Checkout</span>
-        <ArrowRight className="ml-2 h-5 w-5" />
+        <ArrowRight className="ml-2 h-5 w-5" color="white"/>
       </Button>
     </div>
   );

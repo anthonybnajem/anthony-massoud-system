@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { type CartItem as CartItemType } from "@/components/pos-data-provider";
+import { type CartItem as CartItemType, type Worker } from "@/components/pos-data-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Package, Plus, Minus, Pencil, Trash2 } from "lucide-react";
+import { Package, Plus, Minus, Pencil, Trash2, Tag } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   formatMeasurementValue,
   getProductUnitPrice,
@@ -33,6 +41,20 @@ interface CartItemProps {
     rentalDates: { rentalStartDate?: string; rentalEndDate?: string }
   ) => void;
   onRemove: (lineId: string) => void;
+  onUpdateCustomLine?: (
+    lineId: string,
+    updates: {
+      name: string;
+      price: number;
+      quantity: number;
+      workerId?: string;
+      workerName?: string;
+      serviceType?: string;
+      notes?: string;
+      taxable?: boolean;
+    }
+  ) => void;
+  workers?: Worker[];
   variants?: any;
 }
 
@@ -43,8 +65,11 @@ export function CartItem({
   onToggleRentalMode,
   onUpdateRentalDates,
   onRemove,
+  onUpdateCustomLine,
+  workers = [],
   variants,
 }: CartItemProps) {
+  const isCustom = Boolean(item.customLine);
   const baseSaleType = getSaleType(item.product);
   const saleType =
     item.isRental === true
@@ -74,18 +99,56 @@ export function CartItem({
   const canRent =
     typeof variation?.rentalPrice === "number" ||
     typeof item.product.rentalPrice === "number";
+  const canToggleRental = !isCustom && canRent;
   const canIncrease =
     maxStock > 0 && item.quantity + quantityStep <= maxStock + 0.0001;
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editQuantity, setEditQuantity] = useState(String(item.quantity));
   const [editStartDate, setEditStartDate] = useState(item.rentalStartDate || "");
   const [editEndDate, setEditEndDate] = useState(item.rentalEndDate || "");
+  const [editName, setEditName] = useState(
+    item.customLine?.name || item.product.name
+  );
+  const [editPrice, setEditPrice] = useState(String(unitPrice));
+  const [editServiceType, setEditServiceType] = useState(
+    item.customLine?.serviceType || ""
+  );
+  const [editNotes, setEditNotes] = useState(item.customLine?.notes || "");
+  const [editTaxable, setEditTaxable] = useState(
+    item.customLine?.taxable ?? false
+  );
+  const [editWorkerId, setEditWorkerId] = useState(
+    item.customLine?.workerId || ""
+  );
+  const [editWorkerName, setEditWorkerName] = useState(
+    item.customLine?.workerName || ""
+  );
 
   useEffect(() => {
     setEditQuantity(String(item.quantity));
     setEditStartDate(item.rentalStartDate || "");
     setEditEndDate(item.rentalEndDate || "");
-  }, [item.id, item.quantity, item.rentalStartDate, item.rentalEndDate]);
+    setEditName(item.customLine?.name || item.product.name);
+    setEditPrice(String(unitPrice));
+    setEditServiceType(item.customLine?.serviceType || "");
+    setEditNotes(item.customLine?.notes || "");
+    setEditTaxable(item.customLine?.taxable ?? false);
+    setEditWorkerId(item.customLine?.workerId || "");
+    setEditWorkerName(item.customLine?.workerName || "");
+  }, [
+    item.id,
+    item.quantity,
+    item.rentalStartDate,
+    item.rentalEndDate,
+    item.customLine?.name,
+    item.customLine?.serviceType,
+    item.customLine?.notes,
+    item.customLine?.taxable,
+    item.customLine?.workerId,
+    item.customLine?.workerName,
+    item.product.name,
+    unitPrice,
+  ]);
 
   const handleDecrease = () => {
     const nextQuantity = parseFloat(
@@ -112,6 +175,25 @@ export function CartItem({
         rentalEndDate: editEndDate,
       });
     }
+    if (isCustom && onUpdateCustomLine) {
+      const parsedPrice = parseFloat(editPrice);
+      if (!Number.isNaN(parsedPrice) && parsedPrice >= 0) {
+        const workerName =
+          workers.find((worker) => worker.id === editWorkerId)?.name ||
+          editWorkerName ||
+          undefined;
+        onUpdateCustomLine(item.id, {
+          name: editName.trim() || item.product.name,
+          price: parsedPrice,
+          quantity: Number.isNaN(parsedQty) || parsedQty <= 0 ? item.quantity : parsedQty,
+          workerId: editWorkerId || undefined,
+          workerName,
+          serviceType: editServiceType.trim() || undefined,
+          notes: editNotes.trim() || undefined,
+          taxable: editTaxable,
+        });
+      }
+    }
     setIsEditOpen(false);
   };
 
@@ -126,7 +208,11 @@ export function CartItem({
       className="flex items-center gap-2.5 p-2.5 hover:bg-muted/50 active:bg-muted transition-colors group touch-manipulation"
     >
       <div className="w-12 h-12 bg-muted rounded-lg flex-shrink-0 overflow-hidden border border-border">
-        {item.product.image ? (
+        {isCustom ? (
+          <div className="h-full w-full flex items-center justify-center">
+            <Tag className="h-5 w-5 text-muted-foreground" />
+          </div>
+        ) : item.product.image ? (
           <img
             src={item.product.image || "/placeholder.svg"}
             alt={item.product.name}
@@ -144,37 +230,59 @@ export function CartItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-medium text-sm leading-tight truncate">
-              {item.product.name}
+              {isCustom ? editName || item.product.name : item.product.name}
             </h3>
             {item.variationName && (
               <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                 {item.variationName}
               </span>
             )}
+            {isCustom && (
+              <span className="text-[11px] px-1.5 py-0.5 rounded bg-white/30 text-slate-600">
+                Custom
+              </span>
+            )}
             <span className="text-xs text-muted-foreground whitespace-nowrap">
               {quantityDisplay}
             </span>
           </div>
+          {isCustom && (
+            <div className="text-[11px] text-muted-foreground">
+              {item.customLine?.serviceType && (
+                <span>{item.customLine.serviceType}</span>
+              )}
+              {item.customLine?.workerName && (
+                <span>
+                  {item.customLine?.serviceType ? " • " : ""}
+                  {item.customLine.workerName}
+                </span>
+              )}
+            </div>
+          )}
           <div className="mb-1.5 flex items-center gap-1.5">
-            <Button
-              type="button"
-              size="sm"
-              variant={item.isRental ? "outline" : "default"}
-              className="h-6 px-2 text-[11px]"
-              onClick={() => onToggleRentalMode(item.id, false)}
-            >
-              Sell
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={item.isRental ? "default" : "outline"}
-              className="h-6 px-2 text-[11px]"
-              disabled={!canRent}
-              onClick={() => onToggleRentalMode(item.id, true)}
-            >
-              Rent
-            </Button>
+            {!isCustom && (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={item.isRental ? "outline" : "default"}
+                  className="h-6 px-2 text-[11px]"
+                  onClick={() => onToggleRentalMode(item.id, false)}
+                >
+                  Sell
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={item.isRental ? "default" : "outline"}
+                  className="h-6 px-2 text-[11px]"
+                  disabled={!canToggleRental}
+                  onClick={() => onToggleRentalMode(item.id, true)}
+                >
+                  Rent
+                </Button>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <p className="text-xs text-muted-foreground">
@@ -231,17 +339,97 @@ export function CartItem({
           <DialogHeader>
             <DialogTitle>Edit Cart Item</DialogTitle>
             <DialogDescription>
-              Update quantity and rental details for this line.
+              {isCustom
+                ? "Update custom line details."
+                : "Update quantity and rental details for this line."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Item</Label>
               <p className="text-sm font-medium">
-                {item.product.name}
+                {isCustom ? editName || item.product.name : item.product.name}
                 {item.variationName ? ` (${item.variationName})` : ""}
               </p>
             </div>
+            {isCustom && (
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Custom Item Name</Label>
+                  <Input
+                    value={editName}
+                    onChange={(event) => setEditName(event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Price</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editPrice}
+                    onChange={(event) => setEditPrice(event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Service Type</Label>
+                  <Input
+                    value={editServiceType}
+                    onChange={(event) => setEditServiceType(event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Worker</Label>
+                  {workers.length > 0 ? (
+                    <Select
+                      value={editWorkerId || "__none__"}
+                      onValueChange={(value) =>
+                        setEditWorkerId(value === "__none__" ? "" : value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select worker" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">None</SelectItem>
+                        {workers.map((worker) => (
+                          <SelectItem key={worker.id} value={worker.id}>
+                            {worker.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      placeholder="Worker name"
+                      value={editWorkerName}
+                      onChange={(event) => setEditWorkerName(event.target.value)}
+                    />
+                  )}
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Notes</Label>
+                  <textarea
+                    className="w-full rounded-[14px] border border-white/30 bg-white/20 px-3 py-2 text-sm text-slate-700 backdrop-blur-[16px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                    rows={3}
+                    value={editNotes}
+                    onChange={(event) => setEditNotes(event.target.value)}
+                  />
+                </div>
+                <div className="flex items-center justify-between rounded-[14px] border border-white/30 bg-white/20 px-3 py-2 md:col-span-2">
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">Taxable</p>
+                    <p className="text-xs text-slate-500">
+                      Apply sales tax to this line
+                    </p>
+                  </div>
+                  <Switch
+                    checked={editTaxable}
+                    onCheckedChange={setEditTaxable}
+                  />
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Quantity ({unitLabel})</Label>
               <Input

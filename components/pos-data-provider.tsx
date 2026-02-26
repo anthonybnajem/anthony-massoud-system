@@ -15,6 +15,7 @@ import {
   projectWorkerAssignmentsApi,
   projectsApi,
   workersApi,
+  servicesApi,
   type Product as ProductType,
   type Category as CategoryType,
   type Sale as SaleType,
@@ -26,6 +27,7 @@ import {
   type CustomerProject as CustomerProjectType,
   type ProjectWorkerAssignment as ProjectWorkerAssignmentType,
   type Worker as WorkerType,
+  type Service as ServiceType,
 } from "@/lib/db";
 
 export type Product = ProductType;
@@ -38,6 +40,7 @@ export type ClosingReport = ClosingReportType;
 export type CustomerProfile = CustomerProfileType;
 export type CustomerProject = CustomerProjectType;
 export type Worker = WorkerType;
+export type Service = ServiceType;
 export type ProjectWorkerAssignment = ProjectWorkerAssignmentType;
 const WALK_IN_CUSTOMER_NAME = "Walk-in Customer";
 
@@ -51,6 +54,17 @@ export type CartItem = {
   rentalStartDate?: string;
   rentalEndDate?: string;
   quantity: number;
+  isCustom?: boolean;
+  customLine?: {
+    name: string;
+    price: number;
+    source?: "custom" | "worker" | "service";
+    workerId?: string;
+    workerName?: string;
+    serviceType?: string;
+    notes?: string;
+    taxable?: boolean;
+  };
 };
 
 type PosDataContextType = {
@@ -60,6 +74,7 @@ type PosDataContextType = {
   customers: CustomerProfile[];
   projects: CustomerProject[];
   workers: Worker[];
+  services: Service[];
   projectWorkerAssignments: ProjectWorkerAssignment[];
   stockMovements: StockMovement[];
   employees: Employee[];
@@ -119,6 +134,11 @@ type PosDataContextType = {
   ) => Promise<Worker>;
   updateWorker: (worker: Worker) => Promise<Worker>;
   removeWorker: (id: string) => Promise<void>;
+  addService: (
+    service: Omit<Service, "id" | "createdAt" | "updatedAt">
+  ) => Promise<Service>;
+  updateService: (service: Service) => Promise<Service>;
+  removeService: (id: string) => Promise<void>;
   assignWorkerToProject: (
     assignment: Omit<
       ProjectWorkerAssignment,
@@ -149,6 +169,7 @@ const PosDataContext = createContext<PosDataContextType>({
   customers: [],
   projects: [],
   workers: [],
+  services: [],
   projectWorkerAssignments: [],
   stockMovements: [],
   employees: [],
@@ -258,6 +279,29 @@ const PosDataContext = createContext<PosDataContextType>({
     updatedAt: new Date(),
   }),
   removeWorker: async () => {},
+  addService: async () => ({
+    id: "",
+    name: "",
+    price: 0,
+    billingType: "per_count",
+    unitLabel: "service",
+    taxable: true,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
+  updateService: async () => ({
+    id: "",
+    name: "",
+    price: 0,
+    billingType: "per_count",
+    unitLabel: "service",
+    taxable: true,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
+  removeService: async () => {},
   assignWorkerToProject: async () => ({
     id: "",
     projectId: "",
@@ -305,6 +349,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
   const [customers, setCustomers] = useState<CustomerProfile[]>([]);
   const [projects, setProjects] = useState<CustomerProject[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [projectWorkerAssignments, setProjectWorkerAssignments] = useState<
     ProjectWorkerAssignment[]
   >([]);
@@ -315,6 +360,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const isRentalItem = (item: Sale["items"][number]): boolean => {
+    if (item.isCustom) return false;
     if (typeof item.isRental === "boolean") return item.isRental;
     if (item.product?.saleType) return item.product.saleType === "rental";
     const matched = products.find((product) => product.id === item.productId);
@@ -336,6 +382,9 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       const storedWorkers = await workersApi
         .getAll()
         .then((list) => list.filter((worker) => worker.isActive));
+      const storedServices = await servicesApi
+        .getAll()
+        .then((list) => list.filter((service) => service.isActive));
       const storedProjectWorkerAssignments =
         await projectWorkerAssignmentsApi.getAll();
       const storedStockMovements = await stockMovementsApi.getAll();
@@ -350,6 +399,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       setCustomers(storedCustomers);
       setProjects(storedProjects);
       setWorkers(storedWorkers);
+      setServices(storedServices);
       setProjectWorkerAssignments(storedProjectWorkerAssignments);
       setStockMovements(storedStockMovements);
       setEmployees(storedEmployees);
@@ -1029,7 +1079,9 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         requiredQty: number;
       }> = [];
 
+      const productById = new Map<string, Product>();
       for (const item of saleData.items) {
+        if (item.isCustom) continue;
         const product = await productsApi.getById(item.productId);
         if (!product) {
           stockValidationErrors.push(`Product ${item.productId} not found`);
@@ -1041,6 +1093,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
           );
         }
         productStockChecks.push({ product, requiredQty: item.quantity });
+        productById.set(item.productId, product);
       }
 
       if (stockValidationErrors.length > 0) {
@@ -1049,13 +1102,19 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         );
       }
 
-      const normalizedItems = saleData.items.map((item, index) => ({
-        ...item,
-        isRental:
-          typeof item.isRental === "boolean"
-            ? item.isRental
-            : productStockChecks[index]?.product.saleType === "rental",
-      }));
+      const normalizedItems = saleData.items.map((item) => {
+        if (typeof item.isRental === "boolean") {
+          return { ...item, isRental: item.isRental };
+        }
+        if (item.isCustom) {
+          return { ...item, isRental: false };
+        }
+        const product = productById.get(item.productId);
+        return {
+          ...item,
+          isRental: product?.saleType === "rental",
+        };
+      });
       const hasRentalItems = normalizedItems.some((item) => item.isRental);
 
       if (hasRentalItems) {
@@ -1170,6 +1229,9 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
     }
   ) => {
     for (const item of sale.items) {
+      if (item.isCustom) {
+        continue;
+      }
       const rentalItem = isRentalItem(item);
       if (rentalItem && !includeRentalItems) {
         continue;
@@ -1529,6 +1591,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         email: worker.email?.trim() || undefined,
         specialty: worker.specialty?.trim() || undefined,
         dailyRate: Number(worker.dailyRate) || 0,
+        hourlyRate: Number(worker.hourlyRate) || 0,
         notes: worker.notes?.trim() || undefined,
         isActive: worker.isActive !== false,
         createdAt: new Date(),
@@ -1562,6 +1625,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         specialty: worker.specialty?.trim() || undefined,
         notes: worker.notes?.trim() || undefined,
         dailyRate: Number(worker.dailyRate) || 0,
+        hourlyRate: Number(worker.hourlyRate) || 0,
         updatedAt: new Date(),
       };
       await workersApi.update(updatedWorker);
@@ -1601,6 +1665,94 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       toast({
         title: "Error",
         description: error.message || "Failed to archive worker",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const addService = async (
+    service: Omit<Service, "id" | "createdAt" | "updatedAt">
+  ): Promise<Service> => {
+    try {
+      const newService: Service = {
+        id: crypto.randomUUID(),
+        name: service.name.trim(),
+        price: Number(service.price) || 0,
+        billingType: service.billingType,
+        unitLabel: service.unitLabel?.trim() || undefined,
+        taxable: service.taxable === true,
+        description: service.description?.trim() || undefined,
+        isActive: service.isActive !== false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await servicesApi.add(newService);
+      setServices((await servicesApi.getAll()).filter((item) => item.isActive));
+      toast({
+        title: "Service Added",
+        description: `${newService.name} is now available.`,
+      });
+      return newService;
+    } catch (error: any) {
+      console.error("Failed to add service:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add service",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const updateService = async (service: Service): Promise<Service> => {
+    try {
+      const updatedService: Service = {
+        ...service,
+        name: service.name.trim(),
+        price: Number(service.price) || 0,
+        unitLabel: service.unitLabel?.trim() || undefined,
+        description: service.description?.trim() || undefined,
+        taxable: service.taxable === true,
+        updatedAt: new Date(),
+      };
+      await servicesApi.update(updatedService);
+      setServices((await servicesApi.getAll()).filter((item) => item.isActive));
+      toast({
+        title: "Service Updated",
+        description: `${updatedService.name} has been updated.`,
+      });
+      return updatedService;
+    } catch (error: any) {
+      console.error("Failed to update service:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update service",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const removeService = async (id: string): Promise<void> => {
+    try {
+      const service = services.find((item) => item.id === id);
+      if (!service) return;
+      await servicesApi.update({
+        ...service,
+        isActive: false,
+        updatedAt: new Date(),
+      });
+      setServices((await servicesApi.getAll()).filter((item) => item.isActive));
+      toast({
+        title: "Service Archived",
+        description: `${service.name} has been archived.`,
+      });
+    } catch (error: any) {
+      console.error("Failed to archive service:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to archive service",
         variant: "destructive",
       });
       throw error;
@@ -1829,6 +1981,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         customers,
         projects,
         workers,
+        services,
         projectWorkerAssignments,
         employees,
         shifts,
@@ -1863,6 +2016,9 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         addWorker,
         updateWorker,
         removeWorker,
+        addService,
+        updateService,
+        removeService,
         assignWorkerToProject,
         updateProjectWorkerAssignment,
         updateCustomerProfile,

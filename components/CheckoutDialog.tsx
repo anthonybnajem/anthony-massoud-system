@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { User, Mail, Phone, Pencil, ReceiptText, Trash2 } from "lucide-react";
+import type { Worker } from "@/components/pos-data-provider";
 
 interface CheckoutDialogProps {
   isOpen: boolean;
@@ -50,6 +51,18 @@ interface CheckoutDialogProps {
     isRental: boolean;
     rentalStartDate?: string;
     rentalEndDate?: string;
+    isCustom?: boolean;
+    customLine?: {
+      name: string;
+      price: number;
+      source?: "custom" | "worker" | "service";
+      workerId?: string;
+      workerName?: string;
+      serviceType?: string;
+      notes?: string;
+      taxable?: boolean;
+    };
+    taxable?: boolean;
   }>;
   onReceiptItemRentalDatesChange?: (
     lineId: string,
@@ -57,7 +70,23 @@ interface CheckoutDialogProps {
   ) => void;
   onReceiptItemQuantityChange?: (lineId: string, quantity: number) => void;
   onReceiptItemModeChange?: (lineId: string, isRental: boolean) => void;
+  onReceiptItemCustomUpdate?: (
+    lineId: string,
+    updates: {
+      name: string;
+      price: number;
+      quantity: number;
+      workerId?: string;
+      workerName?: string;
+      serviceType?: string;
+      notes?: string;
+      taxable?: boolean;
+      unitLabel?: string;
+    }
+  ) => void;
   onReceiptItemRemove?: (lineId: string) => void;
+  onAddCustomLine?: () => void;
+  workers?: Worker[];
   currencySymbol: string;
   handleCheckout: () => void;
 }
@@ -89,7 +118,10 @@ export default function CheckoutDialog({
   onReceiptItemRentalDatesChange,
   onReceiptItemQuantityChange,
   onReceiptItemModeChange,
+  onReceiptItemCustomUpdate,
   onReceiptItemRemove,
+  onAddCustomLine,
+  workers = [],
   currencySymbol,
   handleCheckout,
 }: CheckoutDialogProps) {
@@ -123,6 +155,35 @@ export default function CheckoutDialog({
     if (isOpen) return;
     setEditingRows({});
   }, [isOpen]);
+
+  const resolveWorkerName = (workerId?: string, fallback?: string) => {
+    if (!workerId) return fallback;
+    return workers.find((worker) => worker.id === workerId)?.name || fallback;
+  };
+
+  const getCustomDefaults = (item: CheckoutDialogProps["receiptItems"][number]) => ({
+    name: item.customLine?.name || item.name,
+    price: item.customLine?.price ?? item.unitPrice,
+    quantity: item.quantity,
+    workerId: item.customLine?.workerId,
+    workerName: item.customLine?.workerName,
+    serviceType: item.customLine?.serviceType,
+    notes: item.customLine?.notes,
+    taxable: item.customLine?.taxable ?? item.taxable ?? false,
+    unitLabel: item.unitLabel,
+  });
+
+  const handleCustomUpdate = (
+    item: CheckoutDialogProps["receiptItems"][number],
+    overrides: Partial<ReturnType<typeof getCustomDefaults>>
+  ) => {
+    if (!onReceiptItemCustomUpdate) return;
+    const base = getCustomDefaults(item);
+    onReceiptItemCustomUpdate(item.id, {
+      ...base,
+      ...overrides,
+    });
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -274,19 +335,33 @@ export default function CheckoutDialog({
                 <ReceiptText className="h-4 w-4 text-primary" />
                 Full Receipt
               </h4>
-              <span className="text-xs text-muted-foreground">
-                {receiptItems.length} line{receiptItems.length === 1 ? "" : "s"}
-              </span>
+              <div className="flex items-center gap-3">
+                {onAddCustomLine && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-[11px]"
+                    onClick={onAddCustomLine}
+                  >
+                    Add Custom Item
+                  </Button>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {receiptItems.length} line
+                  {receiptItems.length === 1 ? "" : "s"}
+                </span>
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto">
               {receiptItems.map((item) => {
                 const isEditing = Boolean(editingRows[item.id]);
+                const isCustom = item.isCustom || Boolean(item.customLine);
                 return (
                 <div key={item.id} className="p-2 border-b space-y-1.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-medium text-sm leading-tight">
-                        {item.name}
+                        {item.customLine?.name || item.name}
                         {item.variationName ? ` (${item.variationName})` : ""}
                         {item.isRental &&
                         (item.rentalStartDate || item.rentalEndDate) ? (
@@ -301,10 +376,23 @@ export default function CheckoutDialog({
                       <p className="text-[11px] text-muted-foreground">
                         {item.quantity} {item.unitLabel || "unit"} × {currencySymbol}
                         {item.unitPrice.toFixed(2)}
-                        {" • "}
-                        Stock: {typeof item.stock === "number" ? item.stock : "—"}{" "}
-                        {item.unitLabel || "unit"}
+                        {!isCustom && (
+                          <>
+                            {" • "}
+                            Stock:{" "}
+                            {typeof item.stock === "number" ? item.stock : "—"}{" "}
+                            {item.unitLabel || "unit"}
+                          </>
+                        )}
                       </p>
+                      {isCustom && (item.customLine?.serviceType || item.customLine?.workerName) && (
+                        <p className="text-[11px] text-muted-foreground">
+                          {item.customLine?.serviceType || "Custom"}
+                          {item.customLine?.workerName
+                            ? ` • ${item.customLine.workerName}`
+                            : ""}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -369,28 +457,40 @@ export default function CheckoutDialog({
                       <label className="text-[11px] text-muted-foreground">Type</label>
                       {isEditing ? (
                         <div className="h-8 rounded-md border px-1.5 flex items-center gap-1">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={item.isRental ? "outline" : "default"}
-                            className="h-6 px-2 text-[10px]"
-                            onClick={() => onReceiptItemModeChange?.(item.id, false)}
-                          >
-                            Sell
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={item.isRental ? "default" : "outline"}
-                            className="h-6 px-2 text-[10px]"
-                            onClick={() => onReceiptItemModeChange?.(item.id, true)}
-                          >
-                            Rent
-                          </Button>
+                          {isCustom ? (
+                            <Badge>Custom Line</Badge>
+                          ) : (
+                            <>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={item.isRental ? "outline" : "default"}
+                                className="h-6 px-2 text-[10px]"
+                                onClick={() =>
+                                  onReceiptItemModeChange?.(item.id, false)
+                                }
+                              >
+                                Sell
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={item.isRental ? "default" : "outline"}
+                                className="h-6 px-2 text-[10px]"
+                                onClick={() =>
+                                  onReceiptItemModeChange?.(item.id, true)
+                                }
+                              >
+                                Rent
+                              </Button>
+                            </>
+                          )}
                         </div>
                       ) : (
                         <div className="h-8 px-0.5 flex items-center text-xs">
-                          {item.isRental ? (
+                          {isCustom ? (
+                            <Badge>Custom Line</Badge>
+                          ) : item.isRental ? (
                             <Badge>Rental Line</Badge>
                           ) : (
                             <span className="text-muted-foreground">Sale Line</span>
@@ -400,7 +500,139 @@ export default function CheckoutDialog({
                     </div>
                   </div>
 
-                  {item.isRental && isEditing && (
+                  {isCustom && isEditing && (
+                    <div className="grid gap-2 md:grid-cols-2 border rounded-md p-2.5">
+                      <div className="space-y-1 md:col-span-2">
+                        <label className="text-[11px] text-muted-foreground">
+                          Custom Item Name
+                        </label>
+                        <Input
+                          className="h-8 text-xs"
+                          value={item.customLine?.name || item.name}
+                          onChange={(e) =>
+                            handleCustomUpdate(item, { name: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-muted-foreground">
+                          Unit Price
+                        </label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          className="h-8 text-xs"
+                          value={item.unitPrice}
+                          onChange={(e) =>
+                            handleCustomUpdate(item, {
+                              price: Number.parseFloat(e.target.value || "0"),
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-muted-foreground">
+                          Unit Label
+                        </label>
+                        <Input
+                          className="h-8 text-xs"
+                          value={item.unitLabel || ""}
+                          onChange={(e) =>
+                            handleCustomUpdate(item, {
+                              unitLabel: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-muted-foreground">
+                          Service Type
+                        </label>
+                        <Input
+                          className="h-8 text-xs"
+                          value={item.customLine?.serviceType || ""}
+                          onChange={(e) =>
+                            handleCustomUpdate(item, {
+                              serviceType: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-muted-foreground">
+                          Worker
+                        </label>
+                        {workers.length > 0 ? (
+                          <div className="h-8">
+                            <select
+                              className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                              value={item.customLine?.workerId || ""}
+                              onChange={(e) =>
+                                handleCustomUpdate(item, {
+                                  workerId: e.target.value || undefined,
+                                  workerName: resolveWorkerName(
+                                    e.target.value || undefined,
+                                    item.customLine?.workerName
+                                  ),
+                                })
+                              }
+                            >
+                              <option value="">None</option>
+                              {workers.map((worker) => (
+                                <option key={worker.id} value={worker.id}>
+                                  {worker.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : (
+                          <Input
+                            className="h-8 text-xs"
+                            value={item.customLine?.workerName || ""}
+                            onChange={(e) =>
+                              handleCustomUpdate(item, {
+                                workerName: e.target.value,
+                              })
+                            }
+                          />
+                        )}
+                      </div>
+                      <div className="space-y-1 md:col-span-2">
+                        <label className="text-[11px] text-muted-foreground">
+                          Notes
+                        </label>
+                        <textarea
+                          className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+                          rows={2}
+                          value={item.customLine?.notes || ""}
+                          onChange={(e) =>
+                            handleCustomUpdate(item, { notes: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center justify-between rounded-md border px-2 py-1 md:col-span-2">
+                        <div>
+                          <p className="text-[11px] font-medium text-foreground">
+                            Taxable
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            Apply sales tax to this line
+                          </p>
+                        </div>
+                        <Switch
+                          checked={
+                            item.customLine?.taxable ?? item.taxable ?? false
+                          }
+                          onCheckedChange={(value) =>
+                            handleCustomUpdate(item, { taxable: value })
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {item.isRental && isEditing && !isCustom && (
                     <details className="rounded-md border bg-muted/20">
                       <summary className="cursor-pointer select-none px-2.5 py-1.5 text-[11px] text-muted-foreground">
                         Rental Start / Rental End

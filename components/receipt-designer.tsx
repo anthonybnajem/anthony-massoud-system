@@ -43,7 +43,7 @@ export function ReceiptDesigner() {
     storeWebsite: "",
     storeLogo: "",
     logoSize: 100,
-    showLogo: true,
+    showLogo: false,
     taxRate: 0,
     showTax: true,
     currency: "USD",
@@ -292,7 +292,7 @@ export function ReceiptDesigner() {
       {/* Settings Panel */}
       <div className="flex-1">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold">Receipt Designer</h2>
+          <h2 className="text-2xl font-bold"></h2>
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleReset} disabled={isSaving}>
               <RefreshCw className="mr-2 h-4 w-4" />

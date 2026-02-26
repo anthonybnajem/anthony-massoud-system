@@ -10,7 +10,7 @@ import {
 } from "@/components/pos-data-provider";
 import { useDiscount } from "@/components/discount-provider";
 import { Badge } from "@/components/ui/badge";
-import { Tag, ShoppingCart } from "lucide-react";
+import { Tag, ShoppingCart, Search } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { InvoicePrint } from "@/components/invoice-print";
 import {
@@ -26,6 +26,10 @@ import { CategoryFilter } from "./components/CategoryFilter";
 import { ProductTabs } from "./components/ProductTabs";
 import { Cart } from "./components/Cart";
 import { MobileCartButton } from "./components/MobileCartButton";
+import {
+  CustomLineItemDialog,
+  type CustomLineDraft,
+} from "./components/CustomLineItemDialog";
 import { useBarcodeScanner } from "./hooks/useBarcodeScanner";
 import { WeightQuantityDialog } from "./components/WeightQuantityDialog";
 import { VariationSelectionDialog } from "./components/VariationSelectionDialog";
@@ -39,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getProductUnitPrice,
   getProductUnitPriceForVariation,
@@ -50,6 +55,7 @@ import {
   type CustomerSummary,
 } from "@/app/(dashboard)/customers/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 
 export default function SalesPage() {
@@ -59,6 +65,8 @@ export default function SalesPage() {
     sales,
     customers,
     projects,
+    workers,
+    services,
     addCustomerProfile,
     addCustomerProject,
     recordSale,
@@ -87,6 +95,9 @@ export default function SalesPage() {
   const [saleNotes, setSaleNotes] = useState("");
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const [activeSalesSection, setActiveSalesSection] = useState<
+    "products" | "workers" | "services" | "custom"
+  >("products");
   const [activeTab, setActiveTab] = useState("all");
   const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
   const [discountType, setDiscountType] = useState<"percentage" | "fixed">(
@@ -103,6 +114,17 @@ export default function SalesPage() {
   const [weightDialogProduct, setWeightDialogProduct] = useState<Product | null>(null);
   const [variationDialogProduct, setVariationDialogProduct] =
     useState<Product | null>(null);
+  const [workerQuery, setWorkerQuery] = useState("");
+  const [serviceQuery, setServiceQuery] = useState("");
+  const [workerRateType, setWorkerRateType] = useState<
+    Record<string, "day" | "hour">
+  >({});
+  const [isCustomLineDialogOpen, setIsCustomLineDialogOpen] = useState(false);
+  const [customLineEditingId, setCustomLineEditingId] = useState<string | null>(
+    null
+  );
+  const [customLineInitial, setCustomLineInitial] =
+    useState<CustomLineDraft | null>(null);
   const customerDirectory = useMemo(
     () => buildCustomersFromSales(sales, customers),
     [sales, customers]
@@ -118,6 +140,37 @@ export default function SalesPage() {
   const customerProjects = useMemo(
     () => projects.filter((project) => project.customerId === selectedCustomerId),
     [projects, selectedCustomerId]
+  );
+  const filteredWorkers = useMemo(() => {
+    const normalized = workerQuery.trim().toLowerCase();
+    if (!normalized) return workers;
+    return workers.filter((worker) => {
+      return (
+        worker.name.toLowerCase().includes(normalized) ||
+        (worker.specialty || "").toLowerCase().includes(normalized) ||
+        (worker.email || "").toLowerCase().includes(normalized) ||
+        (worker.phone || "").toLowerCase().includes(normalized)
+      );
+    });
+  }, [workers, workerQuery]);
+
+  const filteredServices = useMemo(() => {
+    const normalized = serviceQuery.trim().toLowerCase();
+    if (!normalized) return services;
+    return services.filter((service) => {
+      return (
+        service.name.toLowerCase().includes(normalized) ||
+        (service.description || "").toLowerCase().includes(normalized)
+      );
+    });
+  }, [services, serviceQuery]);
+
+  const customCartItems = useMemo(
+    () =>
+      cart.filter(
+        (item) => (item.customLine?.source || "custom") === "custom"
+      ),
+    [cart]
   );
   const hasRentalItemsInCart = useMemo(
     () => cart.some((item) => item.isRental === true),
@@ -202,14 +255,21 @@ export default function SalesPage() {
     );
   }, [products, searchResults]);
 
+  const getCartLineUnitPrice = (item: CartItem) =>
+    typeof item.unitPrice === "number"
+      ? item.unitPrice
+      : getProductUnitPrice(item.product);
+
+  const isLineTaxable = (item: CartItem) => {
+    if (item.customLine) {
+      return item.customLine.taxable === true;
+    }
+    return item.product.taxable !== false;
+  };
+
   // Calculate cart subtotal
   const cartSubtotal = cart.reduce(
-    (total, item) =>
-      total +
-      (typeof item.unitPrice === "number"
-        ? item.unitPrice
-        : getProductUnitPrice(item.product)) *
-        item.quantity,
+    (total, item) => total + getCartLineUnitPrice(item) * item.quantity,
     0
   );
   const discountAnalysis = useMemo(() => {
@@ -244,25 +304,23 @@ export default function SalesPage() {
 
     if (selectedDiscount.appliesTo === "product") {
       cart.forEach((item) => {
+        if (item.customLine) return;
         if (selectedDiscount.productIds?.includes(item.product.id)) {
           applyLineDiscount(
-            (typeof item.unitPrice === "number"
-              ? item.unitPrice
-              : getProductUnitPrice(item.product)) * item.quantity,
+            getCartLineUnitPrice(item) * item.quantity,
             item.quantity
           );
         }
       });
     } else if (selectedDiscount.appliesTo === "category") {
       cart.forEach((item) => {
+        if (item.customLine) return;
         if (
           item.product.categoryId &&
           selectedDiscount.categoryIds?.includes(item.product.categoryId)
         ) {
           applyLineDiscount(
-            (typeof item.unitPrice === "number"
-              ? item.unitPrice
-              : getProductUnitPrice(item.product)) * item.quantity,
+            getCartLineUnitPrice(item) * item.quantity,
             item.quantity
           );
         }
@@ -354,8 +412,15 @@ export default function SalesPage() {
       ? 0
       : computedDiscountAmount;
 
+  const taxableSubtotal = cart.reduce(
+    (total, item) =>
+      total +
+      (isLineTaxable(item) ? getCartLineUnitPrice(item) * item.quantity : 0),
+    0
+  );
+
   // Calculate tax
-  const taxAmount = (cartSubtotal - discountAmount) * (taxRate / 100);
+  const taxAmount = (taxableSubtotal - discountAmount) * (taxRate / 100);
 
   // Calculate total
   const cartTotal = cartSubtotal - discountAmount + taxAmount;
@@ -579,6 +644,18 @@ export default function SalesPage() {
   const updateQuantity = (lineId: string, newQuantity: number) => {
     const targetLine = cart.find((item) => item.id === lineId);
     if (!targetLine) return;
+    if (targetLine.customLine) {
+      if (newQuantity <= 0) {
+        removeFromCart(lineId);
+        return;
+      }
+      setCart((prevCart) =>
+        prevCart.map((item) =>
+          item.id === lineId ? { ...item, quantity: newQuantity } : item
+        )
+      );
+      return;
+    }
     const variation = targetLine.variationId
       ? targetLine.product.variations?.find(
           (item) => item.id === targetLine.variationId
@@ -626,6 +703,7 @@ export default function SalesPage() {
     setCart((prevCart) => {
       const current = prevCart.find((item) => item.id === lineId);
       if (!current || current.isRental === isRental) return prevCart;
+      if (current.customLine) return prevCart;
 
       const modeSuffix = isRental ? "rental" : "sale";
       const nextId = `${current.product.id}::${
@@ -713,6 +791,238 @@ export default function SalesPage() {
             }
           : item
       )
+    );
+  };
+
+  const customCategory = useMemo(
+    () => ({
+      id: "custom",
+      name: "Custom Service",
+      description: "Custom line items",
+    }),
+    []
+  );
+
+  const buildCustomProduct = useCallback(
+    (line: CustomLineDraft, id: string): Product => ({
+      id,
+      name: line.name,
+      price: line.price,
+      rentalPrice: undefined,
+      category: customCategory as any,
+      categoryId: customCategory.id,
+      image: "",
+      stock: 999999,
+      barcode: undefined,
+      description: line.notes,
+      sku: undefined,
+      cost: undefined,
+      taxable: line.taxable,
+      taxRate: undefined,
+      tags: ["custom"],
+      attributes: {
+        serviceType: line.serviceType || "",
+        workerName: line.workerName || "",
+      },
+      variations: [],
+      saleType: "item",
+      unitLabel: line.unitLabel || "service",
+      unitIncrement: 1,
+    }),
+    [customCategory]
+  );
+
+  const appendCustomLine = (line: CustomLineDraft) => {
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? `custom-${crypto.randomUUID()}`
+        : `custom-${Date.now()}`;
+    const customProduct = buildCustomProduct(line, id);
+    setCart((prev) => [
+      ...prev,
+      {
+        id,
+        product: customProduct,
+        unitPrice: line.price,
+        quantity: line.quantity,
+        isCustom: true,
+        customLine: {
+          name: line.name,
+          price: line.price,
+          source: line.source || "custom",
+          workerId: line.workerId,
+          workerName: line.workerName,
+          serviceType: line.serviceType,
+          notes: line.notes,
+          taxable: line.taxable,
+        },
+      },
+    ]);
+  };
+
+  const handleSaveCustomLine = (line: CustomLineDraft) => {
+    if (customLineEditingId) {
+      setCart((prev) =>
+        prev.map((item) => {
+          if (item.id !== customLineEditingId) return item;
+          const nextProduct = {
+            ...item.product,
+            name: line.name,
+            price: line.price,
+            taxable: line.taxable,
+            unitLabel: line.unitLabel || item.product.unitLabel,
+          };
+          return {
+            ...item,
+            product: nextProduct,
+            unitPrice: line.price,
+            quantity: line.quantity,
+            isCustom: true,
+            customLine: {
+              name: line.name,
+              price: line.price,
+              source: line.source || "custom",
+              workerId: line.workerId,
+              workerName: line.workerName,
+              serviceType: line.serviceType,
+              notes: line.notes,
+              taxable: line.taxable,
+            },
+          };
+        })
+      );
+    } else {
+      appendCustomLine(line);
+    }
+    setIsCustomLineDialogOpen(false);
+    setCustomLineEditingId(null);
+    setCustomLineInitial(null);
+  };
+
+  const openAddCustomLine = () => {
+    setCustomLineEditingId(null);
+    setCustomLineInitial(null);
+    setIsCustomLineDialogOpen(true);
+  };
+
+  const openEditCustomLine = (lineId: string) => {
+    const target = cart.find((item) => item.id === lineId);
+    if (!target?.customLine) return;
+    setCustomLineEditingId(lineId);
+    setCustomLineInitial({
+      name: target.customLine.name,
+      price: target.customLine.price,
+      quantity: target.quantity,
+      workerId: target.customLine.workerId,
+      workerName: target.customLine.workerName,
+      serviceType: target.customLine.serviceType,
+      notes: target.customLine.notes,
+      taxable: target.customLine.taxable ?? true,
+      source: target.customLine.source || "custom",
+      unitLabel: target.product.unitLabel,
+    });
+    setIsCustomLineDialogOpen(true);
+  };
+
+  const addWorkerLine = (
+    worker: (typeof workers)[number],
+    rateType: "day" | "hour"
+  ) => {
+    const rate =
+      rateType === "hour"
+        ? Number(worker.hourlyRate || 0)
+        : Number(worker.dailyRate || 0);
+    if (rateType === "hour" && rate <= 0) {
+      toast({
+        title: "Hourly Rate Missing",
+        description: `${worker.name} does not have an hourly rate.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    appendCustomLine({
+      name: `Labor - ${worker.name}`,
+      price: rate,
+      quantity: 1,
+      workerId: worker.id,
+      workerName: worker.name,
+      serviceType:
+        rateType === "hour"
+          ? `${worker.specialty || "Labor"} (Hourly)`
+          : `${worker.specialty || "Labor"} (Daily)`,
+      notes: worker.notes,
+      taxable: false,
+      unitLabel: rateType === "hour" ? "hour" : "day",
+      source: "worker",
+    });
+  };
+
+  const addServiceLine = (service: (typeof services)[number]) => {
+    const fallbackUnit =
+      service.billingType === "per_day"
+        ? "day"
+        : service.billingType === "per_count"
+        ? "service"
+        : "service";
+    appendCustomLine({
+      name: service.name,
+      price: Number(service.price) || 0,
+      quantity: 1,
+      workerId: undefined,
+      workerName: undefined,
+      serviceType: service.billingType.replace("_", " "),
+      notes: service.description,
+      taxable: service.taxable === true,
+      unitLabel: service.unitLabel || fallbackUnit,
+      source: "service",
+    });
+  };
+
+  const handleUpdateCustomLine = (
+    lineId: string,
+    updates: {
+      name: string;
+      price: number;
+      quantity: number;
+      workerId?: string;
+      workerName?: string;
+      serviceType?: string;
+      notes?: string;
+      taxable?: boolean;
+      unitLabel?: string;
+      source?: "custom" | "worker" | "service";
+    }
+  ) => {
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.id !== lineId) return item;
+        const nextProduct = {
+          ...item.product,
+          name: updates.name,
+          price: updates.price,
+          taxable: updates.taxable ?? item.product.taxable,
+          unitLabel: updates.unitLabel || item.product.unitLabel,
+          description: updates.notes || item.product.description,
+        };
+        return {
+          ...item,
+          product: nextProduct,
+          unitPrice: updates.price,
+          quantity: updates.quantity,
+          isCustom: true,
+          customLine: {
+            name: updates.name,
+            price: updates.price,
+            source:
+              updates.source || item.customLine?.source || "custom",
+            workerId: updates.workerId,
+            workerName: updates.workerName,
+            serviceType: updates.serviceType,
+            notes: updates.notes,
+            taxable: updates.taxable,
+          },
+        };
+      })
     );
   };
 
@@ -829,10 +1139,7 @@ export default function SalesPage() {
         items: cart.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
-          price:
-            typeof item.unitPrice === "number"
-              ? item.unitPrice
-              : getProductUnitPrice(item.product),
+          price: getCartLineUnitPrice(item),
           variationId: item.variationId,
           variationName: item.variationName,
           isRental: item.isRental === true,
@@ -844,6 +1151,8 @@ export default function SalesPage() {
             item.isRental && (item.rentalEndDate || rentalEndDate)
               ? new Date(item.rentalEndDate || rentalEndDate)
               : undefined,
+          isCustom: item.isCustom === true,
+          customLine: item.customLine,
           product: item.product,
         })),
         subtotal: cartSubtotal,
@@ -1187,29 +1496,75 @@ export default function SalesPage() {
               
             </div>
 
-            {/* Search and Filter Section */}
-            <div
-              className={`glassy-card ${isTablet ? "p-4" : "p-5"}`}
-            >
-              <SearchBar
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                isTablet={isTablet}
-              />
+            <div className={`glassy-card ${isTablet ? "p-3" : "p-4"}`}>
+              <Tabs
+                value={activeSalesSection}
+                onValueChange={(value) =>
+                  setActiveSalesSection(
+                    value as "products" | "workers" | "services" | "custom"
+                  )
+                }
+                className="w-full"
+              >
+                <TabsList className="grid w-full grid-cols-4 h-11">
+                  <TabsTrigger value="products">Products</TabsTrigger>
+                  <TabsTrigger value="workers">Workers</TabsTrigger>
+                  <TabsTrigger value="services">Services</TabsTrigger>
+                  <TabsTrigger value="custom">Add Custom</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
 
-              {/* Horizontal Category Navigation */}
-              <div className="mt-4">
-                <CategoryFilter
-                  categories={categories}
-                  activeCategory={activeCategory}
-                  onCategoryChange={setActiveCategory}
+            {activeSalesSection === "products" && (
+              <div className={`glassy-card ${isTablet ? "p-4" : "p-5"}`}>
+                <SearchBar
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
                   isTablet={isTablet}
                 />
+
+                {/* Horizontal Category Navigation */}
+                <div className="mt-4">
+                  <CategoryFilter
+                    categories={categories}
+                    activeCategory={activeCategory}
+                    onCategoryChange={setActiveCategory}
+                    isTablet={isTablet}
+                  />
+                </div>
               </div>
-            </div>
+            )}
+
+            {activeSalesSection === "workers" && (
+              <div className={`glassy-card ${isTablet ? "p-4" : "p-5"}`}>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+                  <Input
+                    placeholder="Search workers by name, specialty, or contact"
+                    value={workerQuery}
+                    onChange={(event) => setWorkerQuery(event.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+            )}
+
+            {activeSalesSection === "services" && (
+              <div className={`glassy-card ${isTablet ? "p-4" : "p-5"}`}>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+                  <Input
+                    placeholder="Search services"
+                    value={serviceQuery}
+                    onChange={(event) => setServiceQuery(event.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Products Grid with Tabs */}
+          {activeSalesSection === "products" && (
             <ProductTabs
               activeTab={activeTab}
               onTabChange={setActiveTab}
@@ -1224,6 +1579,189 @@ export default function SalesPage() {
               itemVariants={itemVariants}
               isTablet={isTablet}
             />
+          )}
+
+          {activeSalesSection === "workers" && (
+            <div className="glassy-card p-4 overflow-hidden">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {filteredWorkers.length === 0 && (
+                  <div className="text-sm text-slate-500">
+                    No workers found.
+                  </div>
+                )}
+                {filteredWorkers.map((worker) => (
+                  <div
+                    key={worker.id}
+                    className="glassy-card p-4 flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-700 truncate">
+                        {worker.name}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">
+                        {worker.specialty || "Labor"}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant={
+                            (workerRateType[worker.id] || "day") === "day"
+                              ? "default"
+                              : "outline"
+                          }
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() =>
+                            setWorkerRateType((prev) => ({
+                              ...prev,
+                              [worker.id]: "day",
+                            }))
+                          }
+                        >
+                          Per Day
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={
+                            (workerRateType[worker.id] || "day") === "hour"
+                              ? "default"
+                              : "outline"
+                          }
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() =>
+                            setWorkerRateType((prev) => ({
+                              ...prev,
+                              [worker.id]: "hour",
+                            }))
+                          }
+                        >
+                          Per Hour
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-slate-700">
+                        {currencySymbol}
+                        {(
+                          (workerRateType[worker.id] || "day") === "hour"
+                            ? Number(worker.hourlyRate || 0)
+                            : Number(worker.dailyRate || 0)
+                        ).toFixed(2)}
+                      </p>
+                      <Button
+                        size="sm"
+                        className="mt-2"
+                        onClick={() =>
+                          addWorkerLine(
+                            worker,
+                            workerRateType[worker.id] || "day"
+                          )
+                        }
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeSalesSection === "services" && (
+            <div className="glassy-card p-4 overflow-hidden">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {filteredServices.length === 0 && (
+                  <div className="text-sm text-slate-500">
+                    No services found.
+                  </div>
+                )}
+                {filteredServices.map((service) => (
+                  <div
+                    key={service.id}
+                    className="glassy-card p-4 flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-700 truncate">
+                        {service.name}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">
+                        {service.billingType.replace("_", " ")}{" "}
+                        {service.unitLabel ? `· ${service.unitLabel}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-slate-700">
+                        {currencySymbol}
+                        {Number(service.price || 0).toFixed(2)}
+                      </p>
+                      <Button
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => addServiceLine(service)}
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeSalesSection === "custom" && (
+            <div className="glassy-card p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-700">
+                    Custom Line Items
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Add one-off services or labor lines to the receipt.
+                  </p>
+                </div>
+                <Button onClick={openAddCustomLine}>Add Custom</Button>
+              </div>
+              {customCartItems.length > 0 ? (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {customCartItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="glassy-card p-4 flex items-center justify-between"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-700 truncate">
+                          {item.customLine?.name || item.product.name}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate">
+                          {item.customLine?.serviceType || "Custom"} •{" "}
+                          {item.customLine?.workerName || "No worker"}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-slate-700">
+                          {currencySymbol}
+                          {(
+                            getCartLineUnitPrice(item) * item.quantity
+                          ).toFixed(2)}
+                        </p>
+                        <Button
+                          size="sm"
+                          className="mt-2"
+                          variant="outline"
+                          onClick={() => openEditCustomLine(item.id)}
+                        >
+                          Edit
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500">
+                  No custom items in the cart yet.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Cart Section - Desktop/Tablet: Sidebar, Mobile: Drawer */}
@@ -1244,13 +1782,16 @@ export default function SalesPage() {
             onUpdateQuantity={updateQuantity}
             onToggleRentalMode={setItemRentalMode}
             onUpdateRentalDates={setItemRentalDates}
+            onUpdateCustomLine={handleUpdateCustomLine}
             onRemoveFromCart={removeFromCart}
             onDiscountClick={() => setIsDiscountDialogOpen(true)}
             onNotesClick={() => setIsNotesDialogOpen(true)}
             onCustomerClick={() => setIsCustomerDialogOpen(true)}
+            onAddCustomLine={openAddCustomLine}
             onCheckoutClick={() => setIsCheckoutOpen(true)}
             containerVariants={containerVariants}
             itemVariants={itemVariants}
+            workers={workers}
             isMobile={false}
             isTablet={isTablet}
           />
@@ -1274,13 +1815,16 @@ export default function SalesPage() {
             onUpdateQuantity={updateQuantity}
             onToggleRentalMode={setItemRentalMode}
             onUpdateRentalDates={setItemRentalDates}
+            onUpdateCustomLine={handleUpdateCustomLine}
             onRemoveFromCart={removeFromCart}
             onDiscountClick={() => setIsDiscountDialogOpen(true)}
             onNotesClick={() => setIsNotesDialogOpen(true)}
             onCustomerClick={() => setIsCustomerDialogOpen(true)}
+            onAddCustomLine={openAddCustomLine}
             onCheckoutClick={() => setIsCheckoutOpen(true)}
             containerVariants={containerVariants}
             itemVariants={itemVariants}
+            workers={workers}
             isMobile={true}
             isOpen={isCartOpen}
             onOpenChange={setIsCartOpen}
@@ -1374,6 +1918,15 @@ export default function SalesPage() {
           }}
         />
 
+        <CustomLineItemDialog
+          isOpen={isCustomLineDialogOpen}
+          title={customLineEditingId ? "Edit Custom Line" : "Add Custom Item"}
+          workers={workers}
+          initialValue={customLineInitial}
+          onClose={() => setIsCustomLineDialogOpen(false)}
+          onSave={handleSaveCustomLine}
+        />
+
         {/* Checkout Dialog */}
         <CheckoutDialog
           isOpen={isCheckoutOpen}
@@ -1400,7 +1953,7 @@ export default function SalesPage() {
           cartTotal={cartTotal}
           receiptItems={cart.map((item) => ({
             id: item.id,
-            name: item.product.name,
+            name: item.customLine?.name || item.product.name,
             variationName: item.variationName,
             quantity: item.quantity,
             unitLabel: item.product.unitLabel,
@@ -1410,22 +1963,22 @@ export default function SalesPage() {
                     (variation) => variation.id === item.variationId
                   )?.stock ?? item.product.stock
                 : item.product.stock,
-            unitPrice:
-              typeof item.unitPrice === "number"
-                ? item.unitPrice
-                : getProductUnitPrice(item.product),
+            unitPrice: getCartLineUnitPrice(item),
             isRental: item.isRental === true,
             rentalStartDate: item.rentalStartDate,
             rentalEndDate: item.rentalEndDate,
-            lineTotal:
-              (typeof item.unitPrice === "number"
-                ? item.unitPrice
-                : getProductUnitPrice(item.product)) * item.quantity,
+            lineTotal: getCartLineUnitPrice(item) * item.quantity,
+            isCustom: item.isCustom === true,
+            customLine: item.customLine,
+            taxable: isLineTaxable(item),
           }))}
           onReceiptItemRentalDatesChange={setItemRentalDates}
           onReceiptItemQuantityChange={updateQuantity}
           onReceiptItemModeChange={setItemRentalMode}
+          onReceiptItemCustomUpdate={handleUpdateCustomLine}
           onReceiptItemRemove={removeFromCart}
+          onAddCustomLine={openAddCustomLine}
+          workers={workers}
           currencySymbol={currencySymbol}
           handleCheckout={handleCheckout}
         />

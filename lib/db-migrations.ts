@@ -19,7 +19,7 @@ import {
 } from "./product-constants";
 
 // Current database version - increment when schema changes
-export const CURRENT_VERSION = 13;
+export const CURRENT_VERSION = 15;
 
 // Schema definitions for each version
 // Each version includes ALL stores that should exist at that version
@@ -236,6 +236,56 @@ export const SCHEMA_VERSIONS: Record<number, Record<string, string>> = {
     projects: "id, customerId, name, location, notes, isActive, createdAt, updatedAt",
     workers:
       "id, name, phone, email, specialty, dailyRate, isActive, createdAt, updatedAt",
+    projectWorkerAssignments:
+      "id, projectId, workerId, status, startDate, endDate, createdAt, updatedAt",
+  },
+  14: {
+    // Version 14: Added services table
+    products:
+      "id, name, price, category, categoryId, barcode, stock, description, sku, cost, taxable, taxRate, tags, attributes, variations, saleType, unitLabel, unitIncrement",
+    categories: "id, name, description, color, icon",
+    sales:
+      "id, items, total, subtotal, tax, discount, discountType, discountId, paymentMethod, date, customerId, projectId, customerName, customerEmail, customerPhone, customerLocation, rentalStartDate, rentalEndDate, rentalStatus, rentalReturnedAt, rentalReturnMode, notes, receiptNumber, employeeId, shiftId, status, updatedAt, voidReason, voidedAt",
+    discounts:
+      "id, name, code, type, value, minOrderAmount, maxDiscount, startDate, endDate, isActive, appliesTo, categoryIds, productIds, usageLimit, usageCount",
+    settings: "id",
+    stockMovements:
+      "id, productId, type, quantity, previousStock, newStock, date",
+    employees: "id, name, email, role, isActive, hireDate, password",
+    shifts: "id, employeeId, startTime, endTime, status",
+    closingReports: "id, shiftId, employeeId, date, createdAt",
+    customers:
+      "id, name, email, phone, location, notes, defaultDiscountId, createdAt, updatedAt",
+    projects: "id, customerId, name, location, notes, isActive, createdAt, updatedAt",
+    workers:
+      "id, name, phone, email, specialty, dailyRate, isActive, createdAt, updatedAt",
+    services:
+      "id, name, price, billingType, unitLabel, taxable, isActive, createdAt, updatedAt",
+    projectWorkerAssignments:
+      "id, projectId, workerId, status, startDate, endDate, createdAt, updatedAt",
+  },
+  15: {
+    // Version 15: Added hourlyRate to workers table
+    products:
+      "id, name, price, category, categoryId, barcode, stock, description, sku, cost, taxable, taxRate, tags, attributes, variations, saleType, unitLabel, unitIncrement",
+    categories: "id, name, description, color, icon",
+    sales:
+      "id, items, total, subtotal, tax, discount, discountType, discountId, paymentMethod, date, customerId, projectId, customerName, customerEmail, customerPhone, customerLocation, rentalStartDate, rentalEndDate, rentalStatus, rentalReturnedAt, rentalReturnMode, notes, receiptNumber, employeeId, shiftId, status, updatedAt, voidReason, voidedAt",
+    discounts:
+      "id, name, code, type, value, minOrderAmount, maxDiscount, startDate, endDate, isActive, appliesTo, categoryIds, productIds, usageLimit, usageCount",
+    settings: "id",
+    stockMovements:
+      "id, productId, type, quantity, previousStock, newStock, date",
+    employees: "id, name, email, role, isActive, hireDate, password",
+    shifts: "id, employeeId, startTime, endTime, status",
+    closingReports: "id, shiftId, employeeId, date, createdAt",
+    customers:
+      "id, name, email, phone, location, notes, defaultDiscountId, createdAt, updatedAt",
+    projects: "id, customerId, name, location, notes, isActive, createdAt, updatedAt",
+    workers:
+      "id, name, phone, email, specialty, dailyRate, hourlyRate, isActive, createdAt, updatedAt",
+    services:
+      "id, name, price, billingType, unitLabel, taxable, isActive, createdAt, updatedAt",
     projectWorkerAssignments:
       "id, projectId, workerId, status, startDate, endDate, createdAt, updatedAt",
   },

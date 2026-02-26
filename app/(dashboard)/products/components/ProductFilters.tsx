@@ -84,7 +84,7 @@ export function ProductFilters({
           </Button>
           <Link href="/products/new">
             <Button className="gap-2 shadow-sm">
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4" color="white"/>
               Create New Product
             </Button>
           </Link>

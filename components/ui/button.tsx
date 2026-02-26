@@ -10,12 +10,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "text-white hover:brightness-105",
+        default:
+          "bg-primary text-white shadow-[0_10px_20px_var(--accent-green-shadow)] hover:brightness-105",
         destructive:
-          "text-white hover:brightness-105",
+          "bg-destructive text-white shadow-[0_10px_20px_var(--accent-red-shadow)] hover:brightness-105",
         outline:
           "border border-white/60 bg-white/20 text-slate-700 shadow-[0_8px_16px_rgba(15,23,42,0.06)] hover:bg-white/30",
-        secondary: "text-white hover:brightness-105",
+        secondary:
+          "bg-[var(--accent-purple-hex)] text-white shadow-[0_10px_20px_var(--accent-purple-shadow)] hover:brightness-105",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
@@ -50,17 +52,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         }
       : variant === "default"
         ? {
-            backgroundColor: themeColors.accent.green.hex,
             boxShadow: `0 10px 20px ${themeColors.accent.green.shadow}`,
           }
         : variant === "destructive"
           ? {
-              backgroundColor: themeColors.accent.red.hex,
               boxShadow: `0 10px 20px ${themeColors.accent.red.shadow}`,
             }
           : variant === "secondary"
             ? {
-                backgroundColor: themeColors.accent.purple.hex,
                 boxShadow: `0 10px 20px ${themeColors.accent.purple.shadow}`,
               }
             : undefined

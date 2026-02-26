@@ -54,6 +54,7 @@ export default function WorkersPage() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [dailyRate, setDailyRate] = useState("");
+  const [hourlyRate, setHourlyRate] = useState("");
   const [notes, setNotes] = useState("");
 
   const resetForm = () => {
@@ -62,6 +63,7 @@ export default function WorkersPage() {
     setPhone("");
     setEmail("");
     setDailyRate("");
+    setHourlyRate("");
     setNotes("");
     setSelectedWorkerId("");
   };
@@ -101,6 +103,7 @@ export default function WorkersPage() {
     setPhone(worker.phone || "");
     setEmail(worker.email || "");
     setDailyRate(String(worker.dailyRate || 0));
+    setHourlyRate(String(worker.hourlyRate || 0));
     setNotes(worker.notes || "");
     setIsEditOpen(true);
   };
@@ -115,6 +118,7 @@ export default function WorkersPage() {
         phone,
         email,
         dailyRate: Number(dailyRate || 0),
+        hourlyRate: Number(hourlyRate || 0),
         notes,
         isActive: true,
       });
@@ -137,6 +141,7 @@ export default function WorkersPage() {
         phone,
         email,
         dailyRate: Number(dailyRate || 0),
+        hourlyRate: Number(hourlyRate || 0),
         notes,
       });
       setIsEditOpen(false);
@@ -195,6 +200,7 @@ export default function WorkersPage() {
                   <TableHead>Worker</TableHead>
                   <TableHead>Specialty</TableHead>
                   <TableHead>Daily Rate</TableHead>
+                  <TableHead>Hourly Rate</TableHead>
                   <TableHead>Active Assignments</TableHead>
                   <TableHead>Updated</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -213,6 +219,7 @@ export default function WorkersPage() {
                     </TableCell>
                     <TableCell>{worker.specialty || "General labor"}</TableCell>
                     <TableCell>${(worker.dailyRate || 0).toFixed(2)}</TableCell>
+                    <TableCell>${(worker.hourlyRate || 0).toFixed(2)}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">
                         {assignmentCountByWorker.get(worker.id) || 0}
@@ -285,15 +292,27 @@ export default function WorkersPage() {
                 <Input value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Daily Rate</Label>
-              <Input
-                type="number"
-                min={0}
-                step="0.01"
-                value={dailyRate}
-                onChange={(e) => setDailyRate(e.target.value)}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Daily Rate</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={dailyRate}
+                  onChange={(e) => setDailyRate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Hourly Rate</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={hourlyRate}
+                  onChange={(e) => setHourlyRate(e.target.value)}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>
@@ -343,15 +362,27 @@ export default function WorkersPage() {
                 <Input value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Daily Rate</Label>
-              <Input
-                type="number"
-                min={0}
-                step="0.01"
-                value={dailyRate}
-                onChange={(e) => setDailyRate(e.target.value)}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Daily Rate</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={dailyRate}
+                  onChange={(e) => setDailyRate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Hourly Rate</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={hourlyRate}
+                  onChange={(e) => setHourlyRate(e.target.value)}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Notes</Label>

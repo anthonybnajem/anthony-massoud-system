@@ -236,7 +236,7 @@ export default function CustomersPage() {
                               })
                             }
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
+                            <Trash2 className="mr-2 h-4 w-4" color="white"/>
                             Delete
                           </Button>
                         </div>

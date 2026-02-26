@@ -80,8 +80,7 @@ export default function DashboardPage() {
 
       <Label className="rounded-[14px] border border-white/50 bg-white/25 px-4 py-2 text-sm text-amber-600 shadow-[0_6px_18px_rgba(15,23,42,0.08)] backdrop-blur-[16px]">
         Hello, don’t forget to export your data from the Data
-        Export and History (side menu) before closing the browser. I’m working
-        on the database :)
+        Export and History (side menu) before closing the browser, until we finish the setup :)
       </Label>
       {/* <LicenseStatusCard
         tier={tier}

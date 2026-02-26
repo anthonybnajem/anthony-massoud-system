@@ -401,7 +401,7 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
       storeWebsite,
       storeLogo,
       logoSize = 100,
-      showLogo = true,
+      showLogo = false,
       thankYouMessage,
       returnPolicy,
       footerText,
@@ -439,10 +439,11 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
         typeof item.price === "number"
           ? item.price
           : getProductUnitPrice(item.product as Product);
+      const baseName = item.customLine?.name || item.product?.name || "Item";
       return {
         name: item.variationName
-          ? `${item.product.name} - ${item.variationName}`
-          : item.product.name,
+          ? `${baseName} - ${item.variationName}`
+          : baseName,
         quantity: item.quantity,
         quantityDisplay: formatQuantityWithLabel(
           item.product as Product,
@@ -527,7 +528,7 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
       storeWebsite,
       storeLogo,
       logoSize = 100,
-      showLogo = true,
+      showLogo = false,
       thankYouMessage,
       returnPolicy,
       footerText,
@@ -567,10 +568,11 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
         typeof item.price === "number"
           ? item.price
           : getProductUnitPrice(item.product as Product);
+      const baseName = item.customLine?.name || item.product?.name || "Item";
       return {
         name: item.variationName
-          ? `${item.product.name} - ${item.variationName}`
-          : item.product.name,
+          ? `${baseName} - ${item.variationName}`
+          : baseName,
         quantity: item.quantity,
         quantityDisplay: formatQuantityWithLabel(
           item.product as Product,

@@ -68,6 +68,17 @@ export type Sale = {
     rentalStartDate?: Date;
     rentalEndDate?: Date;
     product?: any;
+    isCustom?: boolean;
+    customLine?: {
+      name: string;
+      price: number;
+      source?: "custom" | "worker" | "service";
+      workerId?: string;
+      workerName?: string;
+      serviceType?: string;
+      notes?: string;
+      taxable?: boolean;
+    };
   }>;
   total: number;
   subtotal?: number;
@@ -129,8 +140,22 @@ export type Worker = {
   email?: string;
   specialty?: string;
   dailyRate: number;
+  hourlyRate: number;
   isActive: boolean;
   notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Service = {
+  id: string;
+  name: string;
+  price: number;
+  billingType: "per_day" | "per_count" | "custom";
+  unitLabel?: string;
+  taxable?: boolean;
+  description?: string;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -282,7 +307,7 @@ export const DEFAULT_RECEIPT_SETTINGS: ReceiptSettings = {
   storePhone: "+961 70008175",
   storeEmail: "",
   storeWebsite: "www.mystore.com",
-  showLogo: true,
+  showLogo: false,
   logoSize: 100,
   taxRate: 0,
   showTax: true,
@@ -331,6 +356,7 @@ class PosDatabase extends Dexie {
   customers!: Dexie.Table<CustomerProfile, string>;
   projects!: Dexie.Table<CustomerProject, string>;
   workers!: Dexie.Table<Worker, string>;
+  services!: Dexie.Table<Service, string>;
   projectWorkerAssignments!: Dexie.Table<ProjectWorkerAssignment, string>;
 
   constructor() {
@@ -369,6 +395,7 @@ class PosDatabase extends Dexie {
     this.customers = this.table("customers");
     this.projects = this.table("projects");
     this.workers = this.table("workers");
+    this.services = this.table("services");
     this.projectWorkerAssignments = this.table("projectWorkerAssignments");
   }
 
@@ -388,6 +415,7 @@ class PosDatabase extends Dexie {
         "customers", // Added in version 9
         "projects", // Added in version 11
         "workers", // Added in version 13
+        "services", // Added in version 14
         "projectWorkerAssignments", // Added in version 13
       ];
 
@@ -1345,6 +1373,17 @@ const normalizeProjectWorkerAssignmentDates = (
   return normalized;
 };
 
+const normalizeServiceDates = (service: Service): Service => {
+  const normalized = { ...service };
+  if (!(normalized.createdAt instanceof Date)) {
+    normalized.createdAt = new Date(normalized.createdAt);
+  }
+  if (!(normalized.updatedAt instanceof Date)) {
+    normalized.updatedAt = new Date(normalized.updatedAt);
+  }
+  return normalized;
+};
+
 export const workersApi = {
   getAll: async (): Promise<Worker[]> => {
     try {
@@ -1383,6 +1422,49 @@ export const workersApi = {
       await db.workers.delete(id);
     } catch (error) {
       console.error("Error deleting worker:", error);
+      throw error;
+    }
+  },
+};
+
+export const servicesApi = {
+  getAll: async (): Promise<Service[]> => {
+    try {
+      const db = getDB();
+      const services = await db.services.toArray();
+      return services.map(normalizeServiceDates);
+    } catch (error) {
+      console.error("Error getting services:", error);
+      return [];
+    }
+  },
+  add: async (service: Service): Promise<string> => {
+    try {
+      const db = getDB();
+      const normalized = normalizeServiceDates(service);
+      await db.services.add(normalized);
+      return normalized.id;
+    } catch (error) {
+      console.error("Error adding service:", error);
+      throw error;
+    }
+  },
+  update: async (service: Service): Promise<void> => {
+    try {
+      const db = getDB();
+      const normalized = normalizeServiceDates(service);
+      await db.services.put(normalized);
+    } catch (error) {
+      console.error("Error updating service:", error);
+      throw error;
+    }
+  },
+  delete: async (id: string): Promise<void> => {
+    try {
+      const db = getDB();
+      await db.services.delete(id);
+    } catch (error) {
+      console.error("Error deleting service:", error);
       throw error;
     }
   },

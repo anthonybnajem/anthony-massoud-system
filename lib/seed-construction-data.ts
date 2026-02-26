@@ -83,6 +83,7 @@ type SeedWorker = {
   email?: string;
   specialty?: string;
   dailyRate: number;
+  hourlyRate?: number;
   notes?: string;
   assignments: Array<{
     customerName: string;
@@ -757,6 +758,9 @@ export async function seedConstructionData(): Promise<{
       email: seedWorker.email,
       specialty: seedWorker.specialty,
       dailyRate: seedWorker.dailyRate,
+      hourlyRate:
+        seedWorker.hourlyRate ??
+        Math.round((seedWorker.dailyRate / 8) * 100) / 100,
       notes: seedWorker.notes,
       isActive: true,
       createdAt: new Date(),

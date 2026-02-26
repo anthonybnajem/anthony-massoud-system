@@ -39,13 +39,28 @@ interface CartProps {
     lineId: string,
     rentalDates: { rentalStartDate?: string; rentalEndDate?: string }
   ) => void;
+  onUpdateCustomLine?: (
+    lineId: string,
+    updates: {
+      name: string;
+      price: number;
+      quantity: number;
+      workerId?: string;
+      workerName?: string;
+      serviceType?: string;
+      notes?: string;
+      taxable?: boolean;
+    }
+  ) => void;
   onRemoveFromCart: (lineId: string) => void;
   onDiscountClick: () => void;
   onNotesClick: () => void;
   onCustomerClick: () => void;
+  onAddCustomLine?: () => void;
   onCheckoutClick: () => void;
   containerVariants: any;
   itemVariants: any;
+  workers?: import("@/components/pos-data-provider").Worker[];
   isMobile?: boolean;
   isTablet?: boolean;
   isOpen?: boolean;
@@ -68,13 +83,16 @@ const CartContent = ({
   onUpdateQuantity,
   onToggleRentalMode,
   onUpdateRentalDates,
+  onUpdateCustomLine,
   onRemoveFromCart,
   onDiscountClick,
   onNotesClick,
   onCustomerClick,
+  onAddCustomLine,
   onCheckoutClick,
   containerVariants,
   itemVariants,
+  workers,
 }: Omit<CartProps, "isMobile" | "isOpen" | "onOpenChange">) => {
   return (
     <div className="flex flex-col h-full overflow-hidden min-w-0">
@@ -125,6 +143,8 @@ const CartContent = ({
                   onToggleRentalMode={onToggleRentalMode}
                   onUpdateRentalDates={onUpdateRentalDates}
                   onRemove={onRemoveFromCart}
+                  onUpdateCustomLine={onUpdateCustomLine}
+                  workers={workers}
                   variants={itemVariants}
                 />
               ))}
@@ -169,6 +189,7 @@ const CartContent = ({
           onDiscountClick={onDiscountClick}
           onNotesClick={onNotesClick}
           onCustomerClick={onCustomerClick}
+          onAddCustomLine={onAddCustomLine}
           onCheckoutClick={onCheckoutClick}
         />
       </div>

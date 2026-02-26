@@ -24,6 +24,7 @@ import {
   BookOpen,
   FolderKanban,
   Wrench,
+  Briefcase,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -78,6 +79,12 @@ const navMain: (NavItem & { roles?: string[] })[] = [
     href: "/workers",
     label: "Workers",
     icon: Wrench,
+    roles: ["admin", "manager", "cashier"],
+  },
+  {
+    href: "/services",
+    label: "Services",
+    icon: Briefcase,
     roles: ["admin", "manager", "cashier"],
   },
   { href: "/products", label: "Products", icon: Package },
