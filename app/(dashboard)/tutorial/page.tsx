@@ -90,7 +90,7 @@ export default function TutorialPage() {
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
             <BookOpenCheck className="h-8 w-8 text-primary" />
-            Massoud System POS Tutorial
+            Massoud System  Tutorial
           </h1>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Wrench className="h-4 w-4 text-primary" />
@@ -98,7 +98,7 @@ export default function TutorialPage() {
           </div>
         </div>
         <p className="text-muted-foreground max-w-2xl">
-          Follow this guided checklist to get your POS ready for day-to-day operations. Each step links to the appropriate page.
+          Follow this guided checklist to get your  ready for day-to-day operations. Each step links to the appropriate page.
         </p>
       </div>
 

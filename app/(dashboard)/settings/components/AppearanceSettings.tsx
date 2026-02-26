@@ -38,7 +38,7 @@ export function AppearanceSettings({ onThemeChange }: AppearanceSettingsProps) {
             Theme Settings
           </CardTitle>
           <CardDescription>
-            Customize the appearance of your POS system.
+            Customize the appearance of your  system.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

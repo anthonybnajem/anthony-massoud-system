@@ -279,7 +279,7 @@ export function DataExportImport() {
     <Card>
       <CardHeader>
         <CardTitle>Data Portability</CardTitle>
-        <CardDescription>Export or import your POS data for backup or migration</CardDescription>
+        <CardDescription>Export or import your  data for backup or migration</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-sm text-muted-foreground">
@@ -289,7 +289,7 @@ export function DataExportImport() {
           <ul className="mt-2 space-y-1">
             <li className="flex items-center">
               <FileText className="h-4 w-4 mr-2 text-blue-500" />
-              All your POS data (products, categories, sales, etc.)
+              All your  data (products, categories, sales, etc.)
             </li>
             <li className="flex items-center">
               <ImageIcon className="h-4 w-4 mr-2 text-green-500" />

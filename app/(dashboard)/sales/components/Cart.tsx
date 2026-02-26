@@ -78,7 +78,7 @@ const CartContent = ({
 }: Omit<CartProps, "isMobile" | "isOpen" | "onOpenChange">) => {
   return (
     <div className="flex flex-col h-full overflow-hidden min-w-0">
-      <div className="p-3 sm:p-4 md:p-5 border-b bg-gradient-to-r from-primary/5 to-primary/10 flex justify-between items-center flex-shrink-0">
+      <div className="p-3 sm:p-4 md:p-5 border-b flex justify-between items-center flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-primary/10 rounded-lg">
             <ShoppingCart className="h-5 w-5 text-primary" />
@@ -250,7 +250,7 @@ export function Cart({
     <div
       className={`w-full ${
         isTablet ? "md:w-80 md:max-w-80" : "md:w-96 md:max-w-96"
-      } flex flex-col border rounded-lg bg-card shadow-lg flex-shrink-0 min-w-0 max-h-[95vh]`}
+      } glassy-card flex flex-col flex-shrink-0 min-w-0 max-h-[95vh]`}
     >
       {cartContent}
     </div>

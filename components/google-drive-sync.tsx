@@ -205,7 +205,7 @@ export function GoogleDriveSync() {
             Google Drive Sync
           </CardTitle>
           <CardDescription>
-            Sign in with Google to sync your POS data to Google Drive
+            Sign in with Google to sync your  data to Google Drive
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -236,7 +236,7 @@ export function GoogleDriveSync() {
           Google Drive Sync
         </CardTitle>
         <CardDescription>
-          Sync your POS data to and from Google Drive
+          Sync your  data to and from Google Drive
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -311,7 +311,7 @@ export function GoogleDriveSync() {
           <CheckCircle2 className="h-4 w-4 text-green-600" />
           <AlertTitle>Connected</AlertTitle>
           <AlertDescription>
-            Your data will be stored in a folder named "Kroma POS Backups" in
+            Your data will be stored in a folder named "Kroma  Backups" in
             your Google Drive.
           </AlertDescription>
         </Alert>

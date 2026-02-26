@@ -1083,13 +1083,11 @@ export default function SalesPage() {
             {/* Cart Summary Bar with Sidebar Toggle */}
              
             <div
-              className={`bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-lg ${
-                isTablet ? "p-3" : "p-4"
-              } border border-primary/20 shadow-sm`}
+              className={`glassy-card ${isTablet ? "p-3" : "p-4"}`}
             >
               
               <div className="flex items-center justify-between gap-3">
-                   <div className="p-2 rounded-lg flex items-center">
+                   <div className="flex items-center">
                          <SidebarTrigger className="h-9 w-9 shrink-0" />
                           <Button
                   variant="outline"
@@ -1191,9 +1189,7 @@ export default function SalesPage() {
 
             {/* Search and Filter Section */}
             <div
-              className={`bg-card rounded-lg ${
-                isTablet ? "p-4" : "p-5"
-              } shadow-sm border border-border`}
+              className={`glassy-card ${isTablet ? "p-4" : "p-5"}`}
             >
               <SearchBar
                 searchQuery={searchQuery}

@@ -41,7 +41,7 @@ export function SyncSettingsForm({
           Sync Settings
         </CardTitle>
         <CardDescription>
-          Configure how your POS system syncs data with the cloud.
+          Configure how your  system syncs data with the cloud.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

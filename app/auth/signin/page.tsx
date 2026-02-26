@@ -108,7 +108,7 @@ export default function SignInPage() {
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
             <CardDescription>
-              Enter your credentials to access the POS system
+              Enter your credentials to access the  system
             </CardDescription>
           </CardHeader>
           <CardContent>

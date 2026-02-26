@@ -139,7 +139,7 @@ export default function SubscriptionPage() {
     {
       name: "Free",
       price: "$0",
-      description: "Basic POS functionality for small businesses",
+      description: "Basic  functionality for small businesses",
       features: ["Unlimited products", "Basic sales tracking", "Single store management", "Local data storage only"],
       limitations: ["No cloud sync", "No multi-store support", "Limited reporting"],
       tier: "free" as const,

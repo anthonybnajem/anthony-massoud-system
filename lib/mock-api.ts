@@ -170,7 +170,7 @@ export const mockApi = {
           id: "free",
           name: "Free",
           price: 0,
-          features: ["Basic POS functionality", "Single store", "Local data storage"],
+          features: ["Basic  functionality", "Single store", "Local data storage"],
         },
         {
           id: "pro",

@@ -3,19 +3,19 @@ import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
+import { themeColors } from "@/lib/theme"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[14px] text-sm font-medium ring-offset-background transition-[color,background-color,box-shadow,filter] duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60 disabled:text-slate-500 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        default: "text-white hover:brightness-105",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          "text-white hover:brightness-105",
         outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "border border-white/60 bg-white/20 text-slate-700 shadow-[0_8px_16px_rgba(15,23,42,0.06)] hover:bg-white/30",
+        secondary: "text-white hover:brightness-105",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
@@ -42,9 +42,32 @@ export interface ButtonProps
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+    const isDisabled = props.disabled ?? false
+    const variantStyle: React.CSSProperties | undefined = isDisabled
+      ? {
+          backgroundColor: "#94A3B859",
+          boxShadow: "none",
+        }
+      : variant === "default"
+        ? {
+            backgroundColor: themeColors.accent.green.hex,
+            boxShadow: `0 10px 20px ${themeColors.accent.green.shadow}`,
+          }
+        : variant === "destructive"
+          ? {
+              backgroundColor: themeColors.accent.red.hex,
+              boxShadow: `0 10px 20px ${themeColors.accent.red.shadow}`,
+            }
+          : variant === "secondary"
+            ? {
+                backgroundColor: themeColors.accent.purple.hex,
+                boxShadow: `0 10px 20px ${themeColors.accent.purple.shadow}`,
+              }
+            : undefined
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
+        style={variantStyle}
         ref={ref}
         {...props}
       />

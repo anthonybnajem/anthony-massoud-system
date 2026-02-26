@@ -134,7 +134,7 @@ export default function CheckoutDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12">
+        <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 bg-background">
           <div className="lg:col-span-4 border-r bg-muted/20 overflow-y-auto p-4 space-y-4">
             {customerName || customerEmail || customerPhone ? (
               <div className="bg-gradient-to-r from-primary/5 to-primary/10 p-4 rounded-lg border border-primary/20">
@@ -185,7 +185,7 @@ export default function CheckoutDialog({
             )}
 
             {hasRentalItems && (
-              <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+              <div className="space-y-3 rounded-lg border  p-4">
                 <h4 className="text-sm font-semibold">Default Rental Period</h4>
                 <div className="grid gap-3">
                   <div className="space-y-1">
@@ -205,7 +205,7 @@ export default function CheckoutDialog({
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-between rounded-md border bg-background px-3 py-2">
+                <div className="flex items-center justify-between rounded-md border  px-3 py-2">
                   <div>
                     <p className="text-sm font-medium">Apply To All Rental Items</p>
                     <p className="text-xs text-muted-foreground">
@@ -269,7 +269,7 @@ export default function CheckoutDialog({
           </div>
 
           <div className="lg:col-span-8 flex flex-col overflow-hidden">
-            <div className="px-4 py-3 border-b flex items-center justify-between bg-background sticky top-0 z-10">
+            <div className="px-4 py-3 border-b flex items-center justify-between sticky top-0 z-10">
               <h4 className="font-semibold flex items-center gap-2">
                 <ReceiptText className="h-4 w-4 text-primary" />
                 Full Receipt
@@ -282,7 +282,7 @@ export default function CheckoutDialog({
               {receiptItems.map((item) => {
                 const isEditing = Boolean(editingRows[item.id]);
                 return (
-                <div key={item.id} className="p-2 border-b last:border-b-0 space-y-1.5">
+                <div key={item.id} className="p-2 border-b space-y-1.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-medium text-sm leading-tight">

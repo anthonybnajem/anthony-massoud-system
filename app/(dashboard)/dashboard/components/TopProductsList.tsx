@@ -19,21 +19,23 @@ export function TopProductsList({ products }: TopProductsListProps) {
   return (
     <Card className="col-span-1">
       <CardHeader>
-        <CardTitle>Top Selling Products</CardTitle>
+        <CardTitle className="text-lg font-medium text-slate-700">
+          Top Selling Products
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {products.length > 0 ? (
-          <div className="space-y-4">
+          <div className="divide-y divide-white/30 rounded-xl border border-white/30">
             {products
               .sort((a, b) => b.stock - a.stock)
               .slice(0, 5)
               .map((product) => (
                 <div
                   key={product.id}
-                  className="flex justify-between items-center"
+                  className="flex items-center justify-between gap-4 px-4 py-3 transition duration-200 ease-in-out hover:bg-white/20"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded bg-muted flex items-center justify-center overflow-hidden">
+                    <div className="h-10 w-10 rounded-xl bg-white/40 shadow-[0_6px_14px_rgba(15,23,42,0.08)] flex items-center justify-center overflow-hidden">
                       {product.image ? (
                         <img
                           src={product.image || "/placeholder.svg"}
@@ -41,17 +43,21 @@ export function TopProductsList({ products }: TopProductsListProps) {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <Package className="h-4 w-4" />
+                        <Package className="h-4 w-4 text-slate-500" />
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm font-medium text-slate-700">
+                        {product.name}
+                      </p>
+                      <p className="text-xs text-slate-500">
                         {product.category.name}
                       </p>
                     </div>
                   </div>
-                  <p className="font-medium">${product.price.toFixed(2)}</p>
+                  <p className="text-right text-sm font-medium text-slate-700">
+                    ${product.price.toFixed(2)}
+                  </p>
                 </div>
               ))}
           </div>

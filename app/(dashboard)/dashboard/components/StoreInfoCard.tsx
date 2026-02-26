@@ -29,12 +29,14 @@ export function StoreInfoCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
     >
-      <Card className="bg-card">
+      <Card>
         <CardContent className="p-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h3 className="font-semibold text-lg">{activeStore.name}</h3>
-              <p className="text-muted-foreground">{activeStore.address}</p>
+              <h3 className="text-lg font-semibold text-slate-800">
+                {activeStore.name}
+              </h3>
+              <p className="text-sm text-slate-500">{activeStore.address}</p>
             </div>
             {canUseEnterpriseFeatures && (
               <Button variant="outline" size="sm" asChild>

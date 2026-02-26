@@ -320,7 +320,7 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
     const total = subtotal + tax;
 
     return (
-      <div className="p-4 border rounded-lg bg-white shadow-md">
+      <div className="p-4 border rounded-lg shadow-md">
         <h3 className="text-lg font-bold mb-4">Original Receipt Table</h3>
         <table className="w-full border-collapse">
           <thead>

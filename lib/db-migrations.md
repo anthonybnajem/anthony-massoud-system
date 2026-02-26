@@ -1,6 +1,6 @@
 # Database Migration Guide
 
-This document explains how to manage database schema changes and migrations in the POS system.
+This document explains how to manage database schema changes and migrations in the  system.
 
 ## Overview
 

@@ -75,7 +75,7 @@ export function DatabaseInitializer({
           <Database className="h-12 w-12 animate-pulse text-primary" />
           <h2 className="text-2xl font-bold">Initializing Database</h2>
           <p className="text-muted-foreground">
-            Please wait while we set up your POS system...
+            Please wait while we set up your  system...
           </p>
         </div>
       </div>

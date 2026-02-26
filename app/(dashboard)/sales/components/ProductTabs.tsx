@@ -47,7 +47,7 @@ export function ProductTabs({
       defaultValue="all"
       value={activeTab}
       onValueChange={onTabChange}
-      className="flex-1 overflow-hidden flex flex-col min-h-0 bg-card rounded-lg border border-border shadow-sm"
+      className="glassy-card flex-1 overflow-hidden flex flex-col min-h-0"
     >
       <div className="px-4 pt-4 flex-shrink-0">
         <TabsList className="grid grid-cols-4 h-11 bg-muted/50">

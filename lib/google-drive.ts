@@ -2,7 +2,7 @@ import { google } from "googleapis";
 import { exportAllData, importAllData, type ExportData } from "./data-portability";
 
 const FILE_NAME = "kroma-pos-backup.json";
-const FOLDER_NAME = "Kroma POS Backups";
+const FOLDER_NAME = "Kroma  Backups";
 
 /**
  * Initialize Google Drive API client with access token

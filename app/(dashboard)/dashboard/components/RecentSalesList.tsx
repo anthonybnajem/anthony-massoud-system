@@ -27,33 +27,37 @@ export function RecentSalesList({ sales }: RecentSalesListProps) {
     <Card className="col-span-1">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <div>
-          <CardTitle className="text-xl">Recent Sales</CardTitle>
+          <CardTitle className="text-lg font-medium text-slate-700">
+            Recent Sales
+          </CardTitle>
         </div>
         <Link
           href="/receipts"
-          className="text-sm font-medium text-primary hover:underline"
+          className="text-sm font-medium text-slate-600 transition hover:text-slate-800"
         >
           View more
         </Link>
       </CardHeader>
       <CardContent>
         {sales.length > 0 ? (
-          <div className="space-y-4">
+          <div className="divide-y divide-white/30 rounded-xl border border-white/30">
             {sales.slice(0, 5).map((sale) => (
               <Link
                 key={sale.id}
                 href={`/receipts/${encodeURIComponent(sale.id)}`}
-                className="flex justify-between items-center rounded-md border p-3 transition hover:border-primary/50 hover:bg-primary/5"
+                className="flex items-center justify-between gap-4 px-4 py-3 transition duration-200 ease-in-out hover:bg-white/20"
               >
                 <div>
-                  <p className="text-sm font-medium text-primary">
+                  <p className="text-sm font-medium text-slate-700">
                     Receipt #{sale.id.slice(0, 8)}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-slate-500">
                     {new Date(sale.date).toLocaleString()}
                   </p>
                 </div>
-                <p className="font-medium">${sale.total.toFixed(2)}</p>
+                <p className="text-right text-sm font-medium text-slate-700">
+                  ${sale.total.toFixed(2)}
+                </p>
               </Link>
             ))}
           </div>
@@ -74,7 +78,7 @@ export function RecentSalesList({ sales }: RecentSalesListProps) {
       <CardFooter className="pt-0">
         <Link
           href="/receipts"
-          className="text-sm font-medium text-primary hover:underline"
+          className="text-sm font-medium text-slate-600 transition hover:text-slate-800"
         >
           View more
         </Link>
