@@ -81,10 +81,20 @@ export function ProductTableRow({
       <TableCell>
         <div className="flex flex-col">
           <span className="font-semibold text-sm">
-            Sell: ${product.price.toFixed(2)}
+            Sell:{" "}
+            {(product.price ?? 0) > 0
+              ? `$${(product.price ?? 0).toFixed(2)}`
+              : (typeof product.rentalPrice === "number" && product.rentalPrice > 0)
+                ? "—"
+                : "$0.00"}
           </span>
           <span className="text-xs text-muted-foreground">
-            Rent: ${((product.rentalPrice ?? product.price) || 0).toFixed(2)}
+            Rent:{" "}
+            {typeof product.rentalPrice === "number" && product.rentalPrice > 0
+              ? `$${product.rentalPrice.toFixed(2)}`
+              : (product.price ?? 0) > 0
+                ? "—"
+                : "—"}
           </span>
         </div>
       </TableCell>

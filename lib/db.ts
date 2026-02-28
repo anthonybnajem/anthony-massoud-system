@@ -669,6 +669,10 @@ const withProductMeasurementDefaults = (product: Product): Product => {
 
   return {
     ...product,
+    price:
+      typeof product.price === "number" && product.price >= 0
+        ? product.price
+        : 0,
     rentalPrice:
       typeof product.rentalPrice === "number" && product.rentalPrice >= 0
         ? product.rentalPrice

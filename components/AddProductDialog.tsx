@@ -47,7 +47,10 @@ import {
 
 const productSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  price: z.number().min(0, "Selling price must be a positive number"),
+  price: z
+    .number()
+    .min(0, "Selling price must be a positive number")
+    .optional(),
   rentalPrice: z
     .number()
     .min(0, "Rental price must be a positive number")
@@ -81,7 +84,10 @@ const productSchema = z.object({
       })
     )
     .optional(),
-});
+}).refine(
+  (data) => (data.price ?? 0) > 0 || (data.rentalPrice ?? 0) > 0,
+  { message: "Include at least a selling price or a renting price.", path: ["price"] }
+);
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
@@ -109,8 +115,8 @@ export default function AddProductDialog({
     resolver: zodResolver(productSchema),
     defaultValues: {
       name: "",
-      price: 0,
-      rentalPrice: 0,
+      price: undefined as number | undefined,
+      rentalPrice: undefined as number | undefined,
       stock: 0,
       categoryId: "",
       barcode: "",
@@ -224,7 +230,8 @@ export default function AddProductDialog({
     }
     const finalData: Omit<Product, "id" | "category"> = {
       ...data,
-      rentalPrice: data.price,
+      price: data.price ?? 0,
+      rentalPrice: data.rentalPrice !== undefined ? data.rentalPrice : undefined,
       variations: pricingMode === "variation" ? data.variations || [] : [],
       attributes,
       image: data.image || "",
@@ -280,19 +287,23 @@ export default function AddProductDialog({
                       <FormItem>
                         <FormLabel>
                           Selling Price{" "}
-                          <span className="text-destructive">*</span>
+                          <span className="text-muted-foreground text-xs font-normal">(optional)</span>
                         </FormLabel>
                         <FormControl>
                           <Input
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(parseFloat(e.target.value) || 0)
-                            }
+                            value={field.value === undefined ? "" : field.value}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              field.onChange(v === "" ? undefined : (parseFloat(v) || 0));
+                            }}
                           />
                         </FormControl>
+                        <FormDescription className="text-xs">
+                          Leave empty for rent-only items
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

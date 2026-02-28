@@ -48,7 +48,10 @@ import {
 
 const productSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  price: z.number().min(0, "Selling price must be a positive number"),
+  price: z
+    .number()
+    .min(0, "Selling price must be a positive number")
+    .optional(),
   rentalPrice: z
     .number()
     .min(0, "Rental price must be a positive number")
@@ -80,7 +83,10 @@ const productSchema = z.object({
       })
     )
     .optional(),
-});
+}).refine(
+  (data) => (data.price ?? 0) > 0 || (data.rentalPrice ?? 0) > 0,
+  { message: "Include at least a selling price or a renting price.", path: ["price"] }
+);
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
@@ -109,8 +115,8 @@ export default function EditProductDialog({
     resolver: zodResolver(productSchema),
     defaultValues: {
       name: "",
-      price: 0,
-      rentalPrice: 0,
+      price: undefined as number | undefined,
+      rentalPrice: undefined as number | undefined,
       stock: 0,
       categoryId: "",
       barcode: "",
@@ -188,7 +194,8 @@ export default function EditProductDialog({
 
     form.reset({
       ...currentProduct,
-      rentalPrice: currentProduct.rentalPrice ?? 0,
+      price: (currentProduct.price ?? 0) > 0 ? currentProduct.price : undefined,
+      rentalPrice: currentProduct.rentalPrice !== undefined && currentProduct.rentalPrice >= 0 ? currentProduct.rentalPrice : undefined,
       saleType: rawSaleType,
       categoryId,
       unitLabel,
@@ -251,7 +258,8 @@ export default function EditProductDialog({
     handleEditProduct({
       ...currentProduct,
       ...data,
-      rentalPrice: data.price,
+      price: data.price ?? 0,
+      rentalPrice: data.rentalPrice !== undefined ? data.rentalPrice : undefined,
       variations: pricingMode === "variation" ? data.variations || [] : [],
       categoryId: String(data.categoryId),
       attributes,
@@ -299,8 +307,8 @@ export default function EditProductDialog({
                   )}
                 />
 
-                {/* PRICE / STOCK */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* PRICE / RENTAL PRICE / STOCK */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
                     name="price"
@@ -308,19 +316,52 @@ export default function EditProductDialog({
                       <FormItem>
                         <FormLabel>
                           Selling Price{" "}
-                          <span className="text-destructive">*</span>
+                          <span className="text-muted-foreground text-xs font-normal">(optional)</span>
                         </FormLabel>
                         <FormControl>
                           <Input
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            value={Number.isFinite(field.value) ? field.value : 0}
-                            onChange={(e) =>
-                              field.onChange(parseFloat(e.target.value) || 0)
-                            }
+                            value={field.value === undefined ? "" : field.value}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              field.onChange(v === "" ? undefined : (parseFloat(v) || 0));
+                            }}
                           />
                         </FormControl>
+                        <FormDescription className="text-xs">
+                          Leave empty for rent-only items
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="rentalPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Renting Price{" "}
+                          <span className="text-muted-foreground text-xs font-normal">(optional)</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={field.value === undefined ? "" : field.value}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              field.onChange(v === "" ? undefined : (parseFloat(v) || 0));
+                            }}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                          Leave empty if not available for rent
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
