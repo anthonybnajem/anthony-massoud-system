@@ -76,7 +76,7 @@ export default function DiscountsPage() {
 
       <Card className="overflow-hidden">
         <CardHeader>
-          <CardTitle>Active Discounts</CardTitle>
+          {/* <CardTitle>Active Discounts</CardTitle> */}
         </CardHeader>
         <CardContent className="overflow-hidden min-w-0">
           <DiscountTable

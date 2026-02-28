@@ -5,8 +5,8 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { Sidebar } from "./sidebar"
-import { ThemeToggle } from "./theme-toggle"
+import { AppSidebar } from "./sidebar"
+// import { ThemeToggle } from "./theme-toggle"
 import { Button } from "@/components/ui/button"
 import { usePosData } from "./pos-data-provider"
 import { useSubscription } from "./subscription-provider"
@@ -85,7 +85,7 @@ export default function MainLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar />
+      <AppSidebar />
 
       <div className="flex flex-col flex-1 overflow-hidden">
         <header className="flex items-center justify-between px-6 py-3 border-b">
@@ -136,7 +136,7 @@ export default function MainLayout({
                 </>
               )}
             </Button>
-            <ThemeToggle />
+            {/* <ThemeToggle /> */}
           </div>
         </header>
 

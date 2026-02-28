@@ -18,6 +18,7 @@ import {
   Barcode,
   Warehouse,
   History,
+  ArrowDownCircle,
   Users,
   UserCircle2,
   LogOut,
@@ -63,6 +64,7 @@ interface NavItem {
 const navMain: (NavItem & { roles?: string[] })[] = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/sales", label: "Sales", icon: ShoppingCart },
+  { href: "/expenses", label: "Expenses", icon: ArrowDownCircle },
   {
     href: "/customers",
     label: "Customers",

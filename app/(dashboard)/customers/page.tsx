@@ -128,7 +128,7 @@ export default function CustomersPage() {
         <CardHeader className="space-y-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <CardTitle>Customer Directory</CardTitle>
+              {/* <CardTitle>Customer Directory</CardTitle> */}
               <CardDescription>
                 {filteredCustomers.length}{" "}
                 {filteredCustomers.length === 1 ? "customer" : "customers"} found

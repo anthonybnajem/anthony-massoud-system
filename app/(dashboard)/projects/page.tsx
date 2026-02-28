@@ -157,7 +157,7 @@ export default function ProjectsPage() {
         <CardHeader className="space-y-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <CardTitle>Project Directory</CardTitle>
+              {/* <CardTitle>Project Directory</CardTitle> */}
               <CardDescription>
                 {filteredProjects.length}{" "}
                 {filteredProjects.length === 1 ? "project" : "projects"} found

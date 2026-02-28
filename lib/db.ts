@@ -109,6 +109,33 @@ export type Sale = {
   voidedAt?: Date;
 };
 
+export type ExpenseItemType = "product" | "worker" | "service" | "custom";
+
+export type ExpenseItem = {
+  id: string;
+  type: ExpenseItemType;
+  productId?: string;
+  workerId?: string;
+  serviceId?: string;
+  description?: string;
+  quantity: number;
+  unitCost: number;
+  total: number;
+  notes?: string;
+};
+
+export type Expense = {
+  id: string;
+  items: ExpenseItem[];
+  total: number;
+  paymentMethod: string;
+  date: Date;
+  vendor?: string;
+  notes?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
 export type CustomerProfile = {
   id: string;
   name: string;
@@ -358,6 +385,7 @@ class PosDatabase extends Dexie {
   workers!: Dexie.Table<Worker, string>;
   services!: Dexie.Table<Service, string>;
   projectWorkerAssignments!: Dexie.Table<ProjectWorkerAssignment, string>;
+  expenses!: Dexie.Table<Expense, string>;
 
   constructor() {
     super("pos_system_db");
@@ -397,6 +425,7 @@ class PosDatabase extends Dexie {
     this.workers = this.table("workers");
     this.services = this.table("services");
     this.projectWorkerAssignments = this.table("projectWorkerAssignments");
+    this.expenses = this.table("expenses");
   }
 
   // Initialize with default settings if needed
@@ -417,6 +446,7 @@ class PosDatabase extends Dexie {
         "workers", // Added in version 13
         "services", // Added in version 14
         "projectWorkerAssignments", // Added in version 13
+        "expenses", // Added in version 16
       ];
 
       for (const tableName of expectedTables) {
@@ -1009,6 +1039,20 @@ const normalizeSaleDates = (sale: Sale): Sale => {
   return normalized;
 };
 
+const normalizeExpenseDates = (expense: Expense): Expense => {
+  const normalized: Expense = { ...expense };
+  if (!(normalized.date instanceof Date)) {
+    normalized.date = new Date(normalized.date);
+  }
+  if (normalized.createdAt && !(normalized.createdAt instanceof Date)) {
+    normalized.createdAt = new Date(normalized.createdAt);
+  }
+  if (normalized.updatedAt && !(normalized.updatedAt instanceof Date)) {
+    normalized.updatedAt = new Date(normalized.updatedAt);
+  }
+  return normalized;
+};
+
 export const salesApi = {
   getAll: async (): Promise<Sale[]> => {
     try {
@@ -1144,6 +1188,87 @@ export const salesApi = {
     } catch (error) {
       console.error(`Error deleting sale ${id}:`, error);
       throw error;
+    }
+  },
+};
+
+export const expensesApi = {
+  getAll: async (): Promise<Expense[]> => {
+    try {
+      const db = getDB();
+      const expenses = await db.expenses.toArray();
+      return expenses.map(normalizeExpenseDates);
+    } catch (error) {
+      console.error("Error getting expenses:", error);
+      return [];
+    }
+  },
+
+  getById: async (id: string): Promise<Expense | undefined> => {
+    try {
+      const db = getDB();
+      const expense = await db.expenses.get(id);
+      return expense ? normalizeExpenseDates(expense) : undefined;
+    } catch (error) {
+      console.error(`Error getting expense ${id}:`, error);
+      return undefined;
+    }
+  },
+
+  add: async (expense: Expense): Promise<string> => {
+    try {
+      const db = getDB();
+      const normalized = normalizeExpenseDates(expense);
+      if (!normalized.createdAt) {
+        normalized.createdAt = new Date(normalized.date);
+      }
+      if (!normalized.updatedAt) {
+        normalized.updatedAt = new Date(normalized.date);
+      }
+      await db.expenses.add(normalized);
+      return normalized.id;
+    } catch (error) {
+      console.error("Error adding expense:", error);
+      throw error;
+    }
+  },
+
+  update: async (expense: Expense): Promise<void> => {
+    try {
+      const db = getDB();
+      const normalized = normalizeExpenseDates(expense);
+      normalized.updatedAt = new Date();
+      await db.expenses.put(normalized);
+    } catch (error) {
+      console.error(`Error updating expense ${expense.id}:`, error);
+      throw error;
+    }
+  },
+
+  delete: async (id: string): Promise<void> => {
+    try {
+      const db = getDB();
+      await db.expenses.delete(id);
+    } catch (error) {
+      console.error(`Error deleting expense ${id}:`, error);
+      throw error;
+    }
+  },
+
+  getByDateRange: async (
+    startDate: Date,
+    endDate: Date
+  ): Promise<Expense[]> => {
+    try {
+      const db = getDB();
+      const expenses = await db.expenses
+        .where("date")
+        .between(startDate, endDate, true, true)
+        .toArray();
+      return expenses.map(normalizeExpenseDates);
+    } catch (error) {
+      console.error("Error getting expenses by date range:", error);
+      return [];
     }
   },
 };

@@ -4,6 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 
 interface ReceiptContentProps {
   data: {
+    showDiscounts: boolean;
     showLogo: boolean;
     storeLogo?: string;
     storeName: string;

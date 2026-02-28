@@ -19,7 +19,7 @@ import {
 } from "./product-constants";
 
 // Current database version - increment when schema changes
-export const CURRENT_VERSION = 15;
+export const CURRENT_VERSION = 16;
 
 // Schema definitions for each version
 // Each version includes ALL stores that should exist at that version
@@ -289,6 +289,33 @@ export const SCHEMA_VERSIONS: Record<number, Record<string, string>> = {
     projectWorkerAssignments:
       "id, projectId, workerId, status, startDate, endDate, createdAt, updatedAt",
   },
+  16: {
+    // Version 16: Added expenses table
+    products:
+      "id, name, price, category, categoryId, barcode, stock, description, sku, cost, taxable, taxRate, tags, attributes, variations, saleType, unitLabel, unitIncrement",
+    categories: "id, name, description, color, icon",
+    sales:
+      "id, items, total, subtotal, tax, discount, discountType, discountId, paymentMethod, date, customerId, projectId, customerName, customerEmail, customerPhone, customerLocation, rentalStartDate, rentalEndDate, rentalStatus, rentalReturnedAt, rentalReturnMode, notes, receiptNumber, employeeId, shiftId, status, updatedAt, voidReason, voidedAt",
+    discounts:
+      "id, name, code, type, value, minOrderAmount, maxDiscount, startDate, endDate, isActive, appliesTo, categoryIds, productIds, usageLimit, usageCount",
+    settings: "id",
+    stockMovements:
+      "id, productId, type, quantity, previousStock, newStock, date",
+    employees: "id, name, email, role, isActive, hireDate, password",
+    shifts: "id, employeeId, startTime, endTime, status",
+    closingReports: "id, shiftId, employeeId, date, createdAt",
+    customers:
+      "id, name, email, phone, location, notes, defaultDiscountId, createdAt, updatedAt",
+    projects: "id, customerId, name, location, notes, isActive, createdAt, updatedAt",
+    workers:
+      "id, name, phone, email, specialty, dailyRate, hourlyRate, isActive, createdAt, updatedAt",
+    services:
+      "id, name, price, billingType, unitLabel, taxable, isActive, createdAt, updatedAt",
+    projectWorkerAssignments:
+      "id, projectId, workerId, status, startDate, endDate, createdAt, updatedAt",
+    expenses:
+      "id, date, total, paymentMethod, vendor, notes, createdAt, updatedAt",
+  },
 };
 
 // Migration functions for data transformations
@@ -451,6 +478,9 @@ export const MIGRATIONS: Record<number, (tx: any) => Promise<void> | void> = {
       "Running migration to version 13: Adding workers and project worker assignments"
     );
   },
+  16: async () => {
+    console.log("Running migration to version 16: Adding expenses table");
+  },
 };
 
 /**
@@ -521,6 +551,7 @@ export function getMigrationDescription(version: number): string {
     11: "Added projects table and customer/project links on sales",
     12: "Added rental lifecycle fields and return tracking on sales",
     13: "Added workers and worker-to-project assignment tables",
+    16: "Added expenses table for tracking purchases and payouts",
   };
   return descriptions[version] || `Migration to version ${version}`;
 }

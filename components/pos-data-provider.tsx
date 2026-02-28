@@ -7,6 +7,7 @@ import {
   productsApi,
   categoriesApi,
   salesApi,
+  expensesApi,
   stockMovementsApi,
   employeesApi,
   shiftsApi,
@@ -19,6 +20,8 @@ import {
   type Product as ProductType,
   type Category as CategoryType,
   type Sale as SaleType,
+  type ExpenseItemType as ExpenseItemTypeFromDB,
+  type Expense as ExpenseType,
   type StockMovement as StockMovementType,
   type Employee as EmployeeType,
   type Shift as ShiftType,
@@ -33,6 +36,8 @@ import {
 export type Product = ProductType;
 export type Category = CategoryType;
 export type Sale = SaleType;
+export type Expense = ExpenseType;
+export type ExpenseItemType = ExpenseItemTypeFromDB;
 export type StockMovement = StockMovementType;
 export type Employee = EmployeeType;
 export type Shift = ShiftType;
@@ -71,6 +76,7 @@ type PosDataContextType = {
   products: Product[];
   categories: Category[];
   sales: Sale[];
+  expenses: Expense[];
   customers: CustomerProfile[];
   projects: CustomerProject[];
   workers: Worker[];
@@ -91,6 +97,7 @@ type PosDataContextType = {
     employeeId?: string,
     shiftId?: string
   ) => Promise<Sale>;
+  recordExpense: (expense: Omit<Expense, "id" | "date">) => Promise<Expense>;
   updateSale: (saleId: string, updates: Partial<Sale>) => Promise<Sale>;
   deleteSale: (saleId: string) => Promise<void>;
   voidSale: (saleId: string, reason?: string) => Promise<Sale>;
@@ -166,6 +173,7 @@ const PosDataContext = createContext<PosDataContextType>({
   products: [],
   categories: [],
   sales: [],
+  expenses: [],
   customers: [],
   projects: [],
   workers: [],
@@ -182,6 +190,13 @@ const PosDataContext = createContext<PosDataContextType>({
   updateExistingCategory: async () => {},
   removeCategory: async () => {},
   recordSale: async () => ({
+    id: "",
+    items: [],
+    total: 0,
+    paymentMethod: "",
+    date: new Date(),
+  }),
+  recordExpense: async () => ({
     id: "",
     items: [],
     total: 0,
@@ -346,6 +361,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [customers, setCustomers] = useState<CustomerProfile[]>([]);
   const [projects, setProjects] = useState<CustomerProject[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -373,6 +389,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       const storedProducts = await productsApi.getAll();
       const storedCategories = await categoriesApi.getAll();
       const storedSales = await salesApi.getAll();
+      const storedExpenses = await expensesApi.getAll();
       const storedCustomers = await customersApi
         .getAll()
         .then((list) => list.filter((customer) => !customer.deleted));
@@ -396,6 +413,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       setProducts(storedProducts);
       setCategories(storedCategories);
       setSales(storedSales);
+      setExpenses(storedExpenses);
       setCustomers(storedCustomers);
       setProjects(storedProjects);
       setWorkers(storedWorkers);
@@ -1214,6 +1232,92 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const recordExpense = async (
+    expenseData: Omit<Expense, "id" | "date">
+  ): Promise<Expense> => {
+    try {
+      if (!expenseData.items || expenseData.items.length === 0) {
+        throw new Error("Expense must include at least one line item.");
+      }
+
+      const normalizedItems = expenseData.items.map((item) => ({
+        ...item,
+        quantity: item.quantity > 0 ? item.quantity : 1,
+      }));
+
+      const rawTotal = normalizedItems.reduce(
+        (sum, item) => sum + item.total,
+        0
+      );
+      const baseTotal =
+        typeof expenseData.total === "number" && !Number.isNaN(expenseData.total)
+          ? expenseData.total
+          : rawTotal;
+      const normalizedTotal =
+        baseTotal > 0 ? -Math.abs(baseTotal) : baseTotal;
+
+      const newExpense: Expense = {
+        ...expenseData,
+        items: normalizedItems,
+        id: crypto.randomUUID(),
+        date: new Date(),
+        total: normalizedTotal,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await expensesApi.add(newExpense);
+
+      // Increase stock for product purchases
+      for (const item of normalizedItems) {
+        if (item.type !== "product" || !item.productId) continue;
+        const product = await productsApi.getById(item.productId);
+        if (!product) continue;
+
+        const previousStock = product.stock;
+        const newStock = previousStock + item.quantity;
+
+        await productsApi.update({
+          ...product,
+          stock: newStock,
+        });
+
+        const movement: StockMovement = {
+          id: crypto.randomUUID(),
+          productId: product.id,
+          type: "purchase",
+          quantity: item.quantity,
+          previousStock,
+          newStock,
+          reason: "Expense purchase",
+          notes: `Expense ID: ${newExpense.id}`,
+          date: new Date(),
+        };
+
+        await stockMovementsApi.add(movement);
+      }
+
+      setExpenses(await expensesApi.getAll());
+      setProducts(await productsApi.getAll());
+      setStockMovements(await stockMovementsApi.getAll());
+
+      toast({
+        title: "Expense Recorded",
+        description: `Expense of $${Math.abs(newExpense.total).toFixed(2)} has been recorded.`,
+      });
+
+      return newExpense;
+    } catch (error: any) {
+      console.error("Failed to record expense:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to record expense",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const restockFromSale = async (
     sale: Sale,
     {
@@ -1977,6 +2081,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         products,
         categories,
         sales,
+        expenses,
         stockMovements,
         customers,
         projects,
@@ -1993,6 +2098,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         updateExistingCategory,
         removeCategory,
         recordSale,
+        recordExpense,
         updateSale,
         deleteSale,
         voidSale,

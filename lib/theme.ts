@@ -6,6 +6,13 @@ export const themeColors = {
       glow: "#7ED95766",
       shadow: "#7ED95747",
     },
+
+    black: {
+      hex: "#0B0B0C", // base black (not pure black → better for UI)
+      soft: "#1A1A1D", // surfaces / cards
+      glow: "#2A2A2F", // borders / glass glow / hover
+      shadow: "#00000000", // real shadow anchor
+    },
     purple: {
       hex: "#8B5CF6",
       shadow: "#8B5CF640",
@@ -28,7 +35,7 @@ export const themeColors = {
     cardForeground: { hex: "#1F2937" },
     popover: { hex: "#FFFFFF" },
     popoverForeground: { hex: "#1F2937" },
-    primary: { hex: "#7ED957" },
+    primary: { hex: "#0B0B0C" },
     primaryForeground: { hex: "#FFFFFF" },
     secondary: { hex: "#F2F4FB" },
     secondaryForeground: { hex: "#1F2937" },
@@ -49,7 +56,7 @@ export const themeColors = {
     sidebarAccentForeground: { hex: "#1F2937" },
     sidebarBorder: { hex: "#FFFFFF" },
     sidebarRing: { hex: "#A7B3C9" },
-    chart1: { hex: "#7ED957" },
+    chart1: { hex: "#0B0B0C" },
     chart2: { hex: "#8B5CF6" },
     chart3: { hex: "#38BDF8" },
     chart4: { hex: "#FBC2EB" },

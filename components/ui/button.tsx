@@ -11,7 +11,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-white shadow-[0_10px_20px_var(--accent-green-shadow)] hover:brightness-105",
+          "bg-primary text-white shadow-[0_10px_20px_var(--accent-black-shadow)] hover:brightness-105",
         destructive:
           "bg-destructive text-white shadow-[0_10px_20px_var(--accent-red-shadow)] hover:brightness-105",
         outline:
@@ -52,7 +52,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         }
       : variant === "default"
         ? {
-            boxShadow: `0 10px 20px ${themeColors.accent.green.shadow}`,
+            boxShadow: `0 10px 20px ${themeColors.accent.black.shadow}`,
           }
         : variant === "destructive"
           ? {

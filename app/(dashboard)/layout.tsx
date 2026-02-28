@@ -18,7 +18,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const isSalesPage = pathname === "/sales";
+  const isSalesPage = pathname === "/sales" || pathname === "/expenses";
 
   return (
     <AuthGuard>

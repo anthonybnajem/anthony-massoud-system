@@ -78,28 +78,64 @@ body {
   }
 
   .type-greeting {
-    font-size: var(--type-greeting-size);
+    @apply text-2xl;
     font-weight: var(--type-greeting-weight);
     color: var(--type-greeting-color);
   }
 
   .type-section {
-    font-size: var(--type-section-size);
+    @apply text-lg;
     font-weight: var(--type-section-weight);
     color: var(--type-section-color);
   }
 
   .type-kpi {
-    font-size: var(--type-kpi-size);
+    @apply text-3xl;
     font-weight: var(--type-kpi-weight);
     letter-spacing: var(--type-kpi-letter-spacing);
     color: var(--type-kpi-color);
   }
 
   .type-secondary {
-    font-size: var(--type-secondary-size);
+    @apply text-sm;
     font-weight: var(--type-secondary-weight);
     color: var(--type-secondary-color);
+  }
+
+  @screen sm {
+    .type-greeting {
+      @apply text-3xl;
+    }
+
+    .type-section {
+      @apply text-xl;
+    }
+
+    .type-kpi {
+      @apply text-4xl;
+    }
+
+    .type-secondary {
+      @apply text-base;
+    }
+  }
+
+  @screen lg {
+    .type-greeting {
+      @apply text-4xl;
+    }
+
+    .type-section {
+      @apply text-2xl;
+    }
+
+    .type-kpi {
+      @apply text-5xl;
+    }
+
+    .type-secondary {
+      @apply text-lg;
+    }
   }
 }
 
@@ -164,6 +200,10 @@ body {
     --accent-green-soft: #7ed95726;
     --accent-green-glow: #7ed95766;
     --accent-green-shadow: #7ed95747;
+    --accent-black-hex: #0b0b0c;
+    --accent-black-soft: #1a1a1d;
+    --accent-black-glow: #2a2a2f;
+    --accent-black-shadow: #000000;
     --accent-purple-hex: #8b5cf6;
     --accent-purple-shadow: #8b5cf640;
     --accent-blue-hex: #38bdf8;

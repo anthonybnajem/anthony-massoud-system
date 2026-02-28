@@ -54,10 +54,16 @@ export function StatsCard({
       }
     >
       <CardContent className="p-6">
+        
         <div className="flex items-start justify-between gap-6">
           <div className="flex-1">
-            <p className="text-sm font-medium text-slate-600">{title}</p>
-            <div className="mt-4 text-[42px] font-bold tracking-tight text-slate-800 md:text-[52px]">
+           <div className="flex items-center justify-start justify-between ">
+             <p className="text-sm font-medium text-slate-600">{title}</p>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/50 shadow-[0_6px_16px_rgba(15,23,42,0.08)]">
+            <Icon className="h-5 w-5 text-slate-500" />
+          </div>
+           </div>
+            <div className="mt-4 text-3xl font-bold tracking-tight text-slate-800 md:text-5xl">
               {value}
             </div>
             <p className="mt-2 text-sm text-slate-500">{description}</p>
@@ -74,9 +80,7 @@ export function StatsCard({
             )}
             {meta && <p className="mt-4 text-xs text-slate-500">{meta}</p>}
           </div>
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/50 shadow-[0_6px_16px_rgba(15,23,42,0.08)]">
-            <Icon className="h-5 w-5 text-slate-500" />
-          </div>
+          
         </div>
       </CardContent>
     </Card>

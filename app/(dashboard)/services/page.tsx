@@ -155,7 +155,7 @@ export default function ServicesPage() {
         <CardHeader className="space-y-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <CardTitle>Service Catalog</CardTitle>
+              {/* <CardTitle>Service Catalog</CardTitle> */}
               <CardDescription>
                 {filteredServices.length}{" "}
                 {filteredServices.length === 1 ? "service" : "services"} found

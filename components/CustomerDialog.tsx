@@ -77,6 +77,7 @@ interface CustomerDialogProps {
     location?: string;
     notes?: string;
   }) => Promise<unknown>;
+  showProjects?: boolean;
 }
 
 export default function CustomerDialog({
@@ -101,6 +102,7 @@ export default function CustomerDialog({
   onProjectIdChange,
   projects = [],
   onAddProject,
+  showProjects = false,
 }: CustomerDialogProps) {
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
@@ -284,7 +286,7 @@ export default function CustomerDialog({
                 No saved customers yet. Use the plus icon to create one.
               </p>
             )}
-            {selectedCustomerId && (
+            {showProjects && selectedCustomerId && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <Label>Project</Label>

@@ -10,7 +10,7 @@ import {
 } from "@/components/pos-data-provider";
 import { useDiscount } from "@/components/discount-provider";
 import { Badge } from "@/components/ui/badge";
-import { Tag, ShoppingCart, Search } from "lucide-react";
+import { Tag, ShoppingCart, Search, Package, BarChart } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { InvoicePrint } from "@/components/invoice-print";
 import {
@@ -24,6 +24,7 @@ import CheckoutDialog from "@/components/CheckoutDialog";
 import { SearchBar } from "./components/SearchBar";
 import { CategoryFilter } from "./components/CategoryFilter";
 import { ProductTabs } from "./components/ProductTabs";
+import { ProductCard } from "./components/ProductCard";
 import { Cart } from "./components/Cart";
 import { MobileCartButton } from "./components/MobileCartButton";
 import {
@@ -57,6 +58,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+} from "@/components/ui/empty";
 
 export default function SalesPage() {
   const {
@@ -1563,148 +1571,264 @@ export default function SalesPage() {
               </div>
             )}
           </div>
-
+        
           {activeSalesSection === "products" && (
             <ProductTabs
               activeTab={activeTab}
               onTabChange={setActiveTab}
-              searchResults={searchResults}
-              products={products}
-              searchQuery={searchQuery}
-              activeCategory={activeCategory}
-              currencySymbol={currencySymbol}
-              onAddToCart={handleProductSelection}
-              onQuickAdd={handleQuickAdd}
+              tabs={[
+                {
+                  value: "all",
+                  label: "All",
+                  items: searchResults,
+                  emptyState: (
+                    <div className="flex items-center justify-center h-full min-h-[400px]">
+                      <Empty>
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon">
+                            <Package className="h-12 w-12 text-muted-foreground" />
+                          </EmptyMedia>
+                          <EmptyTitle>No products found</EmptyTitle>
+                          <EmptyDescription>
+                            {searchQuery || activeCategory !== "all"
+                              ? "Try adjusting your search or filter criteria."
+                              : products.length === 0
+                              ? "No products available. Add products to get started."
+                              : "Loading products..."}
+                          </EmptyDescription>
+                        </EmptyHeader>
+                      </Empty>
+                    </div>
+                  ),
+                },
+                {
+                  value: "popular",
+                  label: "Popular",
+                  items: searchResults
+                    .slice()
+                    .sort((a, b) => b.stock - a.stock)
+                    .slice(0, 10),
+                  emptyState: (
+                    <div className="flex items-center justify-center h-full min-h-[400px]">
+                      <Empty>
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon">
+                            <Package className="h-12 w-12 text-muted-foreground" />
+                          </EmptyMedia>
+                          <EmptyTitle>No products found</EmptyTitle>
+                          <EmptyDescription>
+                            {searchQuery || activeCategory !== "all"
+                              ? "Try adjusting your search or filter criteria."
+                              : products.length === 0
+                              ? "No products available. Add products to get started."
+                              : "Loading products..."}
+                          </EmptyDescription>
+                        </EmptyHeader>
+                      </Empty>
+                    </div>
+                  ),
+                },
+                {
+                  value: "recent",
+                  label: "Recent",
+                  items: searchResults.slice().reverse().slice(0, 10),
+                  emptyState: (
+                    <div className="flex items-center justify-center h-full min-h-[400px]">
+                      <Empty>
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon">
+                            <Package className="h-12 w-12 text-muted-foreground" />
+                          </EmptyMedia>
+                          <EmptyTitle>No products found</EmptyTitle>
+                          <EmptyDescription>
+                            {searchQuery || activeCategory !== "all"
+                              ? "Try adjusting your search or filter criteria."
+                              : products.length === 0
+                              ? "No products available. Add products to get started."
+                              : "Loading products..."}
+                          </EmptyDescription>
+                        </EmptyHeader>
+                      </Empty>
+                    </div>
+                  ),
+                },
+                {
+                  value: "favorites",
+                  label: "Favorites",
+                  items: [],
+                  emptyState: (
+                    <div className="flex flex-col items-center justify-center h-full min-h-[300px]">
+                      <Empty>
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon">
+                            <BarChart className="h-12 w-12 text-muted-foreground" />
+                          </EmptyMedia>
+                          <EmptyTitle>Favorites feature coming soon</EmptyTitle>
+                          <EmptyDescription>
+                            You'll be able to mark products as favorites for
+                            quick access
+                          </EmptyDescription>
+                        </EmptyHeader>
+                      </Empty>
+                    </div>
+                  ),
+                },
+              ]}
+              renderItem={(product) => (
+                <ProductCard
+                  product={product}
+                  currencySymbol={currencySymbol}
+                  onAddToCart={handleProductSelection}
+                  onQuickAdd={handleQuickAdd}
+                  variants={itemVariants}
+                  isTablet={isTablet}
+                />
+              )}
+              getKey={(product) => product.id}
               containerVariants={containerVariants}
-              itemVariants={itemVariants}
               isTablet={isTablet}
             />
           )}
-
+  
           {activeSalesSection === "workers" && (
-            <div className="glassy-card p-4 overflow-hidden">
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {filteredWorkers.length === 0 && (
-                  <div className="text-sm text-slate-500">
-                    No workers found.
-                  </div>
-                )}
-                {filteredWorkers.map((worker) => (
-                  <div
-                    key={worker.id}
-                    className="glassy-card p-4 flex items-center justify-between gap-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-700 truncate">
-                        {worker.name}
-                      </p>
-                      <p className="text-xs text-slate-500 truncate">
-                        {worker.specialty || "Labor"}
-                      </p>
-                      <div className="mt-2 flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant={
-                            (workerRateType[worker.id] || "day") === "day"
-                              ? "default"
-                              : "outline"
-                          }
-                          className="h-7 px-2 text-[11px]"
-                          onClick={() =>
-                            setWorkerRateType((prev) => ({
-                              ...prev,
-                              [worker.id]: "day",
-                            }))
-                          }
-                        >
-                          Per Day
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={
-                            (workerRateType[worker.id] || "day") === "hour"
-                              ? "default"
-                              : "outline"
-                          }
-                          className="h-7 px-2 text-[11px]"
-                          onClick={() =>
-                            setWorkerRateType((prev) => ({
-                              ...prev,
-                              [worker.id]: "hour",
-                            }))
-                          }
-                        >
-                          Per Hour
-                        </Button>
-                      </div>
+            <ProductTabs
+              activeTab="all"
+              onTabChange={() => {}}
+              showTabs={false}
+              className="glassy-card p-4 overflow-hidden flex flex-col min-h-0"
+              contentClassName="flex-1 overflow-auto p-0 min-h-0"
+              tabs={[
+                {
+                  value: "all",
+                  label: "All",
+                  items: filteredWorkers,
+                  emptyState: (
+                    <div className="text-sm text-slate-500">
+                      No workers found.
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-slate-700">
-                        {currencySymbol}
-                        {(
-                          (workerRateType[worker.id] || "day") === "hour"
-                            ? Number(worker.hourlyRate || 0)
-                            : Number(worker.dailyRate || 0)
-                        ).toFixed(2)}
-                      </p>
+                  ),
+                  gridClassName: "grid gap-3 md:grid-cols-2 lg:grid-cols-3",
+                },
+              ]}
+              renderItem={(worker) => (
+                <div className="glassy-card p-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-700 truncate">
+                      {worker.name}
+                    </p>
+                    <p className="text-xs text-slate-500 truncate">
+                      {worker.specialty || "Labor"}
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
                       <Button
                         size="sm"
-                        className="mt-2"
+                        variant={
+                          (workerRateType[worker.id] || "day") === "day"
+                            ? "default"
+                            : "outline"
+                        }
+                        className="h-7 px-2 text-[11px]"
                         onClick={() =>
-                          addWorkerLine(
-                            worker,
-                            workerRateType[worker.id] || "day"
-                          )
+                          setWorkerRateType((prev) => ({
+                            ...prev,
+                            [worker.id]: "day",
+                          }))
                         }
                       >
-                        Add
+                        Per Day
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={
+                          (workerRateType[worker.id] || "day") === "hour"
+                            ? "default"
+                            : "outline"
+                        }
+                        className="h-7 px-2 text-[11px]"
+                        onClick={() =>
+                          setWorkerRateType((prev) => ({
+                            ...prev,
+                            [worker.id]: "hour",
+                          }))
+                        }
+                      >
+                        Per Hour
                       </Button>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-slate-700">
+                      {currencySymbol}
+                      {(
+                        (workerRateType[worker.id] || "day") === "hour"
+                          ? Number(worker.hourlyRate || 0)
+                          : Number(worker.dailyRate || 0)
+                      ).toFixed(2)}
+                    </p>
+                    <Button
+                      size="sm"
+                      className="mt-2"
+                      onClick={() =>
+                        addWorkerLine(worker, workerRateType[worker.id] || "day")
+                      }
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              )}
+              getKey={(worker) => worker.id}
+            />
           )}
 
           {activeSalesSection === "services" && (
-            <div className="glassy-card p-4 overflow-hidden">
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {filteredServices.length === 0 && (
-                  <div className="text-sm text-slate-500">
-                    No services found.
-                  </div>
-                )}
-                {filteredServices.map((service) => (
-                  <div
-                    key={service.id}
-                    className="glassy-card p-4 flex items-center justify-between gap-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-700 truncate">
-                        {service.name}
-                      </p>
-                      <p className="text-xs text-slate-500 truncate">
-                        {service.billingType.replace("_", " ")}{" "}
-                        {service.unitLabel ? `· ${service.unitLabel}` : ""}
-                      </p>
+            <ProductTabs
+              activeTab="all"
+              onTabChange={() => {}}
+              showTabs={false}
+              className="glassy-card p-4 overflow-hidden flex flex-col min-h-0"
+              contentClassName="flex-1 overflow-auto p-0 min-h-0"
+              tabs={[
+                {
+                  value: "all",
+                  label: "All",
+                  items: filteredServices,
+                  emptyState: (
+                    <div className="text-sm text-slate-500">
+                      No services found.
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-slate-700">
-                        {currencySymbol}
-                        {Number(service.price || 0).toFixed(2)}
-                      </p>
-                      <Button
-                        size="sm"
-                        className="mt-2"
-                        onClick={() => addServiceLine(service)}
-                      >
-                        Add
-                      </Button>
-                    </div>
+                  ),
+                  gridClassName: "grid gap-3 md:grid-cols-2 lg:grid-cols-3",
+                },
+              ]}
+              renderItem={(service) => (
+                <div className="glassy-card p-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-700 truncate">
+                      {service.name}
+                    </p>
+                    <p className="text-xs text-slate-500 truncate">
+                      {service.billingType}
+                      {service.unitLabel ? `· ${service.unitLabel}` : ""}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-slate-700">
+                      {currencySymbol}
+                      {Number(service.price || 0).toFixed(2)}
+                    </p>
+                    <Button
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => addServiceLine(service)}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              )}
+              getKey={(service) => service.id}
+            />
           )}
 
           {activeSalesSection === "custom" && (
@@ -1720,46 +1844,54 @@ export default function SalesPage() {
                 </div>
                 <Button onClick={openAddCustomLine}>Add Custom</Button>
               </div>
-              {customCartItems.length > 0 ? (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {customCartItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="glassy-card p-4 flex items-center justify-between"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-700 truncate">
-                          {item.customLine?.name || item.product.name}
-                        </p>
-                        <p className="text-xs text-slate-500 truncate">
-                          {item.customLine?.serviceType || "Custom"} •{" "}
-                          {item.customLine?.workerName || "No worker"}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-slate-700">
-                          {currencySymbol}
-                          {(
-                            getCartLineUnitPrice(item) * item.quantity
-                          ).toFixed(2)}
-                        </p>
-                        <Button
-                          size="sm"
-                          className="mt-2"
-                          variant="outline"
-                          onClick={() => openEditCustomLine(item.id)}
-                        >
-                          Edit
-                        </Button>
-                      </div>
+              <ProductTabs
+                activeTab="all"
+                onTabChange={() => {}}
+                showTabs={false}
+                className="flex flex-col min-h-0"
+                contentClassName="flex-1 overflow-auto p-0 min-h-0"
+                tabs={[
+                  {
+                    value: "all",
+                    label: "All",
+                    items: customCartItems,
+                    emptyState: (
+                      <p className="text-sm text-slate-500">
+                        No custom items in the cart yet.
+                      </p>
+                    ),
+                    gridClassName: "grid gap-3 md:grid-cols-2",
+                  },
+                ]}
+                renderItem={(item) => (
+                  <div className="glassy-card p-4 flex items-center justify-between">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-700 truncate">
+                        {item.customLine?.name || item.product.name}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">
+                        {item.customLine?.serviceType || "Custom"} •{" "}
+                        {item.customLine?.workerName || "No worker"}
+                      </p>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500">
-                  No custom items in the cart yet.
-                </p>
-              )}
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-slate-700">
+                        {currencySymbol}
+                        {(getCartLineUnitPrice(item) * item.quantity).toFixed(2)}
+                      </p>
+                      <Button
+                        size="sm"
+                        className="mt-2"
+                        variant="outline"
+                        onClick={() => openEditCustomLine(item.id)}
+                      >
+                        Edit
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                getKey={(item) => item.id}
+              />
             </div>
           )}
         </div>
@@ -1891,6 +2023,7 @@ export default function SalesPage() {
           selectedProjectId={selectedProjectId}
           onProjectIdChange={setSelectedProjectId}
           projects={customerProjects}
+          showProjects={hasRentalItemsInCart}
           onAddProject={addCustomerProject}
           onSaveProfile={async ({
             name,

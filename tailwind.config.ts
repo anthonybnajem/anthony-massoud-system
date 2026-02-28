@@ -15,6 +15,17 @@ const config: Config = {
         khmer: ["Noto Sans Khmer", "sans-serif"],
         roboto: ["Roboto", "sans-serif"],
       },
+      fontSize: {
+        xs: ["clamp(0.625rem, 0.58rem + 0.22vw, 0.75rem)", { lineHeight: "1rem" }],
+        sm: ["clamp(0.75rem, 0.68rem + 0.28vw, 0.875rem)", { lineHeight: "1.2rem" }],
+        base: ["clamp(0.8125rem, 0.74rem + 0.36vw, 1rem)", { lineHeight: "1.45rem" }],
+        lg: ["clamp(0.9375rem, 0.84rem + 0.48vw, 1.125rem)", { lineHeight: "1.55rem" }],
+        xl: ["clamp(1.0625rem, 0.93rem + 0.65vw, 1.25rem)", { lineHeight: "1.7rem" }],
+        "2xl": ["clamp(1.1875rem, 1rem + 0.95vw, 1.5rem)", { lineHeight: "1.9rem" }],
+        "3xl": ["clamp(1.375rem, 1.07rem + 1.4vw, 1.875rem)", { lineHeight: "2.1rem" }],
+        "4xl": ["clamp(1.5625rem, 1.12rem + 2vw, 2.25rem)", { lineHeight: "2.4rem" }],
+        "5xl": ["clamp(1.875rem, 1.3rem + 2.6vw, 3rem)", { lineHeight: "1.1" }],
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",

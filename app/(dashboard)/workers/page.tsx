@@ -167,7 +167,7 @@ export default function WorkersPage() {
         <CardHeader className="space-y-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <CardTitle>Worker Directory</CardTitle>
+              {/* <CardTitle>Worker Directory</CardTitle> */}
               <CardDescription>
                 {filteredWorkers.length}{" "}
                 {filteredWorkers.length === 1 ? "worker" : "workers"} found
