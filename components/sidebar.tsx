@@ -271,7 +271,7 @@ export function AppSidebar() {
                   <Package className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Massoud System  System</span>
+                  <span className="truncate font-semibold">Massoud System</span>
                   <span className="truncate text-xs">Point of Sale</span>
                 </div>
               </Link>

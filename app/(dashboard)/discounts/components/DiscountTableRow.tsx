@@ -29,7 +29,7 @@ export function DiscountTableRow({
 }: DiscountTableRowProps) {
   const formatDiscountValue = (discount: Discount) => {
     return discount.type === "percentage"
-      ? `${discount.value}%`
+      ? `${discount.value}`
       : `$${discount.value.toFixed(2)}`;
   };
   const targetDetails = () => {
