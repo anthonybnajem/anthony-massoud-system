@@ -184,21 +184,23 @@ export default function CheckoutDialog({
       ...overrides,
     });
   };
+  const checkoutInputClass =
+    "h-8 text-xs !border !border-slate-400 bg-white text-slate-900 placeholder:text-slate-400 focus-visible:!ring-0 focus-visible:!ring-offset-0 focus-visible:!border-slate-500";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[98vw] max-w-6xl h-[94vh] overflow-hidden p-0 gap-0 flex flex-col">
-        <DialogHeader className="px-5 py-4 border-b bg-background">
+      <DialogContent className="w-[98vw] max-w-6xl h-[94vh] overflow-hidden p-0 gap-0 flex flex-col bg-white text-slate-900 border-slate-200">
+        <DialogHeader className="px-5 py-4 border-b border-slate-200 bg-white">
           <DialogTitle className="text-2xl">Complete Checkout</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-slate-600">
             Review and edit the full receipt before confirming payment.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 bg-background">
-          <div className="lg:col-span-4 border-r bg-muted/20 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 bg-white">
+          <div className="lg:col-span-4 border-r border-slate-200 bg-white overflow-y-auto p-4 space-y-4">
             {customerName || customerEmail || customerPhone ? (
-              <div className="bg-gradient-to-r from-primary/5 to-primary/10 p-4 rounded-lg border border-primary/20">
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-semibold flex items-center gap-2">
                     <User className="h-4 w-4 text-primary" />
@@ -216,19 +218,19 @@ export default function CheckoutDialog({
                 <div className="space-y-2">
                   {customerName && (
                     <div className="flex items-center text-sm">
-                      <User className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                      <User className="h-3.5 w-3.5 mr-2 text-slate-500" />
                       <span className="font-medium">{customerName}</span>
                     </div>
                   )}
                   {customerEmail && (
                     <div className="flex items-center text-sm">
-                      <Mail className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                      <Mail className="h-3.5 w-3.5 mr-2 text-slate-500" />
                       <span>{customerEmail}</span>
                     </div>
                   )}
                   {customerPhone && (
                     <div className="flex items-center text-sm">
-                      <Phone className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                      <Phone className="h-3.5 w-3.5 mr-2 text-slate-500" />
                       <span>{customerPhone}</span>
                     </div>
                   )}
@@ -246,30 +248,32 @@ export default function CheckoutDialog({
             )}
 
             {hasRentalItems && (
-              <div className="space-y-3 rounded-lg border  p-4">
+              <div className="space-y-3 rounded-lg border border-slate-200 p-4 bg-white">
                 <h4 className="text-sm font-semibold">Default Rental Period</h4>
                 <div className="grid gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">From</label>
+                    <label className="text-xs text-slate-500">From</label>
                     <Input
                       type="datetime-local"
+                      className={checkoutInputClass}
                       value={rentalStartDate}
                       onChange={(e) => setRentalStartDate?.(e.target.value)}
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">To</label>
+                    <label className="text-xs text-slate-500">To</label>
                     <Input
                       type="datetime-local"
+                      className={checkoutInputClass}
                       value={rentalEndDate}
                       onChange={(e) => setRentalEndDate?.(e.target.value)}
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-between rounded-md border  px-3 py-2">
+                <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2">
                   <div>
                     <p className="text-sm font-medium">Apply To All Rental Items</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-slate-500">
                       Keep all rental lines synced with default dates
                     </p>
                   </div>
@@ -281,19 +285,19 @@ export default function CheckoutDialog({
               </div>
             )}
 
-            <div className="space-y-3 bg-background p-4 rounded-lg border">
+            <div className="space-y-3 bg-white p-4 rounded-lg border border-slate-200">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Subtotal:</span>
-                <span className="font-medium text-foreground">
+                <span className="text-slate-500">Subtotal:</span>
+                <span className="font-medium text-slate-900">
                   {currencySymbol}
                   {cartSubtotal.toFixed(2)}
                 </span>
               </div>
               {discountAmount > 0 && (
                 <>
-                  <Separator className="my-2" />
+                  <Separator className="my-2 bg-slate-200" />
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">
+                    <span className="text-slate-500">
                       Discount{" "}
                       {discountLabel
                         ? `(${discountLabel})`
@@ -308,20 +312,20 @@ export default function CheckoutDialog({
                   </div>
                 </>
               )}
-              <Separator className="my-2" />
+              <Separator className="my-2 bg-slate-200" />
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Tax ({taxRate}%):</span>
-                <span className="font-medium text-foreground">
+                <span className="text-slate-500">Tax ({taxRate}%):</span>
+                <span className="font-medium text-slate-900">
                   {currencySymbol}
                   {taxAmount.toFixed(2)}
                 </span>
               </div>
-              <Separator className="my-3" />
-              <div className="flex justify-between items-center pt-2 border-t border-border">
-                <span className="font-semibold text-base text-foreground">
+              <Separator className="my-3 bg-slate-200" />
+              <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                <span className="font-semibold text-base text-slate-900">
                   Total Amount:
                 </span>
-                <span className="text-2xl font-bold text-primary">
+                <span className="text-2xl font-bold text-slate-900">
                   {currencySymbol}
                   {cartTotal.toFixed(2)}
                 </span>
@@ -330,7 +334,7 @@ export default function CheckoutDialog({
           </div>
 
           <div className="lg:col-span-8 flex flex-col overflow-hidden">
-            <div className="px-4 py-3 border-b flex items-center justify-between sticky top-0 z-10">
+            <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between sticky top-0 z-10">
               <h4 className="font-semibold flex items-center gap-2">
                 <ReceiptText className="h-4 w-4 text-primary" />
                 Full Receipt
@@ -346,7 +350,7 @@ export default function CheckoutDialog({
                     Add Custom Item
                   </Button>
                 )}
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-slate-500">
                   {receiptItems.length} line
                   {receiptItems.length === 1 ? "" : "s"}
                 </span>
@@ -357,7 +361,7 @@ export default function CheckoutDialog({
                 const isEditing = Boolean(editingRows[item.id]);
                 const isCustom = item.isCustom || Boolean(item.customLine);
                 return (
-                <div key={item.id} className="p-2 border-b space-y-1.5">
+                <div key={item.id} className="p-2 border-b border-slate-200 space-y-1.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-medium text-sm leading-tight">
@@ -365,7 +369,7 @@ export default function CheckoutDialog({
                         {item.variationName ? ` (${item.variationName})` : ""}
                         {item.isRental &&
                         (item.rentalStartDate || item.rentalEndDate) ? (
-                          <span className="ml-2 text-[11px] font-normal text-muted-foreground">
+                          <span className="ml-2 text-[11px] font-normal text-slate-500">
                             {formatShortDate(item.rentalStartDate)}
                             {item.rentalEndDate
                               ? ` - ${formatShortDate(item.rentalEndDate)}`
@@ -373,7 +377,7 @@ export default function CheckoutDialog({
                           </span>
                         ) : null}
                       </p>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-[11px] text-slate-500">
                         {item.quantity} {item.unitLabel || "unit"} × {currencySymbol}
                         {item.unitPrice.toFixed(2)}
                         {!isCustom && (
@@ -386,7 +390,7 @@ export default function CheckoutDialog({
                         )}
                       </p>
                       {isCustom && (item.customLine?.serviceType || item.customLine?.workerName) && (
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-[11px] text-slate-500">
                           {item.customLine?.serviceType || "Custom"}
                           {item.customLine?.workerName
                             ? ` • ${item.customLine.workerName}`
@@ -396,7 +400,7 @@ export default function CheckoutDialog({
                     </div>
                     <div className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <span className="text-[11px] font-semibold text-foreground px-1.5">
+                        <span className="text-[11px] font-semibold text-slate-900 px-1.5">
                           {currencySymbol}
                           {item.unitPrice.toFixed(2)}
                         </span>
@@ -430,7 +434,7 @@ export default function CheckoutDialog({
 
                   <div className="grid gap-0.5 md:grid-cols-3">
                     <div className="space-y-0 md:col-span-1">
-                      <label className="text-[11px] text-muted-foreground">
+                      <label className="text-[11px] text-slate-500">
                         Qty ({item.unitLabel || "unit"})
                       </label>
                       {isEditing ? (
@@ -438,7 +442,7 @@ export default function CheckoutDialog({
                           type="number"
                           min="0"
                           step="0.01"
-                          className="h-8 text-xs"
+                          className={checkoutInputClass}
                           value={item.quantity}
                           onChange={(e) => {
                             const qty = parseFloat(e.target.value);
@@ -454,9 +458,9 @@ export default function CheckoutDialog({
                       )}
                     </div>
                     <div className="space-y-0 md:col-span-2">
-                      <label className="text-[11px] text-muted-foreground">Type</label>
+                      <label className="text-[11px] text-slate-500">Type</label>
                       {isEditing ? (
-                        <div className="h-8 rounded-md border px-1.5 flex items-center gap-1">
+                        <div className="h-8 rounded-md border border-slate-200 px-1.5 flex items-center gap-1">
                           {isCustom ? (
                             <Badge>Custom Line</Badge>
                           ) : (
@@ -493,7 +497,7 @@ export default function CheckoutDialog({
                           ) : item.isRental ? (
                             <Badge>Rental Line</Badge>
                           ) : (
-                            <span className="text-muted-foreground">Sale Line</span>
+                            <span className="text-slate-500">Sale Line</span>
                           )}
                         </div>
                       )}
@@ -501,13 +505,13 @@ export default function CheckoutDialog({
                   </div>
 
                   {isCustom && isEditing && (
-                    <div className="grid gap-2 md:grid-cols-2 border rounded-md p-2.5">
+                    <div className="grid gap-2 md:grid-cols-2 border border-slate-200 rounded-md p-2.5 bg-slate-50/60">
                       <div className="space-y-1 md:col-span-2">
-                        <label className="text-[11px] text-muted-foreground">
+                        <label className="text-[11px] text-slate-500">
                           Custom Item Name
                         </label>
                         <Input
-                          className="h-8 text-xs"
+                          className={checkoutInputClass}
                           value={item.customLine?.name || item.name}
                           onChange={(e) =>
                             handleCustomUpdate(item, { name: e.target.value })
@@ -515,14 +519,14 @@ export default function CheckoutDialog({
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[11px] text-muted-foreground">
+                        <label className="text-[11px] text-slate-500">
                           Unit Price
                         </label>
                         <Input
                           type="number"
                           min="0"
                           step="0.01"
-                          className="h-8 text-xs"
+                          className={checkoutInputClass}
                           value={item.unitPrice}
                           onChange={(e) =>
                             handleCustomUpdate(item, {
@@ -532,11 +536,11 @@ export default function CheckoutDialog({
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[11px] text-muted-foreground">
+                        <label className="text-[11px] text-slate-500">
                           Unit Label
                         </label>
                         <Input
-                          className="h-8 text-xs"
+                          className={checkoutInputClass}
                           value={item.unitLabel || ""}
                           onChange={(e) =>
                             handleCustomUpdate(item, {
@@ -546,11 +550,11 @@ export default function CheckoutDialog({
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[11px] text-muted-foreground">
+                        <label className="text-[11px] text-slate-500">
                           Service Type
                         </label>
                         <Input
-                          className="h-8 text-xs"
+                          className={checkoutInputClass}
                           value={item.customLine?.serviceType || ""}
                           onChange={(e) =>
                             handleCustomUpdate(item, {
@@ -560,13 +564,13 @@ export default function CheckoutDialog({
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[11px] text-muted-foreground">
+                        <label className="text-[11px] text-slate-500">
                           Worker
                         </label>
                         {workers.length > 0 ? (
                           <div className="h-8">
                             <select
-                              className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+                              className="h-8 w-full rounded-md !border !border-slate-400 bg-white px-2 text-xs text-slate-900 focus:outline-none focus:!ring-0 focus:!border-slate-500"
                               value={item.customLine?.workerId || ""}
                               onChange={(e) =>
                                 handleCustomUpdate(item, {
@@ -588,7 +592,7 @@ export default function CheckoutDialog({
                           </div>
                         ) : (
                           <Input
-                            className="h-8 text-xs"
+                            className={checkoutInputClass}
                             value={item.customLine?.workerName || ""}
                             onChange={(e) =>
                               handleCustomUpdate(item, {
@@ -599,11 +603,11 @@ export default function CheckoutDialog({
                         )}
                       </div>
                       <div className="space-y-1 md:col-span-2">
-                        <label className="text-[11px] text-muted-foreground">
+                        <label className="text-[11px] text-slate-500">
                           Notes
                         </label>
                         <textarea
-                          className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs"
+                          className="w-full rounded-md !border !border-slate-400 bg-white px-2 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:!ring-0 focus:!border-slate-500"
                           rows={2}
                           value={item.customLine?.notes || ""}
                           onChange={(e) =>
@@ -611,12 +615,12 @@ export default function CheckoutDialog({
                           }
                         />
                       </div>
-                      <div className="flex items-center justify-between rounded-md border px-2 py-1 md:col-span-2">
+                      <div className="flex items-center justify-between rounded-md border border-slate-200 px-2 py-1 md:col-span-2">
                         <div>
-                          <p className="text-[11px] font-medium text-foreground">
+                          <p className="text-[11px] font-medium text-slate-900">
                             Taxable
                           </p>
-                          <p className="text-[10px] text-muted-foreground">
+                          <p className="text-[10px] text-slate-500">
                             Apply sales tax to this line
                           </p>
                         </div>
@@ -633,18 +637,18 @@ export default function CheckoutDialog({
                   )}
 
                   {item.isRental && isEditing && !isCustom && (
-                    <details className="rounded-md border bg-muted/20">
-                      <summary className="cursor-pointer select-none px-2.5 py-1.5 text-[11px] text-muted-foreground">
+                    <details className="rounded-md border border-slate-200 bg-slate-50">
+                      <summary className="cursor-pointer select-none px-2.5 py-1.5 text-[11px] text-slate-500">
                         Rental Start / Rental End
                       </summary>
-                      <div className="grid gap-2 md:grid-cols-2 p-2.5 border-t">
+                      <div className="grid gap-2 md:grid-cols-2 p-2.5 border-t border-slate-200">
                         <div className="space-y-1">
-                          <label className="text-[11px] text-muted-foreground">
+                          <label className="text-[11px] text-slate-500">
                             Rental Start
                           </label>
                           <Input
                             type="datetime-local"
-                            className="h-8 text-xs"
+                            className={checkoutInputClass}
                             value={item.rentalStartDate || ""}
                             onChange={(e) =>
                               onReceiptItemRentalDatesChange?.(item.id, {
@@ -654,12 +658,12 @@ export default function CheckoutDialog({
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[11px] text-muted-foreground">
+                          <label className="text-[11px] text-slate-500">
                             Rental End
                           </label>
                           <Input
                             type="datetime-local"
-                            className="h-8 text-xs"
+                            className={checkoutInputClass}
                             value={item.rentalEndDate || ""}
                             onChange={(e) =>
                               onReceiptItemRentalDatesChange?.(item.id, {
@@ -677,7 +681,7 @@ export default function CheckoutDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 px-5 py-3 border-t bg-background justify-end">
+        <DialogFooter className="gap-2 px-5 py-3 border-t border-slate-200 bg-white justify-end">
           <Button variant="outline" onClick={onClose} className="sm:min-w-28">
             Cancel
           </Button>

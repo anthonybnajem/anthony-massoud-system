@@ -271,7 +271,7 @@ export function Cart({
     <div
       className={`w-full ${
         isTablet ? "md:w-80 md:max-w-80" : "md:w-96 md:max-w-96"
-      } glassy-card flex flex-col flex-shrink-0 min-w-0 max-h-[95vh]`}
+      } card flex flex-col flex-shrink-0 min-w-0 max-h-[95vh]`}
     >
       {cartContent}
     </div>

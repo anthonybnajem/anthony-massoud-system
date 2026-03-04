@@ -39,7 +39,7 @@ export function ProductCard({
   return (
     <motion.div variants={variants} className="h-full">
       <Card
-        className="glassy-card h-full flex flex-col cursor-pointer active:scale-[0.98] transition-all duration-200 group touch-manipulation hover:shadow-[0_14px_34px_rgba(15,23,42,0.14)]"
+        className="card h-full flex flex-col cursor-pointer active:scale-[0.98] transition-all duration-200 group touch-manipulation hover:shadow-[0_14px_34px_rgba(15,23,42,0.14)]"
         onClick={() => onAddToCart(product)}
       >
         <div className="aspect-square bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center overflow-hidden relative">

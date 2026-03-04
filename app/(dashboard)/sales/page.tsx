@@ -1400,7 +1400,7 @@ export default function SalesPage() {
             {/* Cart Summary Bar with Sidebar Toggle */}
              
             <div
-              className={`glassy-card ${isTablet ? "p-3" : "p-4"}`}
+              className={`card ${isTablet ? "p-3" : "p-4"}`}
             >
               
               <div className="flex items-center justify-between gap-3">
@@ -1504,7 +1504,7 @@ export default function SalesPage() {
               
             </div>
 
-            <div className={`glassy-card ${isTablet ? "p-3" : "p-4"}`}>
+            <div className={`card ${isTablet ? "p-3" : "p-4"}`}>
               <Tabs
                 value={activeSalesSection}
                 onValueChange={(value) =>
@@ -1524,7 +1524,7 @@ export default function SalesPage() {
             </div>
 
             {activeSalesSection === "products" && (
-              <div className={`glassy-card ${isTablet ? "p-4" : "p-5"}`}>
+              <div className={`card ${isTablet ? "p-4" : "p-5"}`}>
                 <SearchBar
                   searchQuery={searchQuery}
                   onSearchChange={setSearchQuery}
@@ -1544,7 +1544,7 @@ export default function SalesPage() {
             )}
 
             {activeSalesSection === "workers" && (
-              <div className={`glassy-card ${isTablet ? "p-4" : "p-5"}`}>
+              <div className={`card ${isTablet ? "p-4" : "p-5"}`}>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
                   <Input
@@ -1558,7 +1558,7 @@ export default function SalesPage() {
             )}
 
             {activeSalesSection === "services" && (
-              <div className={`glassy-card ${isTablet ? "p-4" : "p-5"}`}>
+              <div className={`card ${isTablet ? "p-4" : "p-5"}`}>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
                   <Input
@@ -1695,7 +1695,7 @@ export default function SalesPage() {
               activeTab="all"
               onTabChange={() => {}}
               showTabs={false}
-              className="glassy-card p-4 overflow-hidden flex flex-col min-h-0"
+              className="card p-4 overflow-hidden flex flex-col min-h-0"
               contentClassName="flex-1 overflow-auto p-0 min-h-0"
               tabs={[
                 {
@@ -1711,7 +1711,7 @@ export default function SalesPage() {
                 },
               ]}
               renderItem={(worker) => (
-                <div className="glassy-card p-4 flex items-center justify-between gap-3">
+                <div className="card p-4 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-700 truncate">
                       {worker.name}
@@ -1786,7 +1786,7 @@ export default function SalesPage() {
               activeTab="all"
               onTabChange={() => {}}
               showTabs={false}
-              className="glassy-card p-4 overflow-hidden flex flex-col min-h-0"
+              className="card p-4 overflow-hidden flex flex-col min-h-0"
               contentClassName="flex-1 overflow-auto p-0 min-h-0"
               tabs={[
                 {
@@ -1802,7 +1802,7 @@ export default function SalesPage() {
                 },
               ]}
               renderItem={(service) => (
-                <div className="glassy-card p-4 flex items-center justify-between gap-3">
+                <div className="card p-4 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-700 truncate">
                       {service.name}
@@ -1832,7 +1832,7 @@ export default function SalesPage() {
           )}
 
           {activeSalesSection === "custom" && (
-            <div className="glassy-card p-5 space-y-4">
+            <div className="card p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-slate-700">
@@ -1864,7 +1864,7 @@ export default function SalesPage() {
                   },
                 ]}
                 renderItem={(item) => (
-                  <div className="glassy-card p-4 flex items-center justify-between">
+                  <div className="card p-4 flex items-center justify-between">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-700 truncate">
                         {item.customLine?.name || item.product.name}

@@ -40,7 +40,7 @@ export function ProductTabs<T>({
   const hasMultipleTabs = tabs.length > 1;
   const shouldShowTabs = showTabs && hasMultipleTabs;
   const wrapperClassName =
-    className ?? "glassy-card flex-1 overflow-hidden flex flex-col min-h-0";
+    className ?? "card flex-1 overflow-hidden flex flex-col min-h-0";
   const contentPaddingClass =
     contentClassName ??
     `flex-1 overflow-auto ${isTablet ? "p-3" : "p-2 sm:p-3"} min-h-0`;
