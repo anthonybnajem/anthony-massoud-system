@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/language-provider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,16 +28,16 @@ export function DeleteCategoryDialog({
   productCount,
   onConfirm,
 }: DeleteCategoryDialogProps) {
+  const { t } = useLanguage();
   if (!category) return null;
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Category</AlertDialogTitle>
+          <AlertDialogTitle>{t("categories.deleteCategoryConfirmTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete this category? This action cannot be
-            undone.
+            {t("categories.deleteCategoryConfirmDesc")}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -48,25 +49,23 @@ export function DeleteCategoryDialog({
             </p>
           )}
           <p className="mt-2 text-sm">
-            This category contains{" "}
-            <span className="font-medium">{productCount}</span> products.
+            {t("categories.deleteCategoryProductCount", { count: productCount })}
           </p>
           {productCount > 0 && (
             <p className="mt-2 text-sm text-destructive">
-              You must reassign or delete these products before deleting this
-              category.
+              {t("categories.deleteCategoryReassign")}
             </p>
           )}
         </div>
 
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClose}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel onClick={onClose}>{t("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             disabled={productCount > 0}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:pointer-events-none"
           >
-            Delete
+            {t("common.delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

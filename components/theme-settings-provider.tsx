@@ -5,6 +5,7 @@ import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { useTheme } from "next-themes"
 import { useToast } from "@/components/ui/use-toast"
+import { useLanguage } from "@/components/language-provider"
 import { settingsApi } from "@/lib/db"
 
 type ThemeSettingsContextType = {
@@ -27,6 +28,7 @@ export function ThemeSettingsProvider({
   const [isLoading, setIsLoading] = useState(true)
   const { theme: currentTheme, setTheme: setNextTheme } = useTheme()
   const { toast } = useToast()
+  const { t } = useLanguage()
 
   useEffect(() => {
     const loadThemeSettings = async () => {
@@ -57,8 +59,8 @@ export function ThemeSettingsProvider({
     } catch (error) {
       console.error("Failed to update theme settings:", error)
       toast({
-        title: "Settings Error",
-        description: "Failed to save theme preference",
+        title: t("settings.settingsError"),
+        description: t("settings.errorSaveTheme"),
         variant: "destructive",
       })
     }

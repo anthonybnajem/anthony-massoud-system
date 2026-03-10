@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useLanguage } from "@/components/language-provider";
 import { Percent, FileText, User, ArrowRight } from "lucide-react";
 
 interface CartSummaryProps {
@@ -20,6 +21,7 @@ interface CartSummaryProps {
   onCustomerClick: () => void;
   onAddCustomLine?: () => void;
   onCheckoutClick: () => void;
+  isExpenseMode?: boolean;
 }
 
 export function CartSummary({
@@ -38,12 +40,15 @@ export function CartSummary({
   onCustomerClick,
   onAddCustomLine,
   onCheckoutClick,
+  isExpenseMode = false,
 }: CartSummaryProps) {
+  const { t } = useLanguage();
+  const mainButtonKey = isExpenseMode ? "cart.completeExpense" : "cart.completeCheckout";
   return (
     <div className="p-5 border-t bg-gradient-to-b from-background to-muted/20">
       <div className="space-y-3 mb-5">
         <div className="flex justify-between items-center text-sm">
-          <span className="text-muted-foreground">Subtotal:</span>
+          <span className="text-muted-foreground">{t("cart.subtotal")}</span>
           <span className="font-medium text-foreground">
             {currencySymbol}
             {cartSubtotal.toFixed(2)}
@@ -55,7 +60,7 @@ export function CartSummary({
             <Separator className="my-2" />
             <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground">
-                Discount{" "}
+                {t("cart.discount")}{" "}
                 {discountLabel
                   ? `(${discountLabel})`
                   : discountType === "percentage"
@@ -70,21 +75,24 @@ export function CartSummary({
           </>
         )}
 
-        <Separator className="my-2" />
-
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-muted-foreground">Tax ({taxRate}%):</span>
-          <span className="font-medium text-foreground">
-            {currencySymbol}
-            {taxAmount.toFixed(2)}
-          </span>
-        </div>
+        {!isExpenseMode && (
+          <>
+            <Separator className="my-2" />
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">{t("cart.tax")} ({taxRate}%):</span>
+              <span className="font-medium text-foreground">
+                {currencySymbol}
+                {taxAmount.toFixed(2)}
+              </span>
+            </div>
+          </>
+        )}
 
         <Separator className="my-3" />
 
         <div className="flex justify-between items-center pt-2 border-t border-border">
           <span className="font-semibold text-base text-foreground">
-            Total:
+            {t("cart.total")}
           </span>
           <span className="text-2xl font-bold text-primary">
             {currencySymbol}
@@ -100,7 +108,7 @@ export function CartSummary({
           className="w-full h-9 mb-3"
           onClick={onAddCustomLine}
         >
-          Add Custom Item / Service
+          {t("cart.addCustomItemService")}
         </Button>
       )}
 
@@ -113,7 +121,7 @@ export function CartSummary({
           onClick={onDiscountClick}
         >
           <Percent className="h-3.5 w-3.5" />
-          <span className="text-xs">Discount</span>
+          <span className="text-xs">{t("cart.discount")}</span>
         </Button>
         <Button
           variant="outline"
@@ -123,7 +131,7 @@ export function CartSummary({
           onClick={onNotesClick}
         >
           <FileText className="h-3.5 w-3.5" />
-          <span className="text-xs">Notes</span>
+          <span className="text-xs">{t("cart.notes")}</span>
         </Button>
         <Button
           variant="outline"
@@ -133,7 +141,7 @@ export function CartSummary({
           onClick={onCustomerClick}
         >
           <User className="h-3.5 w-3.5" />
-          <span className="text-xs">Customer</span>
+          <span className="text-xs">{t("cart.customer")}</span>
         </Button>
       </div>
 
@@ -143,7 +151,7 @@ export function CartSummary({
         disabled={cartLength === 0}
         onClick={onCheckoutClick}
       >
-        <span>Complete Checkout</span>
+        <span>{t(mainButtonKey)}</span>
         <ArrowRight className="ml-2 h-5 w-5" color="white"/>
       </Button>
     </div>

@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -424,10 +425,12 @@ export function ReceiptDesigner() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="printAutomatically">
-                    Print Automatically After Sale
-                  </Label>
+                <SwitchRow className="p-4 rounded-lg border bg-muted/50">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="printAutomatically" className="text-sm font-medium">
+                      Print Automatically After Sale
+                    </Label>
+                  </div>
                   <Switch
                     id="printAutomatically"
                     checked={formData.printAutomatically}
@@ -435,7 +438,7 @@ export function ReceiptDesigner() {
                       handleSwitchChange("printAutomatically", checked)
                     }
                   />
-                </div>
+                </SwitchRow>
               </TabsContent>
 
               <TabsContent value="header" className="space-y-4">

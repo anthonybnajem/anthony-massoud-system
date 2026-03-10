@@ -9,17 +9,20 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { Separator } from "@/components/ui/separator";
 import { Sun, Moon, Monitor, Palette } from "lucide-react";
 import { useTheme } from "next-themes";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useEffect } from "react";
+import { useLanguage } from "@/components/language-provider";
 
 interface AppearanceSettingsProps {
   onThemeChange: (theme: "light" | "dark" | "system") => void;
 }
 
 export function AppearanceSettings({ onThemeChange }: AppearanceSettingsProps) {
+  const { t } = useLanguage();
   const { setTheme } = useTheme();
 
   useEffect(() => {
@@ -35,15 +38,15 @@ export function AppearanceSettings({ onThemeChange }: AppearanceSettingsProps) {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Palette className="h-5 w-5 text-primary" />
-            Theme Settings
+            {t("appearance.themePreference")}
           </CardTitle>
           <CardDescription>
-            Customize the appearance of your  system.
+            Customize the appearance of your system.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Quick Toggle Switch */}
-            <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+          <SwitchRow className="p-4 rounded-lg border bg-muted/50">
             <div className="flex items-center gap-3">
               {isDark ? (
                 <Moon className="h-5 w-5 text-primary" />
@@ -67,13 +70,13 @@ export function AppearanceSettings({ onThemeChange }: AppearanceSettingsProps) {
               checked={isDark}
               disabled
             />
-          </div>
+          </SwitchRow>
 
           <Separator />
 
           {/* Theme Selection */}
           <div className="space-y-3">
-            <Label className="text-base font-semibold">Theme Preference</Label>
+            <Label className="text-base font-semibold">{t("appearance.themePreference")}</Label>
             <p className="text-sm text-muted-foreground">
               Choose how the theme should be applied.
             </p>
@@ -102,7 +105,7 @@ export function AppearanceSettings({ onThemeChange }: AppearanceSettingsProps) {
                 >
                   <Moon className="h-5 w-5 text-primary" />
                   <div>
-                    <div className="font-medium">Dark</div>
+                    <div className="font-medium">{t("appearance.dark")}</div>
                     <div className="text-sm text-muted-foreground">
                       Always use dark theme
                     </div>
@@ -118,7 +121,7 @@ export function AppearanceSettings({ onThemeChange }: AppearanceSettingsProps) {
                 >
                   <Monitor className="h-5 w-5 text-primary" />
                   <div>
-                    <div className="font-medium">System</div>
+                    <div className="font-medium">{t("appearance.system")}</div>
                     <div className="text-sm text-muted-foreground">
                       Match your device theme
                     </div>

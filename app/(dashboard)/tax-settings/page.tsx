@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useTaxConfig, type TaxJurisdiction, type TaxRule } from "@/components/tax-config-provider"
+import { useLanguage } from "@/components/language-provider"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { SwitchRow } from "@/components/ui/switch-row"
 import { Badge } from "@/components/ui/badge"
 import {
   Empty,
@@ -21,6 +23,7 @@ import {
 import { Plus, Edit, Trash2, Check, Calculator } from "lucide-react"
 
 export default function TaxSettingsPage() {
+  const { t } = useLanguage()
   const {
     taxJurisdictions,
     currentJurisdiction,
@@ -96,21 +99,21 @@ export default function TaxSettingsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Tax Settings</h1>
-          <p className="text-muted-foreground">Manage tax jurisdictions and rules for your store</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("tax.title")}</h1>
+          <p className="text-muted-foreground">{t("tax.subtitle")}</p>
         </div>
         <Button onClick={() => setIsAddJurisdictionOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Jurisdiction
+          {t("tax.addJurisdictionButton")}
         </Button>
       </div>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Tax Jurisdictions</CardTitle>
+          <CardTitle>{t("tax.jurisdictions")}</CardTitle>
           <Select value={currentJurisdiction?.id || ""} onValueChange={setCurrentJurisdiction}>
             <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select jurisdiction" />
+              <SelectValue placeholder={t("tax.selectJurisdiction")} />
             </SelectTrigger>
             <SelectContent>
               {taxJurisdictions.map((jurisdiction) => (
@@ -125,10 +128,10 @@ export default function TaxSettingsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Rules</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>{t("tax.name")}</TableHead>
+                <TableHead>{t("tax.code")}</TableHead>
+                <TableHead>{t("tax.rules")}</TableHead>
+                <TableHead>{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -137,7 +140,7 @@ export default function TaxSettingsPage() {
                   <TableRow key={jurisdiction.id}>
                     <TableCell className="font-medium">{jurisdiction.name}</TableCell>
                     <TableCell>{jurisdiction.code}</TableCell>
-                    <TableCell>{jurisdiction.rules.length} rules</TableCell>
+                    <TableCell>{t("tax.rulesCount", { count: jurisdiction.rules.length })}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button
@@ -171,9 +174,9 @@ export default function TaxSettingsPage() {
                         <EmptyMedia variant="icon">
                           <Calculator className="h-6 w-6" />
                         </EmptyMedia>
-                        <EmptyTitle>No tax jurisdictions found</EmptyTitle>
+                        <EmptyTitle>{t("tax.noJurisdictions")}</EmptyTitle>
                         <EmptyDescription>
-                          Create your first tax jurisdiction to start managing tax rules.
+                          {t("tax.createFirstJurisdictionDesc")}
                         </EmptyDescription>
                       </EmptyHeader>
                     </Empty>
@@ -188,22 +191,22 @@ export default function TaxSettingsPage() {
       {currentJurisdiction && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Tax Rules for {currentJurisdiction.name}</CardTitle>
+            <CardTitle>{t("tax.rulesFor", { name: currentJurisdiction.name })}</CardTitle>
             <Button onClick={() => setIsAddRuleOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Add Rule
+              {t("tax.addRuleButton")}
             </Button>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Rate</TableHead>
-                  <TableHead>Applies To</TableHead>
-                  <TableHead>Default</TableHead>
-                  <TableHead>Exempt</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>{t("tax.name")}</TableHead>
+                  <TableHead>{t("tax.rate")}</TableHead>
+                  <TableHead>{t("tax.appliesTo")}</TableHead>
+                  <TableHead>{t("tax.default")}</TableHead>
+                  <TableHead>{t("tax.exempt")}</TableHead>
+                  <TableHead>{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -215,10 +218,10 @@ export default function TaxSettingsPage() {
                       <TableCell>
                         <Badge variant="outline">
                           {rule.appliesTo === "all"
-                            ? "All Products"
+                            ? t("tax.allProducts")
                             : rule.appliesTo === "category"
-                              ? "Categories"
-                              : "Specific Products"}
+                              ? t("tax.specificCategories")
+                              : t("tax.specificProducts")}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -268,9 +271,9 @@ export default function TaxSettingsPage() {
                           <EmptyMedia variant="icon">
                             <Calculator className="h-6 w-6" />
                           </EmptyMedia>
-                          <EmptyTitle>No tax rules found</EmptyTitle>
+                          <EmptyTitle>{t("tax.noRules")}</EmptyTitle>
                           <EmptyDescription>
-                            Add your first tax rule for this jurisdiction.
+                            {t("tax.addFirstRuleDescription")}
                           </EmptyDescription>
                         </EmptyHeader>
                       </Empty>
@@ -287,21 +290,21 @@ export default function TaxSettingsPage() {
       <Dialog open={isAddJurisdictionOpen} onOpenChange={setIsAddJurisdictionOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Tax Jurisdiction</DialogTitle>
+            <DialogTitle>{t("tax.addJurisdiction")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Jurisdiction Name</Label>
+              <Label htmlFor="name">{t("tax.jurisdictionName")}</Label>
               <Input
                 id="name"
                 value={newJurisdiction.name}
                 onChange={(e) => setNewJurisdiction({ ...newJurisdiction, name: e.target.value })}
-                placeholder="California"
+                placeholder={t("tax.jurisdictionPlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="code">Jurisdiction Code</Label>
+              <Label htmlFor="code">{t("tax.jurisdictionCode")}</Label>
               <Input
                 id="code"
                 value={newJurisdiction.code}
@@ -312,9 +315,9 @@ export default function TaxSettingsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddJurisdictionOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
-            <Button onClick={handleAddJurisdiction}>Add Jurisdiction</Button>
+            <Button onClick={handleAddJurisdiction}>{t("tax.addJurisdictionButton")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -323,12 +326,12 @@ export default function TaxSettingsPage() {
       <Dialog open={isEditJurisdictionOpen} onOpenChange={setIsEditJurisdictionOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Tax Jurisdiction</DialogTitle>
+            <DialogTitle>{t("tax.editJurisdiction")}</DialogTitle>
           </DialogHeader>
           {currentJurisdictionEdit && (
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-name">Jurisdiction Name</Label>
+                <Label htmlFor="edit-name">{t("tax.jurisdictionName")}</Label>
                 <Input
                   id="edit-name"
                   value={currentJurisdictionEdit.name}
@@ -337,7 +340,7 @@ export default function TaxSettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-code">Jurisdiction Code</Label>
+                <Label htmlFor="edit-code">{t("tax.jurisdictionCode")}</Label>
                 <Input
                   id="edit-code"
                   value={currentJurisdictionEdit.code}
@@ -348,9 +351,9 @@ export default function TaxSettingsPage() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditJurisdictionOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
-            <Button onClick={handleEditJurisdiction}>Save Changes</Button>
+            <Button onClick={handleEditJurisdiction}>{t("common.saveChanges")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -359,21 +362,21 @@ export default function TaxSettingsPage() {
       <Dialog open={isAddRuleOpen} onOpenChange={setIsAddRuleOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Tax Rule</DialogTitle>
+            <DialogTitle>{t("tax.addRule")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="rule-name">Rule Name</Label>
+              <Label htmlFor="rule-name">{t("tax.ruleName")}</Label>
               <Input
                 id="rule-name"
                 value={newRule.name}
                 onChange={(e) => setNewRule({ ...newRule, name: e.target.value })}
-                placeholder="Standard Rate"
+                placeholder={t("tax.ratePlaceholder")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="rule-rate">Tax Rate (%)</Label>
+              <Label htmlFor="rule-rate">{t("tax.rate")} (%)</Label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                   <Calculator className="h-4 w-4 text-muted-foreground" />
@@ -390,53 +393,53 @@ export default function TaxSettingsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="rule-applies-to">Applies To</Label>
+              <Label htmlFor="rule-applies-to">{t("tax.appliesTo")}</Label>
               <Select
                 value={newRule.appliesTo}
                 onValueChange={(value: "all" | "category" | "product") => setNewRule({ ...newRule, appliesTo: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select where tax applies" />
+                  <SelectValue placeholder={t("tax.selectWhereAppliesPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Products</SelectItem>
-                  <SelectItem value="category">Specific Categories</SelectItem>
-                  <SelectItem value="product">Specific Products</SelectItem>
+                  <SelectItem value="all">{t("tax.allProducts")}</SelectItem>
+                  <SelectItem value="category">{t("tax.specificCategories")}</SelectItem>
+                  <SelectItem value="product">{t("tax.specificProducts")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="rule-default">Default Rule</Label>
+              <SwitchRow>
+                <Label htmlFor="rule-default">{t("tax.defaultRule")}</Label>
                 <Switch
                   id="rule-default"
                   checked={newRule.isDefault}
                   onCheckedChange={(checked) => setNewRule({ ...newRule, isDefault: checked })}
                 />
-              </div>
+              </SwitchRow>
               <p className="text-xs text-muted-foreground">
-                The default rule applies to all products that don't match other rules.
+                {t("tax.defaultRuleDescription")}
               </p>
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="rule-exempt">Tax Exempt</Label>
+              <SwitchRow>
+                <Label htmlFor="rule-exempt">{t("tax.taxExempt")}</Label>
                 <Switch
                   id="rule-exempt"
                   checked={newRule.isExempt}
                   onCheckedChange={(checked) => setNewRule({ ...newRule, isExempt: checked })}
                 />
-              </div>
-              <p className="text-xs text-muted-foreground">Tax exempt items are not taxed (0% rate).</p>
+              </SwitchRow>
+              <p className="text-xs text-muted-foreground">{t("tax.exemptDescription")}</p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddRuleOpen(false)}>
-              Cancel
+<Button variant="outline" onClick={() => setIsAddRuleOpen(false)}>
+            {t("common.cancel")}
             </Button>
-            <Button onClick={handleAddRule}>Add Rule</Button>
+            <Button onClick={handleAddRule}>{t("tax.addRuleButton")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -445,12 +448,12 @@ export default function TaxSettingsPage() {
       <Dialog open={isEditRuleOpen} onOpenChange={setIsEditRuleOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Tax Rule</DialogTitle>
+            <DialogTitle>{t("tax.editRule")}</DialogTitle>
           </DialogHeader>
           {currentRuleEdit && (
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-rule-name">Rule Name</Label>
+                <Label htmlFor="edit-rule-name">{t("tax.ruleName")}</Label>
                 <Input
                   id="edit-rule-name"
                   value={currentRuleEdit.name}
@@ -459,7 +462,7 @@ export default function TaxSettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-rule-rate">Tax Rate (%)</Label>
+                <Label htmlFor="edit-rule-rate">{t("tax.rate")} (%)</Label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                     <Calculator className="h-4 w-4 text-muted-foreground" />
@@ -477,7 +480,7 @@ export default function TaxSettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-rule-applies-to">Applies To</Label>
+                <Label htmlFor="edit-rule-applies-to">{t("tax.appliesTo")}</Label>
                 <Select
                   value={currentRuleEdit.appliesTo}
                   onValueChange={(value: "all" | "category" | "product") =>
@@ -485,44 +488,44 @@ export default function TaxSettingsPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select where tax applies" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Products</SelectItem>
-                    <SelectItem value="category">Specific Categories</SelectItem>
-                    <SelectItem value="product">Specific Products</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="edit-rule-default">Default Rule</Label>
-                  <Switch
-                    id="edit-rule-default"
-                    checked={currentRuleEdit.isDefault}
-                    onCheckedChange={(checked) => setCurrentRuleEdit({ ...currentRuleEdit, isDefault: checked })}
-                  />
+<SelectValue placeholder={t("tax.selectWhereAppliesPlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t("tax.allProducts")}</SelectItem>
+                      <SelectItem value="category">{t("tax.specificCategories")}</SelectItem>
+                      <SelectItem value="product">{t("tax.specificProducts")}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
+
+                <div className="space-y-2">
+                  <SwitchRow>
+                    <Label htmlFor="edit-rule-default">{t("tax.defaultRule")}</Label>
+                    <Switch
+                      id="edit-rule-default"
+                      checked={currentRuleEdit.isDefault}
+                      onCheckedChange={(checked) => setCurrentRuleEdit({ ...currentRuleEdit, isDefault: checked })}
+                    />
+                  </SwitchRow>
+                </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="edit-rule-exempt">Tax Exempt</Label>
+                <SwitchRow>
+                  <Label htmlFor="edit-rule-exempt">{t("tax.taxExempt")}</Label>
                   <Switch
                     id="edit-rule-exempt"
                     checked={currentRuleEdit.isExempt}
                     onCheckedChange={(checked) => setCurrentRuleEdit({ ...currentRuleEdit, isExempt: checked })}
                   />
-                </div>
+                </SwitchRow>
               </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditRuleOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
-            <Button onClick={handleEditRule}>Save Changes</Button>
+            <Button onClick={handleEditRule}>{t("common.saveChanges")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

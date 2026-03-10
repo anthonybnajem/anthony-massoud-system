@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { type Product } from "@/components/pos-data-provider";
+import { useLanguage } from "@/components/language-provider";
 import {
   Dialog,
   DialogContent,
@@ -35,10 +36,14 @@ export function WeightQuantityDialog({
   onClose,
   onConfirm,
 }: WeightQuantityDialogProps) {
+  const { t } = useLanguage();
   const [quantity, setQuantity] = useState("");
   const unitLabel = getUnitLabel(product ?? undefined);
   const unitIncrement = getUnitIncrement(product ?? undefined);
-  const unitPrice = getProductUnitPrice(product ?? undefined);
+  const sellPrice = getProductUnitPrice(product ?? undefined, false);
+  const rentPrice = getProductUnitPrice(product ?? undefined, true);
+  const isRentalOnly = rentPrice > 0 && sellPrice <= 0;
+  const unitPrice = sellPrice > 0 ? sellPrice : rentPrice;
   const availableStock = product?.stock ?? 0;
 
   useEffect(() => {
@@ -74,23 +79,36 @@ export function WeightQuantityDialog({
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Enter Weight</DialogTitle>
+          <DialogTitle>{t("sales.enterWeight")}</DialogTitle>
           <DialogDescription>
-            Specify how many {unitLabel} of {product?.name} should be added to
-            the cart.
+            {t("sales.enterWeightDesc")
+              .replace("{unit}", unitLabel)
+              .replace("{name}", product?.name ?? "")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-muted-foreground">Price</p>
-              <p className="font-semibold">
-                {currencySymbol}
-                {unitPrice.toFixed(2)} / {unitLabel}
-              </p>
+              <p className="text-muted-foreground">{t("sales.price")}</p>
+              {isRentalOnly ? (
+                <div className="space-y-0.5 font-semibold">
+                  <p>
+                    {t("checkout.rent")}: {currencySymbol}
+                    {unitPrice.toFixed(2)} / {unitLabel}
+                  </p>
+                  <p className="text-muted-foreground font-normal">
+                    {t("sales.saleLabel")}: —
+                  </p>
+                </div>
+              ) : (
+                <p className="font-semibold">
+                  {currencySymbol}
+                  {unitPrice.toFixed(2)} / {unitLabel}
+                </p>
+              )}
             </div>
             <div>
-              <p className="text-muted-foreground">Available</p>
+              <p className="text-muted-foreground">{t("sales.available")}</p>
               <p className="font-semibold">
                 {formatStockDisplay(product ?? undefined)}
               </p>
@@ -98,7 +116,7 @@ export function WeightQuantityDialog({
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Quantity ({unitLabel})
+              {t("sales.quantityWithUnit").replace("{unit}", unitLabel)}
             </label>
             <Input
               type="number"
@@ -109,16 +127,18 @@ export function WeightQuantityDialog({
               disabled={!product || availableStock <= 0}
             />
             <p className="text-xs text-muted-foreground">
-              Minimum step {formatMeasurementValue(unitIncrement)} {unitLabel}
+              {t("sales.minimumStepDesc")
+                .replace("{value}", formatMeasurementValue(unitIncrement))
+                .replace("{unit}", unitLabel)}
             </p>
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleConfirm} disabled={!isQuantityValid}>
-            Add to Cart
+            {t("sales.addToCart")}
           </Button>
         </DialogFooter>
       </DialogContent>

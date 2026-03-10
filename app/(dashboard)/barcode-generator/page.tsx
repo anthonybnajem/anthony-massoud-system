@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useLanguage } from "@/components/language-provider";
 import { usePosData } from "@/components/pos-data-provider";
 import { useToast } from "@/components/ui/use-toast";
 import JsBarcode from "jsbarcode";
@@ -11,6 +12,7 @@ import { ProductSelectionTable } from "./components/ProductSelectionTable";
 import { BarcodeLabel } from "./components/BarcodeLabel";
 
 export default function BarcodeDesignerPage() {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const { products } = usePosData();
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -129,9 +131,8 @@ export default function BarcodeDesignerPage() {
         const printWindow = window.open("", "_blank");
         if (!printWindow) {
           toast({
-            title: "Error",
-            description:
-              "Could not open print window. Please check your popup blocker settings.",
+            title: t("alerts.barcodePrintWindowError"),
+            description: t("alerts.barcodePrintWindowErrorDesc"),
             variant: "destructive",
           });
           return;
@@ -180,17 +181,14 @@ export default function BarcodeDesignerPage() {
         printWindow.document.close();
 
         toast({
-          title: "Barcodes sent to printer",
-          description: `Printing ${
-            selectedProducts.length * quantity
-          } barcodes`,
+          title: t("alerts.barcodesSentToPrinter"),
+          description: t("alerts.printingBarcodesCount", { count: selectedProducts.length * quantity }),
         });
       } catch (error) {
         console.error("Print error:", error);
         toast({
-          title: "Print Error",
-          description:
-            "There was an error while trying to print. Please try again.",
+          title: t("alerts.barcodePrintError"),
+          description: t("alerts.barcodePrintErrorDesc"),
           variant: "destructive",
         });
       }
@@ -233,7 +231,7 @@ export default function BarcodeDesignerPage() {
 
     return printItems;
   };
-   return  <h1 className="text-2xl font-bold tracking-tight">Coming Soon!</h1>
+   return  <h1 className="text-2xl font-bold tracking-tight">{t("common.comingSoon")}</h1>
 
   return (
     <div className="space-y-6 overflow-hidden min-w-0">

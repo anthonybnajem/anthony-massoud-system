@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/components/language-provider";
 import { type Sale } from "@/components/pos-data-provider";
 import type { Discount } from "@/lib/db";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,7 @@ export function EditReceiptDialog({
   }) => Promise<void>;
   availableDiscounts?: Discount[];
 }) {
+  const { t } = useLanguage();
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -106,14 +108,14 @@ export function EditReceiptDialog({
     <Dialog open={!!sale} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Receipt</DialogTitle>
+          <DialogTitle>{t("receipts.editReceipt")}</DialogTitle>
           <DialogDescription>
-            Update customer details or payment method for this receipt.
+            {t("receipts.editReceiptDesc")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Customer Name</Label>
+            <Label>{t("receipts.customerName")}</Label>
             <Input
               value={customerName}
               onChange={(event) => setCustomerName(event.target.value)}
@@ -121,14 +123,14 @@ export function EditReceiptDialog({
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>Email</Label>
+              <Label>{t("receipts.email")}</Label>
               <Input
                 value={customerEmail}
                 onChange={(event) => setCustomerEmail(event.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label>Phone</Label>
+              <Label>{t("receipts.phone")}</Label>
               <Input
                 value={customerPhone}
                 onChange={(event) => setCustomerPhone(event.target.value)}
@@ -136,28 +138,28 @@ export function EditReceiptDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Location</Label>
+            <Label>{t("receipts.location")}</Label>
             <Input
               value={customerLocation}
               onChange={(event) => setCustomerLocation(event.target.value)}
-              placeholder="Address / city"
+              placeholder={t("receipts.addressCity")}
             />
           </div>
           <div className="space-y-2">
-            <Label>Payment Method</Label>
+            <Label>{t("receipts.paymentMethod")}</Label>
             <Select value={paymentMethod} onValueChange={setPaymentMethod}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="cash">Cash</SelectItem>
-                <SelectItem value="credit">Credit Card</SelectItem>
-                <SelectItem value="mobile">Mobile Payment</SelectItem>
+                <SelectItem value="cash">{t("reports.cash")}</SelectItem>
+                <SelectItem value="credit">{t("reports.creditCard")}</SelectItem>
+                <SelectItem value="mobile">{t("reports.mobilePayment")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Discount</Label>
+            <Label>{t("receipts.discount")}</Label>
             <Select
               value={discountId ?? "none"}
               onValueChange={(value) =>
@@ -165,13 +167,13 @@ export function EditReceiptDialog({
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="No discount" />
+                <SelectValue placeholder={t("receipts.noDiscount")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No discount</SelectItem>
+                <SelectItem value="none">{t("receipts.noDiscount")}</SelectItem>
                 {availableDiscounts.length === 0 ? (
                   <SelectItem value="placeholder" disabled>
-                    No saved discounts yet
+                    {t("receipts.noSavedDiscountsYet")}
                   </SelectItem>
                 ) : (
                   availableDiscounts.map((discount) => (
@@ -184,7 +186,7 @@ export function EditReceiptDialog({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Notes</Label>
+            <Label>{t("customers.notes")}</Label>
             <Textarea
               rows={4}
               value={notes}
@@ -194,10 +196,10 @@ export function EditReceiptDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isSaving}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save Changes"}
+            {isSaving ? t("common.saving") : t("common.saveChanges")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -214,6 +216,7 @@ export function VoidReceiptDialog({
   onClose: () => void;
   onConfirm: (saleId: string, reason?: string) => Promise<void>;
 }) {
+  const { t } = useLanguage();
   const [reason, setReason] = useState("");
   const [isVoiding, setIsVoiding] = useState(false);
 
@@ -235,30 +238,30 @@ export function VoidReceiptDialog({
     <Dialog open={!!sale} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Void Receipt</DialogTitle>
+          <DialogTitle>{t("receipts.voidReceipt")}</DialogTitle>
           <DialogDescription>
-            Voiding a receipt will restock all items and keep a record of this transaction.
+            {t("receipts.voidReceiptDesc")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2 py-4">
-          <Label>Reason for void</Label>
+          <Label>{t("receipts.reasonForVoid")}</Label>
           <Textarea
             rows={3}
-            placeholder="Optional reason for voiding..."
+            placeholder={t("receipts.reasonPlaceholder")}
             value={reason}
             onChange={(event) => setReason(event.target.value)}
           />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isVoiding}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant="destructive"
             onClick={handleConfirm}
             disabled={isVoiding}
           >
-            {isVoiding ? "Voiding..." : "Confirm Void"}
+            {isVoiding ? t("receipts.voiding") : t("receipts.confirmVoid")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -275,6 +278,7 @@ export function DeleteReceiptDialog({
   onClose: () => void;
   onConfirm: () => Promise<void>;
 }) {
+  const { t } = useLanguage();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -291,19 +295,19 @@ export function DeleteReceiptDialog({
     <AlertDialog open={!!sale} onOpenChange={(open) => !open && onClose()}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete receipt?</AlertDialogTitle>
+          <AlertDialogTitle>{t("receipts.deleteReceiptConfirm")}</AlertDialogTitle>
           <AlertDialogDescription>
-            This action will restock the items and permanently remove this receipt.
+            {t("receipts.deleteReceiptDesc")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>{t("common.cancel")}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             className="bg-destructive text-white hover:bg-destructive/90"
             disabled={isDeleting}
           >
-            {isDeleting ? "Deleting..." : "Delete"}
+            {isDeleting ? t("receipts.deleting") : t("common.delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

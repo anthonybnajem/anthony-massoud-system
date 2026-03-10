@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Save } from "lucide-react";
+import { useLanguage } from "@/components/language-provider";
 
 interface StoreSettings {
   name: string;
@@ -32,21 +33,22 @@ export function StoreSettingsForm({
   onSettingsChange,
   onSave,
 }: StoreSettingsFormProps) {
+  const { t } = useLanguage();
   return (
     <Card className="border-2 shadow-sm">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <span className="h-5 w-5">🏪</span>
-          Store Information
+          {t("storeSettings.storeInformation")}
         </CardTitle>
         <CardDescription>
-          Update your store details that will appear on receipts and reports.
+          {t("storeSettings.storeInfoDesc")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="store-name" className="text-sm font-medium">
-            Store Name <span className="text-destructive">*</span>
+            {t("storeSettings.storeName")} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="store-name"
@@ -55,13 +57,13 @@ export function StoreSettingsForm({
               onSettingsChange({ ...settings, name: e.target.value })
             }
             className="border-2 focus:border-primary"
-            placeholder="Enter store name"
+            placeholder={t("storeSettings.enterStoreName")}
           />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="store-address" className="text-sm font-medium">
-            Address
+            {t("storeSettings.address")}
           </Label>
           <Input
             id="store-address"
@@ -70,14 +72,14 @@ export function StoreSettingsForm({
               onSettingsChange({ ...settings, address: e.target.value })
             }
             className="border-2 focus:border-primary"
-            placeholder="Enter store address"
+            placeholder={t("storeSettings.enterAddress")}
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="store-phone" className="text-sm font-medium">
-              Phone Number
+              {t("storeSettings.phoneNumber")}
             </Label>
             <Input
               id="store-phone"
@@ -92,7 +94,7 @@ export function StoreSettingsForm({
 
           <div className="space-y-2">
             <Label htmlFor="store-email" className="text-sm font-medium">
-              Email
+              {t("storeSettings.email")}
             </Label>
             <Input
               id="store-email"
@@ -102,14 +104,14 @@ export function StoreSettingsForm({
                 onSettingsChange({ ...settings, email: e.target.value })
               }
               className="border-2 focus:border-primary"
-              placeholder="contact@store.com"
+              placeholder={t("storeSettings.emailPlaceholder")}
             />
           </div>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="tax-rate" className="text-sm font-medium">
-            Default Tax Rate (%)
+            {t("storeSettings.defaultTaxRate")}
           </Label>
           <Input
             id="tax-rate"
@@ -129,7 +131,7 @@ export function StoreSettingsForm({
       <CardFooter className="border-t bg-muted/50">
         <Button onClick={onSave} className="gap-2 shadow-sm">
           <Save className="h-4 w-4" />
-          Save Changes
+          {t("common.saveChanges")}
         </Button>
       </CardFooter>
     </Card>

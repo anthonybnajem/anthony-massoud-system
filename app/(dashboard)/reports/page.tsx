@@ -4,7 +4,16 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { usePosData } from "@/components/pos-data-provider";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
+import { useLanguage } from "@/components/language-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,6 +30,8 @@ import {
   endOfWeek,
   startOfMonth,
   endOfMonth,
+  addMonths,
+  isWithinInterval,
 } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import { salesApi } from "@/lib/db";
@@ -40,9 +51,14 @@ import {
 } from "./utils/exportUtils";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { buildCustomersFromSales } from "../customers/utils";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { UserCircle2 } from "lucide-react";
 
 export default function ReportsPage() {
-  const { sales, products, categories } = usePosData();
+  const { t } = useLanguage();
+  const { sales, products, categories, expenses, customers: customerProfiles } = usePosData();
   const { settings: receiptSettings } = useReceiptSettings();
   const [dateRange, setDateRange] = useState("week");
   const [startDate, setStartDate] = useState("");
@@ -245,8 +261,8 @@ export default function ReportsPage() {
       } catch (error) {
         console.error("Error loading report data:", error);
         toast({
-          title: "Error",
-          description: "Failed to load report data",
+          title: t("common.error"),
+          description: t("reports.failedToLoad"),
           variant: "destructive",
         });
       } finally {
@@ -338,6 +354,8 @@ export default function ReportsPage() {
         { label: "Transactions", value: totalTransactions.toString() },
         { label: "Avg. Ticket", value: `${receiptSettings?.currencySymbol || "$"}${averageTransaction.toFixed(2)}` },
         { label: "Items Sold", value: totalItems.toString() },
+        { label: "Expense Out", value: `${receiptSettings?.currencySymbol || "$"}${Math.abs(totalExpenses).toFixed(2)}` },
+        { label: "Income Net", value: `${receiptSettings?.currencySymbol || "$"}${incomeNet.toFixed(2)}` },
       ];
 
       pdf.setFontSize(11);
@@ -479,12 +497,12 @@ export default function ReportsPage() {
       }
 
       pdf.save(`sales-transactions-${format(new Date(), "yyyyMMdd-HHmm")}.pdf`);
-      toast({ title: "PDF Ready", description: "Sales PDF has been generated." });
+      toast({ title: t("alerts.pdfReady"), description: t("alerts.salesPdfGenerated") });
     } catch (error) {
       console.error("export pdf failed", error);
       toast({
-        title: "Export Error",
-        description: "Unable to generate the PDF. Please try again.",
+        title: t("alerts.exportError"),
+        description: t("alerts.unableToGeneratePdfTryAgain"),
         variant: "destructive",
       });
     } finally {
@@ -521,6 +539,56 @@ export default function ReportsPage() {
     (sum, sale) => sum + sale.items.length,
     0
   );
+
+  // Expenses (expense_out only) and income net for the applied date range
+  const totalExpenses = useMemo(() => {
+    if (!appliedRange.start || !appliedRange.end) return 0;
+    const start = appliedRange.start.getTime();
+    const end = appliedRange.end.getTime();
+    return expenses
+      .filter(
+        (exp) =>
+          exp.expenseType === "expense_out" &&
+          new Date(exp.date).getTime() >= start &&
+          new Date(exp.date).getTime() <= end
+      )
+      .reduce((sum, exp) => sum + exp.total, 0);
+  }, [expenses, appliedRange.start, appliedRange.end]);
+  const incomeNet = totalRevenue - Math.abs(totalExpenses);
+
+  // Monthly breakdown: total income, expenses, income net per month in the applied range
+  const monthlyBreakdown = useMemo(() => {
+    if (!appliedRange.start || !appliedRange.end) return [];
+    const start = startOfMonth(appliedRange.start);
+    const end = endOfMonth(appliedRange.end);
+    const rows: { monthKey: string; monthLabel: string; totalIncome: number; expenses: number; incomeNet: number }[] = [];
+    let current = new Date(start);
+    while (current <= end) {
+      const monthStart = startOfMonth(current);
+      const monthEnd = endOfMonth(current);
+      const monthSales = filteredSales.filter((sale) => {
+        const d = new Date(sale.date);
+        return isWithinInterval(d, { start: monthStart, end: monthEnd });
+      });
+      const monthExpenses = expenses.filter(
+        (exp) =>
+          exp.expenseType === "expense_out" &&
+          isWithinInterval(new Date(exp.date), { start: monthStart, end: monthEnd })
+      );
+      const totalIncome = monthSales.reduce((sum, s) => sum + s.total, 0);
+      const expenseTotal = monthExpenses.reduce((sum, e) => sum + e.total, 0);
+      const expenseOutAmount = Math.abs(expenseTotal);
+      rows.push({
+        monthKey: format(current, "yyyy-MM"),
+        monthLabel: format(current, "MMMM yyyy"),
+        totalIncome,
+        expenses: expenseOutAmount,
+        incomeNet: totalIncome - expenseOutAmount,
+      });
+      current = addMonths(current, 1);
+    }
+    return rows.reverse(); // most recent month first
+  }, [appliedRange.start, appliedRange.end, filteredSales, expenses]);
 
   const uniqueCustomers = useMemo(() => {
     const ids = new Set(
@@ -607,6 +675,25 @@ export default function ReportsPage() {
     }));
   }, [filteredSales, products, productFilter, categoryFilter, categoryLookup]);
 
+  const outstandingPayments = useMemo(() => {
+    const allCustomers = buildCustomersFromSales(sales, customerProfiles);
+    const rows: { id: string; name: string; status: "unpaid" | "partially_paid"; totalUnpaid: number }[] = [];
+    allCustomers.forEach((customer) => {
+      const unpaidSales = customer.sales.filter(
+        (s) => s.paymentStatus === "unpaid" || s.paymentStatus === "partially_paid"
+      );
+      if (unpaidSales.length === 0) return;
+      const hasPartially = customer.sales.some((s) => s.paymentStatus === "partially_paid");
+      const status: "unpaid" | "partially_paid" = hasPartially ? "partially_paid" : "unpaid";
+      const totalUnpaid = unpaidSales.reduce((sum, s) => {
+        const paid = s.paymentStatus === "partially_paid" ? (s.amountPaid ?? 0) : 0;
+        return sum + (s.total - paid);
+      }, 0);
+      rows.push({ id: customer.id, name: customer.name || "—", status, totalUnpaid });
+    });
+    return rows.sort((a, b) => b.totalUnpaid - a.totalUnpaid);
+  }, [sales, customerProfiles]);
+
   const selectedRangeLabel = useMemo(() => {
     if (!appliedRange.start || !appliedRange.end) return "All time";
     return `${format(appliedRange.start, "MMM dd, yyyy")} – ${format(appliedRange.end, "MMM dd, yyyy")}`;
@@ -616,16 +703,16 @@ export default function ReportsPage() {
 
   return (
     <motion.div
-      className="space-y-6 overflow-hidden min-w-0"
+      className="space-y-2 overflow-hidden min-w-0"
       variants={containerVariants}
       initial="hidden"
       animate="show"
     >
       {/* Summary Cards */}
-      <motion.div variants={itemVariants} className="grid gap-4 md:grid-cols-4">
+      <motion.div variants={itemVariants} className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <Card className="border-2 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("reports.totalRevenue")}</CardTitle>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -641,12 +728,12 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${totalRevenue.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">For selected period</p>
+            <p className="text-xs text-muted-foreground">{t("reports.forSelectedPeriod")}</p>
           </CardContent>
         </Card>
         <Card className="border-2 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Transactions</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("reports.transactions")}</CardTitle>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -663,13 +750,13 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalTransactions}</div>
-            <p className="text-xs text-muted-foreground">Total sales</p>
+            <p className="text-xs text-muted-foreground">{t("reports.totalSales")}</p>
           </CardContent>
         </Card>
         <Card className="border-2 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Avg. Transaction
+              {t("reports.avgTransaction")}
             </CardTitle>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -690,12 +777,12 @@ export default function ReportsPage() {
             <div className="text-2xl font-bold">
               ${averageTransaction.toFixed(2)}
             </div>
-            <p className="text-xs text-muted-foreground">Per transaction</p>
+            <p className="text-xs text-muted-foreground">{t("reports.perTransaction")}</p>
           </CardContent>
         </Card>
         <Card className="border-2 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Items Sold</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("reports.itemsSold")}</CardTitle>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -713,7 +800,91 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalItems}</div>
-            <p className="text-xs text-muted-foreground">Total items</p>
+            <p className="text-xs text-muted-foreground">{t("reports.totalItems")}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-2 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t("reports.expenseOut")}</CardTitle>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              className="h-4 w-4 text-muted-foreground"
+            >
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${Math.abs(totalExpenses).toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">{t("reports.forSelectedPeriod")}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-2 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t("reports.incomeNet")}</CardTitle>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              className="h-4 w-4 text-muted-foreground"
+            >
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${incomeNet.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">{t("reports.forSelectedPeriod")}</p>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Monthly breakdown: always visible so no empty gap; table or empty state */}
+      <motion.div variants={itemVariants}>
+        <Card className="border-2 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">{t("reports.byMonth")}</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              {t("reports.totalIncome")}, {t("reports.incomeNet")}, {t("reports.expenseOut")} {t("reports.forSelectedPeriod")}
+            </p>
+          </CardHeader>
+          <CardContent>
+            {monthlyBreakdown.length > 0 ? (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="font-semibold">{t("reports.month")}</TableHead>
+                      <TableHead className="text-right font-semibold">{t("reports.totalRevenue")}</TableHead>
+                      <TableHead className="text-right font-semibold">{t("reports.expenseOut")}</TableHead>
+                      <TableHead className="text-right font-semibold">{t("reports.incomeNet")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {monthlyBreakdown.map((row) => (
+                      <TableRow key={row.monthKey}>
+                        <TableCell className="font-medium">{row.monthLabel}</TableCell>
+                        <TableCell className="text-right">${row.totalIncome.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${row.expenses.toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-semibold">${row.incomeNet.toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                {t("reports.noMonthlyDataYet")}
+              </p>
+            )}
           </CardContent>
         </Card>
       </motion.div>
@@ -721,7 +892,7 @@ export default function ReportsPage() {
       <motion.div variants={itemVariants} className="grid gap-4 md:grid-cols-2">
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Selected Date Range</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("reports.selectedDateRange")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="font-semibold text-lg">{selectedRangeLabel}</p>
@@ -734,23 +905,23 @@ export default function ReportsPage() {
                       (1000 * 60 * 60 * 24)
                   )
                 )}{" "}
-                days of data
+                {t("reports.daysOfData")}
               </p>
             )}
           </CardContent>
         </Card>
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Customers</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("reports.customers")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="font-semibold text-lg">{uniqueCustomers}</p>
             <p className="text-xs text-muted-foreground">
-              Unique customers served (walk-ins included)
+              {t("reports.uniqueCustomersServed")}
             </p>
             {topCustomer && (
               <p className="text-xs text-muted-foreground mt-2">
-                Top customer: <span className="font-medium">{topCustomer.name}</span>{" "}
+                {t("reports.topCustomer")} <span className="font-medium">{topCustomer.name}</span>{" "}
                 (${topCustomer.total.toFixed(2)})
               </p>
             )}
@@ -807,6 +978,72 @@ export default function ReportsPage() {
               onExportPdf={handleExportSalesPdf}
               exportPdfLoading={isExportingSalesPdf}
             />
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <Card className="border-2 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <UserCircle2 className="h-5 w-5 text-primary" />
+                  {t("reports.outstandingPayments")}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {t("reports.outstandingPaymentsDesc")}
+                </p>
+              </CardHeader>
+              <CardContent>
+                {outstandingPayments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-6 text-center">
+                    {t("reports.noOutstandingPayments")}
+                  </p>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="font-semibold">{t("customers.customer")}</TableHead>
+                          <TableHead className="font-semibold">{t("customers.payment")}</TableHead>
+                          <TableHead className="text-right font-semibold">{t("reports.amountNotPaid")}</TableHead>
+                          <TableHead className="w-[80px]" />
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {outstandingPayments.map((row) => (
+                          <TableRow key={row.id}>
+                            <TableCell className="font-medium">{row.name}</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  row.status === "partially_paid"
+                                    ? "text-amber-700 border-amber-300 bg-amber-50"
+                                    : "text-red-700 border-red-300 bg-red-50"
+                                }
+                              >
+                                {row.status === "partially_paid"
+                                  ? t("customers.partiallyPaid")
+                                  : t("customers.unpaid")}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              {receiptSettings?.currencySymbol || "$"}
+                              {row.totalUnpaid.toFixed(2)}
+                            </TableCell>
+                            <TableCell>
+                              <Button variant="ghost" size="sm" asChild>
+                                <Link href={`/customers/${encodeURIComponent(row.id)}`}>
+                                  {t("customers.view")}
+                                </Link>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </motion.div>
         </div>
       </div>

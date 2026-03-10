@@ -3,8 +3,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { FolderKanban, Pencil, Eye } from "lucide-react";
+import { FolderKanban, Pencil, Eye, MoreVertical } from "lucide-react";
 import { usePosData } from "@/components/pos-data-provider";
+import { useLanguage } from "@/components/language-provider";
 import {
   Card,
   CardContent,
@@ -39,8 +40,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function ProjectsPage() {
+  const { t } = useLanguage();
   const { projects, customers, addCustomerProject, updateCustomerProject } =
     usePosData();
 
@@ -146,10 +154,10 @@ export default function ProjectsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
           <FolderKanban className="h-6 w-6 text-primary" />
-          Projects
+          {t("projects.title")}
         </h1>
         <p className="text-muted-foreground max-w-2xl">
-          Manage all customer projects used for rental and sales assignment.
+          {t("projects.subtitle")}
         </p>
       </div>
 
@@ -160,12 +168,12 @@ export default function ProjectsPage() {
               {/* <CardTitle>Project Directory</CardTitle> */}
               <CardDescription>
                 {filteredProjects.length}{" "}
-                {filteredProjects.length === 1 ? "project" : "projects"} found
+                {filteredProjects.length === 1 ? t("projects.project") : t("projects.projects")} {t("projects.found")}
               </CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
               <Input
-                placeholder="Search by project, customer, or location"
+                placeholder={t("projects.searchPlaceholder")}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 className="sm:max-w-xs"
@@ -176,7 +184,7 @@ export default function ProjectsPage() {
                   setIsAddOpen(true);
                 }}
               >
-                Add Project
+                {t("projects.addProject")}
               </Button>
             </div>
           </div>
@@ -184,43 +192,49 @@ export default function ProjectsPage() {
         <CardContent>
           <div className="rounded-lg border">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Project</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Updated</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("projects.project")}</TableHead>
+                    <TableHead>{t("projects.customer")}</TableHead>
+                    <TableHead>{t("customers.location")}</TableHead>
+                    <TableHead>{t("projects.updated")}</TableHead>
+                    <TableHead className="text-end">{t("customers.actions")}</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {filteredProjects.map((project) => (
                   <TableRow key={project.id}>
                     <TableCell className="font-medium">{project.name}</TableCell>
                     <TableCell>
-                      {customerMap[project.customerId] || "Unknown customer"}
+                      {customerMap[project.customerId] || t("projects.unknownCustomer")}
                     </TableCell>
                     <TableCell>{project.location || "—"}</TableCell>
                     <TableCell>
                       {format(new Date(project.updatedAt), "MMM dd, yyyy")}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button asChild variant="outline" size="sm">
-                          <Link href={`/projects/${encodeURIComponent(project.id)}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View
-                          </Link>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEdit(project.id)}
-                        >
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </Button>
-                      </div>
+                    <TableCell className="text-end">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-9 w-9">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href={`/projects/${encodeURIComponent(project.id)}`}
+                              className="flex items-center"
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              {t("projects.view")}
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEdit(project.id)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            {t("projects.edit")}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -233,17 +247,17 @@ export default function ProjectsPage() {
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Project</DialogTitle>
+            <DialogTitle>{t("projects.addProject")}</DialogTitle>
             <DialogDescription>
-              Create a project under a customer.
+              {t("projects.addProjectDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Customer</Label>
+              <Label>{t("projects.customer")}</Label>
               <Select value={customerId} onValueChange={setCustomerId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select customer" />
+                  <SelectValue placeholder={t("projects.selectCustomer")} />
                 </SelectTrigger>
                 <SelectContent>
                   {customers.map((customer) => (
@@ -255,23 +269,23 @@ export default function ProjectsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Project Name</Label>
+              <Label>{t("projects.projectName")}</Label>
               <Input
                 value={projectName}
                 onChange={(event) => setProjectName(event.target.value)}
-                placeholder="Project name"
+                placeholder={t("projects.projectNamePlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label>Location</Label>
+              <Label>{t("customers.location")}</Label>
               <Input
                 value={projectLocation}
                 onChange={(event) => setProjectLocation(event.target.value)}
-                placeholder="Location"
+                placeholder={t("projects.locationPlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label>Notes</Label>
+              <Label>{t("projects.notes")}</Label>
               <Textarea
                 value={projectNotes}
                 onChange={(event) => setProjectNotes(event.target.value)}
@@ -285,13 +299,13 @@ export default function ProjectsPage() {
               onClick={() => setIsAddOpen(false)}
               disabled={isSaving}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleAdd}
               disabled={isSaving || !customerId || !projectName.trim()}
             >
-              {isSaving ? "Saving..." : "Save"}
+              {isSaving ? t("projects.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -300,17 +314,17 @@ export default function ProjectsPage() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Project</DialogTitle>
+            <DialogTitle>{t("projects.editProject")}</DialogTitle>
             <DialogDescription>
-              Update project information.
+              {t("projects.editProjectDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Customer</Label>
+              <Label>{t("projects.customer")}</Label>
               <Select value={customerId} onValueChange={setCustomerId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select customer" />
+                  <SelectValue placeholder={t("projects.selectCustomer")} />
                 </SelectTrigger>
                 <SelectContent>
                   {customers.map((customer) => (
@@ -322,21 +336,21 @@ export default function ProjectsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Project Name</Label>
+              <Label>{t("projects.projectName")}</Label>
               <Input
                 value={projectName}
                 onChange={(event) => setProjectName(event.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label>Location</Label>
+              <Label>{t("customers.location")}</Label>
               <Input
                 value={projectLocation}
                 onChange={(event) => setProjectLocation(event.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label>Notes</Label>
+              <Label>{t("projects.notes")}</Label>
               <Textarea
                 value={projectNotes}
                 onChange={(event) => setProjectNotes(event.target.value)}
@@ -350,13 +364,13 @@ export default function ProjectsPage() {
               onClick={() => setIsEditOpen(false)}
               disabled={isSaving}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleEdit}
               disabled={isSaving || !customerId || !projectName.trim()}
             >
-              {isSaving ? "Saving..." : "Save"}
+              {isSaving ? t("projects.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>

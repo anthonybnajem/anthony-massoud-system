@@ -17,6 +17,7 @@ import {
   type Sale,
 } from "@/components/pos-data-provider";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
+import { useLanguage } from "@/components/language-provider";
 import { InvoicePrint } from "@/components/invoice-print";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,9 +49,8 @@ import {
   DeleteReceiptDialog,
 } from "../components/receipt-dialogs";
 
-const fallbackName = "Walk-in customer";
-
 export default function ReceiptDetailsPage() {
+  const { t } = useLanguage();
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -108,8 +108,8 @@ export default function ReceiptDetailsPage() {
       <div className="space-y-6">
         <Button asChild variant="ghost" size="sm">
           <Link href="/receipts">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            
+            <ArrowLeft className="me-2 h-4 w-4" />
+            {t("common.back")}
           </Link>
         </Button>
         <Empty>
@@ -117,9 +117,9 @@ export default function ReceiptDetailsPage() {
             <EmptyMedia variant="icon">
               <ReceiptIcon className="h-6 w-6" />
             </EmptyMedia>
-            <EmptyTitle>Receipt not found</EmptyTitle>
+            <EmptyTitle>{t("receipts.receiptNotFound")}</EmptyTitle>
             <EmptyDescription>
-              This receipt may have been deleted or does not exist.
+              {t("receipts.receiptMayHaveBeenDeleted")}
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -128,7 +128,7 @@ export default function ReceiptDetailsPage() {
   }
 
   const status = sale.status || "completed";
-  const customerName = sale.customerName || fallbackName;
+  const customerName = sale.customerName || t("reports.walkInCustomer");
 
   return (
     <div className="space-y-6 overflow-hidden min-w-0">
@@ -139,13 +139,13 @@ export default function ReceiptDetailsPage() {
       >
         <div className="flex items-center gap-3 flex-wrap">
           <Button asChild variant="ghost" size="sm">
-            <Link href="/receipts">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+            <Link href="/receipts" aria-label={t("common.back")}>
+              <ArrowLeft className="me-2 h-4 w-4" />
             </Link>
           </Button>
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Receipt #{receiptNumber}
+              {t("receipts.receiptNumberTitle", { number: receiptNumber })}
             </h1>
             <p className="text-muted-foreground">
               {format(new Date(sale.date), "PPpp")} • {sale.paymentMethod}
@@ -160,7 +160,7 @@ export default function ReceiptDetailsPage() {
             onClick={() => setIsInvoiceOpen(true)}
           >
             <Printer className="h-4 w-4" />
-            Print
+            {t("receipts.print")}
           </Button>
           <Button
             variant="outline"
@@ -169,7 +169,7 @@ export default function ReceiptDetailsPage() {
             onClick={() => setIsEditOpen(true)}
           >
             <Edit2 className="h-4 w-4" />
-            Edit
+            {t("common.edit")}
           </Button>
           <Button
             variant="outline"
@@ -179,7 +179,7 @@ export default function ReceiptDetailsPage() {
             onClick={() => setIsVoidOpen(true)}
           >
             <Ban className="h-4 w-4" />
-            Void
+            {t("receipts.void")}
           </Button>
           <Button
             variant="destructive"
@@ -188,61 +188,61 @@ export default function ReceiptDetailsPage() {
             onClick={() => setIsDeleteOpen(true)}
           >
             <Trash2 className="h-4 w-4" />
-            Delete
+            {t("common.delete")}
           </Button>
         </div>
       </div>
 
       <Card className="border-2">
         <CardHeader>
-          <CardTitle>Summary</CardTitle>
-          <CardDescription>Customer and payment details</CardDescription>
+          <CardTitle>{t("receipts.summary")}</CardTitle>
+          <CardDescription>{t("receipts.customerPaymentDetails")}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Customer</p>
+            <p className="text-xs text-muted-foreground">{t("receipts.customerLabel")}</p>
             <p className="font-semibold">{customerName}</p>
             <p className="text-sm text-muted-foreground">
-              {sale.customerEmail || "No email"}
+              {sale.customerEmail || t("receipts.noEmail")}
             </p>
             <p className="text-sm text-muted-foreground">
-              {sale.customerPhone || "No phone"}
+              {sale.customerPhone || t("receipts.noPhone")}
             </p>
             <p className="text-sm text-muted-foreground">
-              {sale.customerLocation || "No location"}
+              {sale.customerLocation || t("receipts.noLocation")}
             </p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Payment Method</p>
+            <p className="text-xs text-muted-foreground">{t("receipts.paymentMethod")}</p>
             <p className="font-semibold capitalize">{sale.paymentMethod}</p>
             {sale.notes && (
               <p className="text-sm text-muted-foreground">
-                Notes: {sale.notes}
+                {t("receipts.notesLabel")}: {sale.notes}
               </p>
             )}
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Status</p>
+            <p className="text-xs text-muted-foreground">{t("receipts.statusLabel")}</p>
             <Badge variant={status === "voided" ? "destructive" : "secondary"}>
               {status}
             </Badge>
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Subtotal</p>
+            <p className="text-xs text-muted-foreground">{t("receipts.subtotal")}</p>
             <p className="font-semibold">
               {currencySymbol}
               {(sale.subtotal ?? sale.total).toFixed(2)}
             </p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Tax</p>
+            <p className="text-xs text-muted-foreground">{t("receipts.taxLabel")}</p>
             <p className="font-semibold">
               {currencySymbol}
               {(sale.tax ?? 0).toFixed(2)}
             </p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-xs text-muted-foreground">{t("receipts.total")}</p>
             <p className="text-xl font-bold">
               {currencySymbol}
               {sale.total.toFixed(2)}
@@ -253,17 +253,17 @@ export default function ReceiptDetailsPage() {
 
       <Card className="border-2">
         <CardHeader>
-          <CardTitle>Receipt Items</CardTitle>
-          <CardDescription>Line items included in this receipt</CardDescription>
+          <CardTitle>{t("receipts.receiptItems")}</CardTitle>
+          <CardDescription>{t("receipts.lineItemsIncluded")}</CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Total</TableHead>
+                <TableHead>{t("receipts.item")}</TableHead>
+                <TableHead>{t("receipts.quantity")}</TableHead>
+                <TableHead>{t("receipts.price")}</TableHead>
+                <TableHead>{t("receipts.total")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -275,7 +275,7 @@ export default function ReceiptDetailsPage() {
                     </p>
                     {item.product?.sku && (
                       <p className="text-xs text-muted-foreground">
-                        SKU: {item.product.sku}
+                        {t("reports.sku")}: {item.product.sku}
                       </p>
                     )}
                   </TableCell>

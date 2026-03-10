@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/language-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BarChart,
@@ -27,19 +28,20 @@ interface TopProductsChartProps {
 }
 
 export function TopProductsChart({ data, isLoading }: TopProductsChartProps) {
+  const { t } = useLanguage();
   return (
     <Card className="border-2 shadow-sm">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <BarChartIcon className="h-5 w-5 text-primary" />
-          Top Selling Products
+          {t("reports.topProducts")}
         </CardTitle>
       </CardHeader>
       <CardContent className="h-80">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-2">
             <Spinner className="h-6 w-6" />
-            <p className="text-sm text-muted-foreground">Loading data...</p>
+            <p className="text-sm text-muted-foreground">{t("reports.loadingData")}</p>
           </div>
         ) : data.length === 0 ? (
           <Empty>
@@ -47,9 +49,9 @@ export function TopProductsChart({ data, isLoading }: TopProductsChartProps) {
               <EmptyMedia variant="icon">
                 <BarChartIcon className="h-6 w-6" />
               </EmptyMedia>
-              <EmptyTitle>No data available</EmptyTitle>
+              <EmptyTitle>{t("reports.noDataAvailable")}</EmptyTitle>
               <EmptyDescription>
-                No top products data found for the selected date range.
+                {t("reports.noDataAvailable")}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>

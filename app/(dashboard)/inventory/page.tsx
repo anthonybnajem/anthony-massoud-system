@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/components/language-provider";
 import { usePosData, type Product } from "@/components/pos-data-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package } from "lucide-react";
@@ -11,6 +12,7 @@ import { InventoryTable } from "./components/InventoryTable";
 import { StockAdjustmentDialog } from "./components/StockAdjustmentDialog";
 
 export default function InventoryPage() {
+  const { t } = useLanguage();
   const { products, categories, adjustStock, fetchData } = usePosData();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -116,9 +118,9 @@ export default function InventoryPage() {
         <div className="flex items-center gap-3 mb-2">
           <Package className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Inventory</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{t("inventory.title")}</h1>
             <p className="text-muted-foreground mt-1">
-              Manage your inventory levels and stock movements
+              {t("inventory.subtitle")}
             </p>
           </div>
         </div>
@@ -155,10 +157,10 @@ export default function InventoryPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Package className="h-5 w-5 text-primary" />
-                Inventory Overview
+                {t("inventory.overviewTitle")}
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                {filteredProducts.length} of {products.length} products
+                {filteredProducts.length} {t("products.of")} {products.length} {t("products.productsCount")}
               </p>
             </div>
           </CardHeader>

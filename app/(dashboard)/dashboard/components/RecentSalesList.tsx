@@ -17,25 +17,27 @@ import {
 } from "@/components/ui/empty";
 import { ShoppingCart } from "lucide-react";
 import { type Sale } from "@/components/pos-data-provider";
+import { useLanguage } from "@/components/language-provider";
 
 interface RecentSalesListProps {
   sales: Sale[];
 }
 
 export function RecentSalesList({ sales }: RecentSalesListProps) {
+  const { t, locale } = useLanguage();
   return (
     <Card className="col-span-1">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <div>
           <CardTitle className="text-lg font-medium text-slate-700">
-            Recent Sales
+            {t("dashboard.recentSalesTitle")}
           </CardTitle>
         </div>
         <Link
           href="/receipts"
           className="text-sm font-medium text-slate-600 transition hover:text-slate-800"
         >
-          View more
+          {t("dashboard.viewMore")}
         </Link>
       </CardHeader>
       <CardContent>
@@ -52,10 +54,10 @@ export function RecentSalesList({ sales }: RecentSalesListProps) {
                     Receipt #{sale.id.slice(0, 8)}
                   </p>
                   <p className="text-xs text-slate-500">
-                    {new Date(sale.date).toLocaleString()}
+                    {new Date(sale.date).toLocaleString(locale === "ar" ? "ar" : "en-US")}
                   </p>
                 </div>
-                <p className="text-right text-sm font-medium text-slate-700">
+                <p className="text-end text-sm font-medium text-slate-700">
                   ${sale.total.toFixed(2)}
                 </p>
               </Link>
@@ -67,9 +69,9 @@ export function RecentSalesList({ sales }: RecentSalesListProps) {
               <EmptyMedia variant="icon">
                 <ShoppingCart className="h-6 w-6" />
               </EmptyMedia>
-              <EmptyTitle>No sales recorded yet</EmptyTitle>
+              <EmptyTitle>{t("dashboard.noSalesRecorded")}</EmptyTitle>
               <EmptyDescription>
-                Start making sales to see them appear here.
+                {t("dashboard.startSalesToSee")}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -80,7 +82,7 @@ export function RecentSalesList({ sales }: RecentSalesListProps) {
           href="/receipts"
           className="text-sm font-medium text-slate-600 transition hover:text-slate-800"
         >
-          View more
+          {t("dashboard.viewMore")}
         </Link>
       </CardFooter>
     </Card>

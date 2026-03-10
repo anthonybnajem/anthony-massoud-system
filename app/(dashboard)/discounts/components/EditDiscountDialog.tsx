@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/language-provider";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,7 @@ export function EditDiscountDialog({
   categories,
   currencySymbol,
 }: EditDiscountDialogProps) {
+  const { t } = useLanguage();
   if (!discount) return null;
 
   const formData = {
@@ -53,7 +55,7 @@ export function EditDiscountDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit Discount</DialogTitle>
+          <DialogTitle>{t("discounts.editDiscount")}</DialogTitle>
         </DialogHeader>
         <DiscountForm
           discount={formData}
@@ -67,9 +69,9 @@ export function EditDiscountDialog({
         />
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
-          <Button onClick={onSubmit}>Save Changes</Button>
+          <Button onClick={onSubmit}>{t("discounts.saveChanges")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

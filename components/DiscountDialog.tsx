@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/components/language-provider";
 import type { Discount } from "@/lib/db";
 
 interface DiscountDialogProps {
@@ -57,18 +58,19 @@ export default function DiscountDialog({
   appliedDiscount,
   savedDiscountError,
 }: DiscountDialogProps) {
+  const { t } = useLanguage();
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Apply Discount</DialogTitle>
+          <DialogTitle>{t("checkout.applyDiscountTitle")}</DialogTitle>
           <DialogDescription>
-            Add a discount to the current sale.
+            {t("checkout.applyDiscountDesc")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Saved Discount</Label>
+            <Label>{t("checkout.savedDiscount")}</Label>
             <Select
               value={selectedDiscountId ?? "none"}
               onValueChange={(value) => {
@@ -80,13 +82,13 @@ export default function DiscountDialog({
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Choose a saved discount" />
+                <SelectValue placeholder={t("checkout.chooseSavedDiscount")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No saved discount</SelectItem>
+                <SelectItem value="none">{t("checkout.noSavedDiscount")}</SelectItem>
                 {savedDiscounts.length === 0 ? (
                   <SelectItem value="placeholder" disabled>
-                    Create one in the Discounts page
+                    {t("checkout.createDiscountInPage")}
                   </SelectItem>
                 ) : (
                   savedDiscounts.map((discount) => (
@@ -106,7 +108,7 @@ export default function DiscountDialog({
                 </div>
                 {appliedDiscount.code && (
                   <p className="text-muted-foreground text-xs">
-                    Code: {appliedDiscount.code}
+                    {t("checkout.codeLabel")}: {appliedDiscount.code}
                   </p>
                 )}
                 {savedDiscountError ? (
@@ -115,7 +117,7 @@ export default function DiscountDialog({
                   </p>
                 ) : (
                   <p className="text-xs text-muted-foreground">
-                    This discount overrides manual settings.
+                    {t("checkout.discountOverridesManual")}
                   </p>
                 )}
               </div>
@@ -123,7 +125,7 @@ export default function DiscountDialog({
           </div>
           <div className="flex items-center space-x-4">
             <div className="grid flex-1 gap-2">
-              <Label htmlFor="discount-type">Discount Type</Label>
+              <Label htmlFor="discount-type">{t("checkout.discountType")}</Label>
               <Tabs
                 defaultValue={discountType}
                 className="w-full"
@@ -133,8 +135,8 @@ export default function DiscountDialog({
                 }}
               >
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="percentage">Percentage (%)</TabsTrigger>
-                  <TabsTrigger value="fixed">Fixed Amount</TabsTrigger>
+                  <TabsTrigger value="percentage">{t("checkout.percentageTab")}</TabsTrigger>
+                  <TabsTrigger value="fixed">{t("checkout.fixedAmountTab")}</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
@@ -142,8 +144,8 @@ export default function DiscountDialog({
           <div className="grid gap-2">
             <Label htmlFor="discount-value">
               {discountType === "percentage"
-                ? "Discount Percentage"
-                : "Discount Amount"}
+                ? t("checkout.discountPercentage")
+                : t("checkout.discountAmountLabel")}
             </Label>
             <Input
               id="discount-value"
@@ -159,14 +161,14 @@ export default function DiscountDialog({
           </div>
           <div className="border-t pt-4">
             <div className="flex justify-between font-medium">
-              <span>Discount Amount:</span>
+              <span>{t("checkout.discountAmountValue")}</span>
               <span>
                 {currencySymbol}
                 {discountAmount.toFixed(2)}
               </span>
             </div>
             <div className="flex justify-between font-medium mt-2">
-              <span>New Total:</span>
+              <span>{t("checkout.newTotal")}</span>
               <span>
                 {currencySymbol}
                 {cartTotal.toFixed(2)}
@@ -176,10 +178,10 @@ export default function DiscountDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={applyDiscount} disabled={Boolean(selectedDiscountId && savedDiscountError)}>
-            Apply Discount
+            {t("checkout.applyDiscountButton")}
           </Button>
         </DialogFooter>
       </DialogContent>

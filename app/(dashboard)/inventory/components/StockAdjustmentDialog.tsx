@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLanguage } from "@/components/language-provider";
 import {
   Dialog,
   DialogContent,
@@ -46,13 +47,13 @@ interface StockAdjustmentDialogProps {
 }
 
 const ADJUSTMENT_REASONS = [
-  "Restock",
-  "Damage",
-  "Return",
-  "Theft",
-  "Expired",
-  "Count Correction",
-  "Other",
+  { value: "Restock", key: "inventory.restock" as const },
+  { value: "Damage", key: "inventory.damage" as const },
+  { value: "Return", key: "inventory.return" as const },
+  { value: "Theft", key: "inventory.theft" as const },
+  { value: "Expired", key: "inventory.expired" as const },
+  { value: "Count Correction", key: "inventory.countCorrection" as const },
+  { value: "Other", key: "inventory.other" as const },
 ];
 
 export function StockAdjustmentDialog({
@@ -61,6 +62,7 @@ export function StockAdjustmentDialog({
   product,
   onAdjust,
 }: StockAdjustmentDialogProps) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [adjustmentType, setAdjustmentType] = useState<
     "add" | "remove" | "set"
@@ -79,8 +81,8 @@ export function StockAdjustmentDialog({
   const handleSubmit = async () => {
     if (!quantity || parseFloat(quantity) <= 0) {
       toast({
-        title: "Invalid Quantity",
-        description: "Please enter a valid quantity",
+        title: t("inventory.invalidQuantity"),
+        description: t("inventory.invalidQuantityMessage"),
         variant: "destructive",
       });
       return;
@@ -131,20 +133,20 @@ export function StockAdjustmentDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Adjust Stock</DialogTitle>
+          <DialogTitle>{t("inventory.adjustStock")}</DialogTitle>
           <DialogDescription>
-            Adjust the stock level for {product.name}
+            {t("inventory.adjustStockDesc", { name: product.name })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Product</Label>
+            <Label>{t("products.product")}</Label>
             <Input value={product.name} disabled className="bg-muted" />
           </div>
 
           <div className="space-y-2">
-            <Label>Current Stock</Label>
+            <Label>{t("inventory.currentStock")}</Label>
             <Input
               value={formattedCurrentStock}
               disabled
@@ -153,7 +155,7 @@ export function StockAdjustmentDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Adjustment Type</Label>
+            <Label>{t("inventory.adjustmentType")}</Label>
             <Select
               value={adjustmentType}
               onValueChange={(value) =>
@@ -164,17 +166,17 @@ export function StockAdjustmentDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="add">Add Stock</SelectItem>
-                <SelectItem value="remove">Remove Stock</SelectItem>
-                <SelectItem value="set">Set Stock</SelectItem>
+                <SelectItem value="add">{t("inventory.addStock")}</SelectItem>
+                <SelectItem value="remove">{t("inventory.removeStock")}</SelectItem>
+                <SelectItem value="set">{t("inventory.setStock")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
             <Label>
-              Quantity ({unitLabel}){" "}
-              {adjustmentType === "set" ? "(New Stock Level)" : ""}
+              {t("inventory.quantity")} ({unitLabel}){" "}
+              {adjustmentType === "set" ? `(${t("inventory.newStockLevel")})` : ""}
             </Label>
             <Input
               type="number"
@@ -182,7 +184,7 @@ export function StockAdjustmentDialog({
               step={unitIncrement}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              placeholder="Enter quantity"
+              placeholder={t("inventory.enterQuantity")}
               className="border-2 focus:border-primary"
             />
           </div>
@@ -190,7 +192,7 @@ export function StockAdjustmentDialog({
           {quantity && parseFloat(quantity) > 0 && (
             <div className="p-3 rounded-lg bg-muted/50 border">
               <div className="text-sm text-muted-foreground">
-                New Stock Level:
+                {t("inventory.newStockLevel")}:
               </div>
               <div className="text-lg font-semibold">
                 {formatMeasurementValue(calculateNewStock())} {unitLabel}
@@ -199,15 +201,15 @@ export function StockAdjustmentDialog({
           )}
 
           <div className="space-y-2">
-            <Label>Reason</Label>
+            <Label>{t("inventory.reason")}</Label>
             <Select value={reason} onValueChange={setReason}>
               <SelectTrigger className="border-2">
-                <SelectValue placeholder="Select a reason" />
+                <SelectValue placeholder={t("inventory.selectReason")} />
               </SelectTrigger>
               <SelectContent>
                 {ADJUSTMENT_REASONS.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {r}
+                  <SelectItem key={r.value} value={r.value}>
+                    {t(r.key)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -215,11 +217,11 @@ export function StockAdjustmentDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Notes (Optional)</Label>
+            <Label>{t("inventory.notes")}</Label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Additional notes about this adjustment"
+              placeholder={t("inventory.notesPlaceholder")}
               className="border-2 focus:border-primary min-h-[80px]"
             />
           </div>
@@ -237,10 +239,10 @@ export function StockAdjustmentDialog({
             }}
             disabled={isSubmitting}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Adjusting..." : "Adjust Stock"}
+            {isSubmitting ? t("inventory.adjusting") : t("inventory.adjustStock")}
           </Button>
         </DialogFooter>
       </DialogContent>

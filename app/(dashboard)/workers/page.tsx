@@ -3,8 +3,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { Eye, Pencil, UserPlus, Wrench } from "lucide-react";
+import { Eye, Pencil, UserPlus, Wrench, MoreVertical, Archive } from "lucide-react";
 import { usePosData } from "@/components/pos-data-provider";
+import { useLanguage } from "@/components/language-provider";
 import {
   Card,
   CardContent,
@@ -13,8 +14,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -35,6 +44,7 @@ import {
 } from "@/components/ui/dialog";
 
 export default function WorkersPage() {
+  const { t } = useLanguage();
   const {
     workers,
     projectWorkerAssignments,
@@ -56,6 +66,7 @@ export default function WorkersPage() {
   const [dailyRate, setDailyRate] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
   const [notes, setNotes] = useState("");
+  const [isActive, setIsActive] = useState(true);
 
   const resetForm = () => {
     setName("");
@@ -65,6 +76,7 @@ export default function WorkersPage() {
     setDailyRate("");
     setHourlyRate("");
     setNotes("");
+    setIsActive(true);
     setSelectedWorkerId("");
   };
 
@@ -105,6 +117,7 @@ export default function WorkersPage() {
     setDailyRate(String(worker.dailyRate || 0));
     setHourlyRate(String(worker.hourlyRate || 0));
     setNotes(worker.notes || "");
+    setIsActive(worker.isActive !== false);
     setIsEditOpen(true);
   };
 
@@ -120,7 +133,7 @@ export default function WorkersPage() {
         dailyRate: Number(dailyRate || 0),
         hourlyRate: Number(hourlyRate || 0),
         notes,
-        isActive: true,
+        isActive,
       });
       setIsAddOpen(false);
       resetForm();
@@ -143,6 +156,7 @@ export default function WorkersPage() {
         dailyRate: Number(dailyRate || 0),
         hourlyRate: Number(hourlyRate || 0),
         notes,
+        isActive,
       });
       setIsEditOpen(false);
       resetForm();
@@ -156,10 +170,10 @@ export default function WorkersPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
           <Wrench className="h-6 w-6 text-primary" />
-          Workers
+          {t("workers.title")}
         </h1>
         <p className="text-muted-foreground max-w-2xl">
-          Manage labor services your company provides to customer projects.
+          {t("workers.subtitle")}
         </p>
       </div>
 
@@ -170,12 +184,12 @@ export default function WorkersPage() {
               {/* <CardTitle>Worker Directory</CardTitle> */}
               <CardDescription>
                 {filteredWorkers.length}{" "}
-                {filteredWorkers.length === 1 ? "worker" : "workers"} found
+                {filteredWorkers.length === 1 ? t("workers.worker") : t("workers.workers")} {t("workers.found")}
               </CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
               <Input
-                placeholder="Search by name, specialty, or contact"
+                placeholder={t("workers.searchPlaceholder")}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 className="sm:max-w-xs"
@@ -186,8 +200,8 @@ export default function WorkersPage() {
                   setIsAddOpen(true);
                 }}
               >
-                <UserPlus className="mr-2 h-4 w-4" />
-                Add Worker
+                <UserPlus className="me-2 h-4 w-4" />
+                {t("workers.addWorker")}
               </Button>
             </div>
           </div>
@@ -195,17 +209,17 @@ export default function WorkersPage() {
         <CardContent>
           <div className="rounded-lg border">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Worker</TableHead>
-                  <TableHead>Specialty</TableHead>
-                  <TableHead>Daily Rate</TableHead>
-                  <TableHead>Hourly Rate</TableHead>
-                  <TableHead>Active Assignments</TableHead>
-                  <TableHead>Updated</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("workers.worker")}</TableHead>
+                    <TableHead>{t("workers.specialty")}</TableHead>
+                    <TableHead>{t("workers.dailyRate")}</TableHead>
+                    <TableHead>{t("workers.hourlyRate")}</TableHead>
+                    <TableHead>{t("workers.activeAssignments")}</TableHead>
+                    <TableHead>{t("workers.updated")}</TableHead>
+                    <TableHead className="text-end">{t("customers.actions")}</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {filteredWorkers.map((worker) => (
                   <TableRow key={worker.id}>
@@ -213,11 +227,11 @@ export default function WorkersPage() {
                       <div>
                         <p className="font-medium">{worker.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {worker.phone || worker.email || "No contact"}
+                          {worker.phone || worker.email || t("workers.noContact")}
                         </p>
                       </div>
                     </TableCell>
-                    <TableCell>{worker.specialty || "General labor"}</TableCell>
+                    <TableCell>{worker.specialty || t("workers.generalLabor")}</TableCell>
                     <TableCell>${(worker.dailyRate || 0).toFixed(2)}</TableCell>
                     <TableCell>${(worker.hourlyRate || 0).toFixed(2)}</TableCell>
                     <TableCell>
@@ -228,30 +242,33 @@ export default function WorkersPage() {
                     <TableCell>
                       {format(new Date(worker.updatedAt), "MMM dd, yyyy")}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button asChild variant="outline" size="sm">
-                          <Link href={`/workers/${encodeURIComponent(worker.id)}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View
-                          </Link>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEdit(worker.id)}
-                        >
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeWorker(worker.id)}
-                        >
-                          Archive
-                        </Button>
-                      </div>
+                    <TableCell className="text-end">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-9 w-9">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href={`/workers/${encodeURIComponent(worker.id)}`}
+                              className="flex items-center"
+                            >
+                              <Eye className="me-2 h-4 w-4" />
+                              {t("workers.view")}
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEdit(worker.id)}>
+                            <Pencil className="me-2 h-4 w-4" />
+                            {t("workers.edit")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => removeWorker(worker.id)}>
+                            <Archive className="me-2 h-4 w-4" />
+                            {t("workers.archive")}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -264,37 +281,37 @@ export default function WorkersPage() {
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Worker</DialogTitle>
+            <DialogTitle>{t("workers.addWorker")}</DialogTitle>
             <DialogDescription>
-              Create a worker profile for project assignments.
+              {t("workers.addWorkerDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label>Worker Name</Label>
+              <Label>{t("workers.workerName")}</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Specialty</Label>
+              <Label>{t("workers.specialty")}</Label>
               <Input
                 value={specialty}
                 onChange={(e) => setSpecialty(e.target.value)}
-                placeholder="Rebar technician, welder, carpenter..."
+                placeholder={t("workers.specialtyPlaceholder")}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Phone</Label>
+                <Label>{t("workers.phone")}</Label>
                 <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Email</Label>
+                <Label>{t("workers.email")}</Label>
                 <Input value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Daily Rate</Label>
+                <Label>{t("workers.dailyRate")}</Label>
                 <Input
                   type="number"
                   min={0}
@@ -304,7 +321,7 @@ export default function WorkersPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Hourly Rate</Label>
+                <Label>{t("workers.hourlyRate")}</Label>
                 <Input
                   type="number"
                   min={0}
@@ -315,20 +332,35 @@ export default function WorkersPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Notes</Label>
+              <Label>{t("workers.notes")}</Label>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
               />
             </div>
+            <SwitchRow className="rounded-lg border p-4 bg-muted/50">
+              <div className="space-y-0.5">
+                <Label htmlFor="worker-active" className="text-base font-medium">
+                  {t("workers.activeStatus")}
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  {t("workers.activeStatusDesc")}
+                </p>
+              </div>
+              <Switch
+                id="worker-active"
+                checked={isActive}
+                onCheckedChange={setIsActive}
+              />
+            </SwitchRow>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleAdd} disabled={isSaving || !name.trim()}>
-              {isSaving ? "Saving..." : "Save Worker"}
+              {isSaving ? t("workers.saving") : t("workers.saveWorker")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -337,16 +369,16 @@ export default function WorkersPage() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Worker</DialogTitle>
-            <DialogDescription>Update worker details and pricing.</DialogDescription>
+            <DialogTitle>{t("workers.editWorker")}</DialogTitle>
+            <DialogDescription>{t("workers.editWorkerDesc")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label>Worker Name</Label>
+              <Label>{t("workers.workerName")}</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Specialty</Label>
+              <Label>{t("workers.specialty")}</Label>
               <Input
                 value={specialty}
                 onChange={(e) => setSpecialty(e.target.value)}
@@ -354,17 +386,17 @@ export default function WorkersPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Phone</Label>
+                <Label>{t("workers.phone")}</Label>
                 <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Email</Label>
+                <Label>{t("workers.email")}</Label>
                 <Input value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Daily Rate</Label>
+                <Label>{t("workers.dailyRate")}</Label>
                 <Input
                   type="number"
                   min={0}
@@ -374,7 +406,7 @@ export default function WorkersPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Hourly Rate</Label>
+                <Label>{t("workers.hourlyRate")}</Label>
                 <Input
                   type="number"
                   min={0}
@@ -385,20 +417,35 @@ export default function WorkersPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Notes</Label>
+              <Label>{t("workers.notes")}</Label>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
               />
             </div>
+            <SwitchRow className="rounded-lg border p-4 bg-muted/50">
+              <div className="space-y-0.5">
+                <Label htmlFor="edit-worker-active" className="text-base font-medium">
+                  {t("workers.activeStatus")}
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  {t("workers.activeStatusDesc")}
+                </p>
+              </div>
+              <Switch
+                id="edit-worker-active"
+                checked={isActive}
+                onCheckedChange={setIsActive}
+              />
+            </SwitchRow>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleEdit} disabled={isSaving || !name.trim()}>
-              {isSaving ? "Saving..." : "Save Changes"}
+              {isSaving ? t("workers.saving") : t("common.saveChanges")}
             </Button>
           </DialogFooter>
         </DialogContent>

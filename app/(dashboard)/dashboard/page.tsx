@@ -15,24 +15,26 @@ import { DollarSign, Package, ShoppingCart, Tags } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo } from "react";
+import { useLanguage } from "@/components/language-provider";
 
 export default function DashboardPage() {
-   const {  setTheme } = useTheme()
-    useEffect(() => {
-      setTheme("light");
-    }, [setTheme]);
+  const { setTheme } = useTheme();
+  const { t, locale } = useLanguage();
+  useEffect(() => {
+    setTheme("light");
+  }, [setTheme]);
   const { products, sales, categories } = usePosData();
   const { tier, activeStore, canUseEnterpriseFeatures } = useSubscription();
   const { licenseInfo, licenseStatus } = useLicense();
 
   const todayLabel = useMemo(
     () =>
-      new Date().toLocaleDateString("en-US", {
+      new Date().toLocaleDateString(locale === "ar" ? "ar" : "en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
       }),
-    []
+    [locale]
   );
 
   const salesToday = sales.filter(
@@ -74,13 +76,12 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 overflow-hidden min-w-0">
       <div className="flex flex-col gap-2 mb-5">
-        <p className="type-greeting">Welcome back</p>
-        <p className="type-secondary">Overview for {todayLabel}</p>
+        <p className="type-greeting">{t("dashboard.welcomeBack")}</p>
+        <p className="type-secondary">{t("dashboard.overviewFor")} {todayLabel}</p>
       </div>
 
       <Label className="rounded-[14px] border border-white/50 bg-white/25 px-4 py-2 text-sm text-amber-600 shadow-[0_6px_18px_rgba(15,23,42,0.08)] backdrop-blur-[16px]">
-        Hello, don’t forget to export your data from the Data
-        Export and History (side menu) before closing the browser, until we finish the setup :)
+        {t("dashboard.exportReminder")}
       </Label>
       {/* <LicenseStatusCard
         tier={tier}
@@ -100,40 +101,40 @@ export default function DashboardPage() {
         animate="show"
       >
         <StatsCard
-          title="Total Revenue"
+          title={t("dashboard.totalRevenue")}
           value={`$${totalRevenue.toFixed(0)}`}
-          description="Across all completed sales"
+          description={t("dashboard.acrossAllSales")}
           badge={{
-            label: `${salesToday} sales today`,
+            label: `${salesToday} ${t("dashboard.salesToday")}`,
             tone: salesToday > 0 ? "positive" : "neutral",
           }}
-          meta={`Updated ${todayLabel}`}
+          meta={`${t("dashboard.updated")} ${todayLabel}`}
           icon={DollarSign}
           variants={itemVariants}
           href="/reports"
         />
         <StatsCard
-          title="Products"
+          title={t("dashboard.totalProducts")}
           value={totalProducts}
           description={
             totalProducts > 0
-              ? `${products.filter((p) => p.stock < 5).length} low stock items`
-              : "No products yet"
+              ? `${products.filter((p) => p.stock < 5).length} ${t("dashboard.lowStockItems")}`
+              : t("dashboard.noProductsYet")
           }
           badge={{
             label:
               lowStockProducts.length > 0
-                ? `${lowStockProducts.length} low stock`
-                : "Stock healthy",
+                ? `${lowStockProducts.length} ${t("dashboard.lowStockShort")}`
+                : t("dashboard.stockHealthy"),
             tone: lowStockProducts.length > 0 ? "negative" : "positive",
           }}
-          meta={`Inventory snapshot ${todayLabel}`}
+          meta={`${t("dashboard.inventorySnapshot")} ${todayLabel}`}
           icon={Package}
           variants={itemVariants}
           href="/products"
         />
         <StatsCard
-          title="Sales"
+          title={t("dashboard.totalSales")}
           value={totalSales}
           description={
             totalSales > 0
@@ -143,37 +144,37 @@ export default function DashboardPage() {
                       new Date(s.date).toDateString() ===
                       new Date().toDateString()
                   ).length
-                } today`
-              : "No sales yet"
+                } ${t("dashboard.today")}`
+              : t("dashboard.noSalesYet")
           }
           badge={{
             label:
               salesToday > 0
-                ? `${salesToday} today`
-                : "Ready for first sale",
+                ? `${salesToday} ${t("dashboard.today")}`
+                : t("dashboard.readyForFirstSale"),
             tone: salesToday > 0 ? "positive" : "neutral",
           }}
-          meta={`Activity ${todayLabel}`}
+          meta={`${t("dashboard.activity")} ${todayLabel}`}
           icon={ShoppingCart}
           variants={itemVariants}
           href="/sales"
         />
         <StatsCard
-          title="Categories"
+          title={t("dashboard.categories")}
           value={totalCategories}
           description={
             totalCategories > 0
-              ? `${categories.length} total categories`
-              : "No categories yet"
+              ? `${categories.length} ${t("dashboard.totalCategories")}`
+              : t("dashboard.noCategoriesYet")
           }
           badge={{
             label:
               totalCategories > 0
-                ? `${totalCategories} active`
-                : "Add categories",
+                ? `${totalCategories} ${t("dashboard.active")}`
+                : t("dashboard.addCategories"),
             tone: totalCategories > 0 ? "positive" : "neutral",
           }}
-          meta={`Catalog ${todayLabel}`}
+          meta={`${t("dashboard.catalog")} ${todayLabel}`}
           icon={Tags}
           variants={itemVariants}
           href="/categories"
@@ -188,10 +189,9 @@ export default function DashboardPage() {
         >
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Low Stock Alert</AlertTitle>
+            <AlertTitle>{t("dashboard.lowStockAlert")}</AlertTitle>
             <AlertDescription>
-              {lowStockProducts.length} products are running low on stock.
-              Please restock soon.
+              {lowStockProducts.length} {t("dashboard.lowStockDescription")}
             </AlertDescription>
           </Alert>
         </motion.div>

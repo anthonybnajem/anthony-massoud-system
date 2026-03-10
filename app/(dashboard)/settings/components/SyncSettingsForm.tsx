@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { Save } from "lucide-react";
 
 interface SyncSettings {
@@ -45,7 +46,7 @@ export function SyncSettingsForm({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+        <SwitchRow className="p-4 rounded-lg border bg-muted/50">
           <div className="space-y-0.5">
             <Label htmlFor="auto-sync" className="text-sm font-medium">
               Auto Sync
@@ -61,7 +62,7 @@ export function SyncSettingsForm({
               onSettingsChange({ ...settings, autoSync: checked })
             }
           />
-        </div>
+        </SwitchRow>
 
         {settings.autoSync && (
           <div className="space-y-2 p-4 rounded-lg border bg-muted/30">
@@ -87,7 +88,7 @@ export function SyncSettingsForm({
 
         <Separator />
 
-        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+        <SwitchRow className="p-4 rounded-lg border bg-muted/50">
           <div className="space-y-0.5">
             <Label htmlFor="sync-startup" className="text-sm font-medium">
               Sync on Startup
@@ -103,11 +104,11 @@ export function SyncSettingsForm({
               onSettingsChange({ ...settings, syncOnStartup: checked })
             }
           />
-        </div>
+        </SwitchRow>
 
         <Separator />
 
-        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+        <SwitchRow className="p-4 rounded-lg border bg-muted/50">
           <div className="space-y-0.5">
             <Label htmlFor="sync-shutdown" className="text-sm font-medium">
               Sync on Shutdown
@@ -123,7 +124,7 @@ export function SyncSettingsForm({
               onSettingsChange({ ...settings, syncOnShutdown: checked })
             }
           />
-        </div>
+        </SwitchRow>
       </CardContent>
       <CardFooter className="border-t bg-muted/50">
         <Button onClick={onSave} className="gap-2 shadow-sm">

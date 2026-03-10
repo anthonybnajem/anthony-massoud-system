@@ -986,6 +986,18 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       const actualCash = endCash;
       const cashDifference = actualCash - expectedCash;
 
+      // Expense out: sum of expenses with expenseType "expense_out" in shift period
+      const shiftExpenses = expenses.filter((exp) => {
+        const expDate = new Date(exp.date);
+        return (
+          expDate >= shiftStart &&
+          expDate <= shiftEnd &&
+          exp.expenseType === "expense_out"
+        );
+      });
+      const expenseOut = shiftExpenses.reduce((sum, exp) => sum + exp.total, 0);
+      const incomeNet = totalSales - Math.abs(expenseOut);
+
       const report: ClosingReport = {
         id: crypto.randomUUID(),
         shiftId,
@@ -998,6 +1010,8 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         cashDifference,
         totalSales,
         totalTransactions,
+        expenseOut,
+        incomeNet,
         paymentMethods,
         salesByEmployee,
         notes,
@@ -1196,7 +1210,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
             previousStock,
             newStock,
             reason: "Sale",
-            notes: `Sale ID: ${newSale.id}`,
+            notes: "",
             date: new Date(),
           };
 
@@ -1262,17 +1276,47 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         id: crypto.randomUUID(),
         date: new Date(),
         total: normalizedTotal,
+        expenseType: expenseData.expenseType ?? "expense_out",
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
       await expensesApi.add(newExpense);
 
-      // Increase stock for product purchases
+      // Increase stock for product purchases (both restock and expense_out product lines)
+      const isRestock = newExpense.expenseType === "restock";
       for (const item of normalizedItems) {
         if (item.type !== "product" || !item.productId) continue;
         const product = await productsApi.getById(item.productId);
         if (!product) continue;
+
+        if (item.variationId && Array.isArray(product.variations)) {
+          const variation = product.variations.find((v) => v.id === item.variationId);
+          if (variation) {
+            const previousStock = variation.stock;
+            const newStock = previousStock + item.quantity;
+            const updatedVariations = product.variations.map((v) =>
+              v.id === item.variationId ? { ...v, stock: newStock } : v
+            );
+            await productsApi.update({
+              ...product,
+              variations: updatedVariations,
+            });
+            const movement: StockMovement = {
+              id: crypto.randomUUID(),
+              productId: product.id,
+              type: "purchase",
+              quantity: item.quantity,
+              previousStock,
+              newStock,
+              reason: isRestock ? "Restock" : "Expense purchase",
+              notes: "",
+              date: new Date(),
+            };
+            await stockMovementsApi.add(movement);
+          }
+          continue;
+        }
 
         const previousStock = product.stock;
         const newStock = previousStock + item.quantity;
@@ -1289,8 +1333,8 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
           quantity: item.quantity,
           previousStock,
           newStock,
-          reason: "Expense purchase",
-          notes: `Expense ID: ${newExpense.id}`,
+          reason: isRestock ? "Restock" : "Expense purchase",
+          notes: "",
           date: new Date(),
         };
 
@@ -1302,8 +1346,10 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
       setStockMovements(await stockMovementsApi.getAll());
 
       toast({
-        title: "Expense Recorded",
-        description: `Expense of $${Math.abs(newExpense.total).toFixed(2)} has been recorded.`,
+        title: isRestock ? "Stock Added" : "Expense Recorded",
+        description: isRestock
+          ? `Restock of $${Math.abs(newExpense.total).toFixed(2)} recorded. Inventory updated.`
+          : `Expense of $${Math.abs(newExpense.total).toFixed(2)} has been recorded.`,
       });
 
       return newExpense;
@@ -1364,7 +1410,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         previousStock,
         newStock,
         reason,
-        notes: `Sale ID: ${sale.id}`,
+        notes: "",
         date: new Date(),
       };
 

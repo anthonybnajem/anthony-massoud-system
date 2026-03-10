@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { usePosData } from "@/components/pos-data-provider";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
 import { useDiscount } from "@/components/discount-provider";
+import { useLanguage } from "@/components/language-provider";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -60,6 +61,7 @@ export default function CustomerDetailPage() {
   } = usePosData();
   const { settings } = useReceiptSettings();
   const { discounts } = useDiscount();
+  const { t } = useLanguage();
   const currencySymbol = settings?.currencySymbol || "$";
 
   const customers = useMemo(
@@ -76,8 +78,8 @@ export default function CustomerDetailPage() {
     [discounts]
   );
   const assignedDiscountLabel = customer?.defaultDiscountId
-    ? discountLookup[customer.defaultDiscountId] || "Discount removed"
-    : "No discount";
+    ? discountLookup[customer.defaultDiscountId] || t("customers.discountRemoved")
+    : t("customers.noDiscountPlaceholder");
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [pendingName, setPendingName] = useState("");
@@ -140,6 +142,15 @@ export default function CustomerDetailPage() {
       setIsSaving(false);
     }
   };
+
+  const totalAmountNotPaid = useMemo(() => {
+    if (!customer) return 0;
+    return customer.sales.reduce((sum, sale) => {
+      if (sale.paymentStatus === "paid" || sale.paymentStatus == null) return sum;
+      const paid = sale.paymentStatus === "partially_paid" ? (sale.amountPaid ?? 0) : 0;
+      return sum + (sale.total - paid);
+    }, 0);
+  }, [customer]);
 
   const customerProfileId = customer?.profileId;
   const customerProjects = useMemo(
@@ -208,8 +219,8 @@ export default function CustomerDetailPage() {
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost" size="sm">
             <Link href="/customers">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-     
+              <ArrowLeft className="me-2 h-4 w-4" />
+              {t("common.back")}
             </Link>
           </Button>
         </div>
@@ -218,9 +229,9 @@ export default function CustomerDetailPage() {
             <EmptyMedia variant="icon">
               <Users className="h-6 w-6" />
             </EmptyMedia>
-            <EmptyTitle>Customer not found</EmptyTitle>
+            <EmptyTitle>{t("customers.customerNotFound")}</EmptyTitle>
             <EmptyDescription>
-              We couldn&apos;t find the customer you were looking for.
+              {t("customers.customerNotFoundDesc")}
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -233,8 +244,8 @@ export default function CustomerDetailPage() {
       <div className="flex items-center gap-3 flex-wrap">
         <Button asChild variant="ghost" size="sm">
           <Link href="/customers">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-        
+            <ArrowLeft className="me-2 h-4 w-4" />
+            {t("common.back")}
           </Link>
         </Button>
         <div>
@@ -242,70 +253,82 @@ export default function CustomerDetailPage() {
             {customer.name}
           </h1>
           <p className="text-muted-foreground">
-            {customer.email || "No email saved"} •{" "}
-            {customer.phone || "No phone saved"} •{" "}
-            {customer.location || "No location saved"}
+            {customer.email || t("customers.noEmailSaved")} •{" "}
+            {customer.phone || t("customers.noPhoneSaved")} •{" "}
+            {customer.location || t("customers.noLocationSaved")}
           </p>
         </div>
         <div className="flex-1" />
         <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)}>
-          Edit Customer
+          {t("customers.editCustomer")}
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("customers.totalSpent")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
               {currencySymbol}
               {customer.totalSpent.toFixed(2)}
             </p>
-            <CardDescription>All recorded purchases</CardDescription>
+            <CardDescription>{t("customers.allRecordedPurchases")}</CardDescription>
           </CardContent>
         </Card>
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Purchases</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("customers.amountNotPaid")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className={`text-2xl font-bold ${totalAmountNotPaid > 0 ? "text-amber-700" : ""}`}>
+              {currencySymbol}
+              {totalAmountNotPaid.toFixed(2)}
+            </p>
+            <CardDescription>{t("customers.totalUnpaidBalance")}</CardDescription>
+          </CardContent>
+        </Card>
+        <Card className="border-2 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">{t("customers.purchases")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{customer.purchaseCount}</p>
-            <CardDescription>Receipts tied to this customer</CardDescription>
+            <CardDescription>{t("customers.receiptsTiedToCustomer")}</CardDescription>
           </CardContent>
         </Card>
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Last Purchase</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("customers.lastPurchase")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
               {format(customer.lastPurchase, "MMM dd, yyyy")}
             </p>
-            <CardDescription>Most recent visit</CardDescription>
+            <CardDescription>{t("customers.mostRecentVisit")}</CardDescription>
           </CardContent>
         </Card>
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Location</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("customers.location")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
-              {customer.location || "Not provided"}
+              {customer.location || t("customers.notProvided")}
             </p>
-            <CardDescription>Saved customer location</CardDescription>
+            <CardDescription>{t("customers.savedCustomerLocation")}</CardDescription>
           </CardContent>
         </Card>
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              Preferred Discount
+              {t("customers.preferredDiscount")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{assignedDiscountLabel}</p>
-            <CardDescription>Applied during checkout</CardDescription>
+            <CardDescription>{t("customers.appliedDuringCheckout")}</CardDescription>
           </CardContent>
         </Card>
       </div>
@@ -315,10 +338,10 @@ export default function CustomerDetailPage() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <FolderKanban className="h-5 w-5 text-primary" />
-              Projects
+              {t("customers.projects")}
             </CardTitle>
             <CardDescription>
-              Projects under this customer profile.
+              {t("customers.projectsUnderProfile")}
             </CardDescription>
           </div>
           <Button
@@ -326,17 +349,17 @@ export default function CustomerDetailPage() {
             onClick={openAddProject}
             disabled={!customerProfileId}
           >
-            Add Project
+            {t("customers.addProject")}
           </Button>
         </CardHeader>
         <CardContent className="space-y-3">
           {!customerProfileId ? (
             <p className="text-sm text-muted-foreground">
-              Save this customer as a profile first before creating projects.
+              {t("customers.saveProfileFirst")}
             </p>
           ) : customerProjects.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No projects yet for this customer.
+              {t("customers.noProjectsYet")}
             </p>
           ) : (
             customerProjects.map((project) => (
@@ -347,7 +370,7 @@ export default function CustomerDetailPage() {
                 <div className="space-y-1">
                   <p className="font-semibold">{project.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {project.location || "No location"}
+                    {project.location || t("customers.noLocationSaved")}
                   </p>
                   {project.notes && (
                     <p className="text-xs text-muted-foreground">
@@ -358,8 +381,8 @@ export default function CustomerDetailPage() {
                 <div className="flex gap-2">
                   <Button asChild variant="outline" size="sm">
                     <Link href={`/projects/${encodeURIComponent(project.id)}`}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      View
+                      <Eye className="me-2 h-4 w-4" />
+                      {t("customers.view")}
                     </Link>
                   </Button>
                   <Button
@@ -367,8 +390,8 @@ export default function CustomerDetailPage() {
                     size="sm"
                     onClick={() => openEditProject(project.id)}
                   >
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit
+                    <Pencil className="me-2 h-4 w-4" />
+                    {t("common.edit")}
                   </Button>
                 </div>
               </div>
@@ -379,10 +402,9 @@ export default function CustomerDetailPage() {
 
       <Card className="border-2">
         <CardHeader>
-          <CardTitle>Purchase History</CardTitle>
+          <CardTitle>{t("customers.purchaseHistory")}</CardTitle>
           <CardDescription>
-            {customer.sales.length}{" "}
-            {customer.sales.length === 1 ? "receipt" : "receipts"} recorded
+            {t("customers.receiptsRecorded", { count: customer.sales.length })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -392,47 +414,71 @@ export default function CustomerDetailPage() {
                 <EmptyMedia variant="icon">
                   <UserCircle2 className="h-6 w-6" />
                 </EmptyMedia>
-                <EmptyTitle>No purchase history</EmptyTitle>
+                <EmptyTitle>{t("customers.noPurchaseHistory")}</EmptyTitle>
                 <EmptyDescription>
-                  Once this customer completes a sale, it will show up here.
+                  {t("customers.onceCustomerCompletesSale")}
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>
           ) : (
-            customer.sales.map((sale) => (
-              <Link
-                key={sale.id}
-                href={`/receipts/${encodeURIComponent(sale.id)}`}
-                className="rounded-lg border p-4 shadow-sm transition hover:border-primary/50 hover:bg-primary/5 block"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold">
-                      Receipt #{sale.id.slice(0, 8)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(sale.date), "PPpp")} •{" "}
-                      {sale.paymentMethod}
-                    </p>
+            customer.sales.map((sale) => {
+              const isPaid = sale.paymentStatus === "paid" || sale.paymentStatus == null;
+              const paidSoFar = isPaid
+                ? sale.total
+                : (sale.paymentStatus === "partially_paid"
+                    ? sale.amountPaid ?? 0
+                    : 0);
+              const amountLeft = sale.total - paidSoFar;
+              return (
+                <Link
+                  key={sale.id}
+                  href={`/receipts/${encodeURIComponent(sale.id)}`}
+                  className="rounded-lg border p-4 shadow-sm transition hover:border-primary/50 hover:bg-primary/5 block"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        {t("customers.receiptShort")} #{sale.id.slice(0, 8)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(sale.date), "PPpp")}
+                      </p>
+                      <div className="mt-2 text-xs">
+                        <p className="text-muted-foreground">
+                          {isPaid ? (
+                            <span className="text-green-600 font-medium">
+                              {t("customers.fullyPaid")}
+                            </span>
+                          ) : (
+                            <>
+                              {t("customers.amountLeft")}:{" "}
+                              <span className="font-medium text-amber-700">
+                                {currencySymbol}
+                                {amountLeft.toFixed(2)}
+                              </span>
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-end">
+                      <p className="text-sm font-semibold">
+                        {currencySymbol}
+                        {sale.total.toFixed(2)}
+                      </p>
+                      <Badge variant="outline" className="mt-1 text-xs">
+                        {t("customers.itemsCount", { count: sale.items.length })}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold">
-                      {currencySymbol}
-                      {sale.total.toFixed(2)}
+                  {sale.notes && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {t("customers.notes")}: {sale.notes}
                     </p>
-                    <Badge variant="outline" className="mt-1 text-xs">
-                      {sale.items.length}{" "}
-                      {sale.items.length === 1 ? "item" : "items"}
-                    </Badge>
-                  </div>
-                </div>
-                {sale.notes && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Notes: {sale.notes}
-                  </p>
-                )}
-              </Link>
-            ))
+                  )}
+                </Link>
+              );
+            })
           )}
         </CardContent>
       </Card>
@@ -440,14 +486,14 @@ export default function CustomerDetailPage() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Customer</DialogTitle>
+            <DialogTitle>{t("customers.editCustomer")}</DialogTitle>
             <DialogDescription>
-              Update contact information across all of this customer&apos;s receipts.
+              {t("customers.editCustomerDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Name</Label>
+              <Label htmlFor="edit-name">{t("customers.nameLabel")}</Label>
               <Input
                 id="edit-name"
                 value={pendingName}
@@ -455,7 +501,7 @@ export default function CustomerDetailPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-email">Email</Label>
+              <Label htmlFor="edit-email">{t("receipts.email")}</Label>
               <Input
                 id="edit-email"
                 type="email"
@@ -464,7 +510,7 @@ export default function CustomerDetailPage() {
               />
             </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-phone">Phone</Label>
+            <Label htmlFor="edit-phone">{t("receipts.phone")}</Label>
             <Input
               id="edit-phone"
               value={pendingPhone}
@@ -472,7 +518,7 @@ export default function CustomerDetailPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-location">Location</Label>
+            <Label htmlFor="edit-location">{t("receipts.location")}</Label>
             <Input
               id="edit-location"
               value={pendingLocation}
@@ -480,7 +526,7 @@ export default function CustomerDetailPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-discount">Preferred Discount</Label>
+            <Label htmlFor="edit-discount">{t("customers.preferredDiscount")}</Label>
             <Select
               value={pendingDiscountId ?? "none"}
               onValueChange={(value) =>
@@ -488,13 +534,13 @@ export default function CustomerDetailPage() {
               }
             >
               <SelectTrigger id="edit-discount">
-                <SelectValue placeholder="No discount" />
+                <SelectValue placeholder={t("customers.noDiscountPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No discount</SelectItem>
+                <SelectItem value="none">{t("customers.noDiscountPlaceholder")}</SelectItem>
                 {discounts.length === 0 ? (
                   <SelectItem value="placeholder" disabled>
-                    Create a discount first
+                    {t("customers.createDiscountFirst")}
                   </SelectItem>
                 ) : (
                   discounts.map((discount) => (
@@ -509,10 +555,10 @@ export default function CustomerDetailPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleSaveCustomer} disabled={isSaving}>
-              {isSaving ? "Saving..." : "Save Changes"}
+              {isSaving ? t("customers.saving") : t("stores.saveChanges")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -522,35 +568,35 @@ export default function CustomerDetailPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {isEditingProject ? "Edit Project" : "Add Project"}
+              {isEditingProject ? t("projects.editProject") : t("projects.addProject")}
             </DialogTitle>
             <DialogDescription>
               {isEditingProject
-                ? "Update this customer project details."
-                : "Create a new project for this customer."}
+                ? t("projects.editProjectDesc")
+                : t("projects.addProjectDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="project-name">Project Name</Label>
+              <Label htmlFor="project-name">{t("projects.projectName")}</Label>
               <Input
                 id="project-name"
                 value={projectName}
                 onChange={(event) => setProjectName(event.target.value)}
-                placeholder="Project name"
+                placeholder={t("projects.projectNamePlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="project-location">Location</Label>
+              <Label htmlFor="project-location">{t("receipts.location")}</Label>
               <Input
                 id="project-location"
                 value={projectLocation}
                 onChange={(event) => setProjectLocation(event.target.value)}
-                placeholder="Location"
+                placeholder={t("projects.locationPlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="project-notes">Notes</Label>
+              <Label htmlFor="project-notes">{t("customers.notes")}</Label>
               <Textarea
                 id="project-notes"
                 rows={3}
@@ -565,13 +611,13 @@ export default function CustomerDetailPage() {
               onClick={() => setIsProjectDialogOpen(false)}
               disabled={isSaving}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleSaveProject}
               disabled={isSaving || !projectName.trim()}
             >
-              {isSaving ? "Saving..." : "Save"}
+              {isSaving ? t("customers.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>

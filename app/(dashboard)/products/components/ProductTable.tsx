@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
+import { useLanguage } from "@/components/language-provider";
 import { type Product } from "@/components/pos-data-provider";
 import {
   Table,
@@ -37,17 +38,18 @@ export function ProductTable({
   onDelete,
   itemVariants,
 }: ProductTableProps) {
+  const { t } = useLanguage();
   return (
     <div className="overflow-x-auto min-w-0">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="font-semibold">Product</TableHead>
-            <TableHead className="font-semibold">Category</TableHead>
-            <TableHead className="font-semibold">Price</TableHead>
-             <TableHead className="font-semibold">Unit</TableHead>
-            <TableHead className="font-semibold">Stock</TableHead>
-            <TableHead className="text-right font-semibold">Actions</TableHead>
+            <TableHead className="font-semibold text-start">{t("products.product")}</TableHead>
+            <TableHead className="font-semibold text-start">{t("products.category")}</TableHead>
+            <TableHead className="font-semibold text-start">{t("products.price")}</TableHead>
+            <TableHead className="font-semibold text-start">{t("products.unit")}</TableHead>
+            <TableHead className="font-semibold text-start">{t("products.stock")}</TableHead>
+            <TableHead className="text-end font-semibold">{t("common.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -70,11 +72,11 @@ export function ProductTable({
                       <EmptyMedia variant="icon">
                         <Package className="h-12 w-12 text-muted-foreground" />
                       </EmptyMedia>
-                      <EmptyTitle>No products found</EmptyTitle>
+                      <EmptyTitle>{t("products.noProductsFound")}</EmptyTitle>
                       <EmptyDescription>
                         {searchQuery || filterCategory !== "all"
-                          ? "Try adjusting your search or filter criteria."
-                          : "Get started by adding your first product."}
+                          ? t("products.tryAdjustingSearch")
+                          : t("products.getStartedAdding")}
                       </EmptyDescription>
                     </EmptyHeader>
                   </Empty>

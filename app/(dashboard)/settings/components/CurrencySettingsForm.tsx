@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DollarSign, Save } from "lucide-react";
+import { useLanguage } from "@/components/language-provider";
 
 interface CurrencySettings {
   currencySymbol: string;
@@ -47,73 +48,47 @@ export function CurrencySettingsForm({
   onSave,
   currencyOptions,
 }: CurrencySettingsFormProps) {
+  const { t } = useLanguage();
   return (
     <Card className="border-2 shadow-sm">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <DollarSign className="h-5 w-5 text-primary" />
-          Currency & Locale
+          {t("settings.currencyAndLocale")}
         </CardTitle>
         <CardDescription>
-          Configure currency and date/time formats.
+          {t("settings.currencyAndLocaleDesc")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="currency" className="text-sm font-medium">
-              Currency
-            </Label>
-            <Select
-              value={settings.currencyCode}
-              onValueChange={(value) => {
-                const currency = currencyOptions.find((c) => c.code === value);
-                if (currency) {
-                  onSettingsChange({
-                    ...settings,
-                    currencyCode: currency.code,
-                    currencySymbol: currency.symbol,
-                  });
-                }
-              }}
-            >
-              <SelectTrigger id="currency" className="border-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {currencyOptions.map((currency) => (
-                  <SelectItem key={currency.code} value={currency.code}>
-                    {currency.symbol} {currency.name} ({currency.code})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="language" className="text-sm font-medium">
-              Language
-            </Label>
-            <Select
-              value={settings.language}
-              onValueChange={(value) =>
-                onSettingsChange({ ...settings, language: value })
+        <div className="space-y-2 max-w-xs">
+          <Label htmlFor="currency" className="text-sm font-medium">
+            {t("common.currency")}
+          </Label>
+          <Select
+            value={settings.currencyCode}
+            onValueChange={(value) => {
+              const currency = currencyOptions.find((c) => c.code === value);
+              if (currency) {
+                onSettingsChange({
+                  ...settings,
+                  currencyCode: currency.code,
+                  currencySymbol: currency.symbol,
+                });
               }
-            >
-              <SelectTrigger id="language" className="border-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="km">ភាសាខ្មែរ (Khmer)</SelectItem>
-                <SelectItem value="es">Español</SelectItem>
-                <SelectItem value="fr">Français</SelectItem>
-                <SelectItem value="de">Deutsch</SelectItem>
-                <SelectItem value="zh">中文</SelectItem>
-                <SelectItem value="ja">日本語</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            }}
+          >
+            <SelectTrigger id="currency" className="border-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {currencyOptions.map((currency) => (
+                <SelectItem key={currency.code} value={currency.code}>
+                  {currency.symbol} {currency.name} ({currency.code})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <Separator />
@@ -121,7 +96,7 @@ export function CurrencySettingsForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="date-format" className="text-sm font-medium">
-              Date Format
+              {t("settings.dateFormat")}
             </Label>
             <Select
               value={settings.dateFormat}
@@ -143,7 +118,7 @@ export function CurrencySettingsForm({
 
           <div className="space-y-2">
             <Label htmlFor="time-format" className="text-sm font-medium">
-              Time Format
+              {t("settings.timeFormat")}
             </Label>
             <Select
               value={settings.timeFormat}
@@ -155,8 +130,8 @@ export function CurrencySettingsForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="12h">12-hour (AM/PM)</SelectItem>
-                <SelectItem value="24h">24-hour</SelectItem>
+                <SelectItem value="12h">{t("settings.timeFormat12h")}</SelectItem>
+                <SelectItem value="24h">{t("settings.timeFormat24h")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -165,7 +140,7 @@ export function CurrencySettingsForm({
       <CardFooter className="border-t bg-muted/50">
         <Button onClick={onSave} className="gap-2 shadow-sm">
           <Save className="h-4 w-4" />
-          Save Changes
+          {t("common.saveChanges")}
         </Button>
       </CardFooter>
     </Card>

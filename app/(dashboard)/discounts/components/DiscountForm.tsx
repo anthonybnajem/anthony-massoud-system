@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useLanguage } from "@/components/language-provider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import {
   Select,
   SelectContent,
@@ -45,6 +47,7 @@ export function DiscountForm({
   categories = [],
   currencySymbol = "$",
 }: DiscountFormProps) {
+  const { t } = useLanguage();
   const [productSearch, setProductSearch] = useState("");
   const [categorySearch, setCategorySearch] = useState("");
   const selectedProducts = useMemo(() => {
@@ -101,28 +104,28 @@ export function DiscountForm({
   return (
     <div className="space-y-4 py-4">
       <div className="space-y-2">
-        <Label htmlFor="name">Discount Name</Label>
+        <Label htmlFor="name">{t("discounts.discountName")}</Label>
         <Input
           id="name"
           value={discount.name}
           onChange={(e) => onChange({ ...discount, name: e.target.value })}
-          placeholder="Summer Sale"
+          placeholder={t("discounts.namePlaceholder")}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="code">Discount Code (Optional)</Label>
+        <Label htmlFor="code">{t("discounts.discountCodeOptional")}</Label>
         <Input
           id="code"
           value={discount.code || ""}
           onChange={(e) => onChange({ ...discount, code: e.target.value })}
-          placeholder="SUMMER25"
+          placeholder={t("discounts.codePlaceholder")}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="type">Discount Type</Label>
+          <Label htmlFor="type">{t("discounts.discountType")}</Label>
           <Select
             value={discount.type}
             onValueChange={(value: DiscountType) =>
@@ -130,11 +133,11 @@ export function DiscountForm({
             }
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select type" />
+f              <SelectValue placeholder={t("discounts.selectTypePlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="percentage">Percentage</SelectItem>
-              <SelectItem value="fixed">Fixed Amount</SelectItem>
+              <SelectItem value="percentage">{t("discounts.percentage")}</SelectItem>
+              <SelectItem value="fixed">{t("discounts.fixedAmount")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -142,11 +145,11 @@ export function DiscountForm({
         <div className="space-y-2">
           <Label htmlFor="value">
             {discount.type === "percentage"
-              ? "Percentage Value"
-              : "Fixed Amount"}
+              ? t("discounts.percentageValue")
+              : t("discounts.fixedAmountLabel")}
           </Label>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
               {discount.type === "percentage" ? (
                 <Percent className="h-4 w-4 text-muted-foreground" />
               ) : (
@@ -163,7 +166,7 @@ export function DiscountForm({
                   value: Number.parseFloat(e.target.value) || 0,
                 })
               }
-              className="pl-9"
+              className="ps-9"
               placeholder={discount.type === "percentage" ? "25" : "10.00"}
             />
           </div>
@@ -171,7 +174,7 @@ export function DiscountForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="appliesTo">Applies To</Label>
+        <Label htmlFor="appliesTo">{t("discounts.appliesTo")}</Label>
         <Select
           value={discount.appliesTo}
           onValueChange={(value: "all" | "category" | "product" | "cart") =>
@@ -185,13 +188,13 @@ export function DiscountForm({
           }
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select where discount applies" />
+            <SelectValue placeholder={t("discounts.selectWhereAppliesPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Products</SelectItem>
-            <SelectItem value="cart">Cart Total</SelectItem>
-            <SelectItem value="category">Specific Categories</SelectItem>
-            <SelectItem value="product">Specific Products</SelectItem>
+            <SelectItem value="all">{t("discounts.badgeAllProducts")}</SelectItem>
+            <SelectItem value="cart">{t("discounts.badgeCartTotal")}</SelectItem>
+            <SelectItem value="category">{t("discounts.specificCategories")}</SelectItem>
+            <SelectItem value="product">{t("discounts.specificProducts")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -199,19 +202,19 @@ export function DiscountForm({
       {discount.appliesTo === "product" && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label>Select Products</Label>
+            <Label>{t("discounts.selectProducts")}</Label>
             {discount.productIds?.length ? (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onChange({ ...discount, productIds: [] })}
               >
-                Clear
+                {t("discounts.clear")}
               </Button>
             ) : null}
           </div>
           <Input
-            placeholder="Search products"
+            placeholder={t("discounts.searchProductsPlaceholder")}
             value={productSearch}
             onChange={(e) => setProductSearch(e.target.value)}
           />
@@ -219,7 +222,7 @@ export function DiscountForm({
             <div className="p-2 space-y-2">
               {filteredProducts.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No products match your search.
+                  {t("discounts.noProductsMatch")}
                 </p>
               ) : (
                 filteredProducts.map((product) => (
@@ -250,7 +253,7 @@ export function DiscountForm({
               {selectedProducts.map((product) => (
                 <Badge key={product.id} variant="secondary">
                   <span className="truncate max-w-[120px]">{product.name}</span>
-                  <span className="ml-1 text-xs text-muted-foreground">
+                  <span className="ms-1 text-xs text-muted-foreground">
                     {formatDiscountDisplay(product.price)}
                   </span>
                 </Badge>
@@ -258,7 +261,7 @@ export function DiscountForm({
             </div>
           ) : (
             <p className="text-xs text-muted-foreground">
-              Choose the products that should receive this discount.
+              {t("discounts.chooseProductsHint")}
             </p>
           )}
         </div>
@@ -267,19 +270,19 @@ export function DiscountForm({
       {discount.appliesTo === "category" && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label>Select Categories</Label>
+            <Label>{t("discounts.selectCategories")}</Label>
             {discount.categoryIds?.length ? (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onChange({ ...discount, categoryIds: [] })}
               >
-                Clear
+                {t("discounts.clear")}
               </Button>
             ) : null}
           </div>
           <Input
-            placeholder="Search categories"
+            placeholder={t("discounts.searchCategoriesPlaceholder")}
             value={categorySearch}
             onChange={(e) => setCategorySearch(e.target.value)}
           />
@@ -287,7 +290,7 @@ export function DiscountForm({
             <div className="p-2 space-y-2">
               {filteredCategories.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No categories found.
+                  {t("discounts.noCategoriesFound")}
                 </p>
               ) : (
                 filteredCategories.map((category) => (
@@ -317,15 +320,19 @@ export function DiscountForm({
             </div>
           ) : (
             <p className="text-xs text-muted-foreground">
-              Select the categories where this discount applies.
+              {t("discounts.selectCategoriesHint")}
             </p>
           )}
         </div>
       )}
 
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="isActive">Active</Label>
+        <SwitchRow className="p-4 rounded-lg border bg-muted/50">
+          <div className="space-y-0.5">
+            <Label htmlFor="isActive" className="text-sm font-medium">
+              {t("discounts.activeLabel")}
+            </Label>
+          </div>
           <Switch
             id="isActive"
             checked={discount.isActive}
@@ -333,14 +340,16 @@ export function DiscountForm({
               onChange({ ...discount, isActive: checked })
             }
           />
-        </div>
+        </SwitchRow>
       </div>
 
       {showUsageCount && (
         <div className="pt-2 border-t">
           <p className="text-xs text-muted-foreground">
-            Usage Count: {usageCount}
-            {usageLimit && ` / ${usageLimit}`}
+            {t("discounts.usageCount", {
+              count: usageCount ?? 0,
+              limit: usageLimit ? ` / ${usageLimit}` : "",
+            })}
           </p>
         </div>
       )}

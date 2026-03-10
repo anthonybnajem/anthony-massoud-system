@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/language-provider";
 import { type Discount } from "@/lib/db";
 import {
   type Product,
@@ -40,6 +41,7 @@ export function DiscountTable({
   categories,
   currencySymbol,
 }: DiscountTableProps) {
+  const { t } = useLanguage();
   const productMap = new Map(products.map((product) => [product.id, product]));
   const categoryMap = new Map(
     categories.map((category) => [category.id, category])
@@ -50,13 +52,13 @@ export function DiscountTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Code</TableHead>
-            <TableHead>Value</TableHead>
-            <TableHead>Applies To</TableHead>
-            <TableHead>Targets</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>{t("discounts.nameHeader")}</TableHead>
+            <TableHead>{t("discounts.codeHeader")}</TableHead>
+            <TableHead>{t("discounts.valueHeader")}</TableHead>
+            <TableHead>{t("discounts.appliesToHeader")}</TableHead>
+            <TableHead>{t("discounts.targetsHeader")}</TableHead>
+            <TableHead>{t("discounts.statusHeader")}</TableHead>
+            <TableHead>{t("discounts.actionsHeader")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -80,10 +82,9 @@ export function DiscountTable({
                     <EmptyMedia variant="icon">
                       <Tag className="h-6 w-6" />
                     </EmptyMedia>
-                    <EmptyTitle>No discounts found</EmptyTitle>
+                    <EmptyTitle>{t("discounts.noDiscountsFound")}</EmptyTitle>
                     <EmptyDescription>
-                      Create your first discount to start offering promotions to
-                      customers.
+                      {t("discounts.noDiscountsDesc")}
                     </EmptyDescription>
                   </EmptyHeader>
                 </Empty>

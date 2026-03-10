@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { type CartItem as CartItemType } from "@/components/pos-data-provider";
+import { useLanguage } from "@/components/language-provider";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
 import {
@@ -34,7 +35,7 @@ interface CartProps {
   currencySymbol: string;
   onClearCart: () => void;
   onUpdateQuantity: (lineId: string, quantity: number) => void;
-  onToggleRentalMode: (lineId: string, isRental: boolean) => void;
+  onToggleRentalMode?: (lineId: string, isRental: boolean) => void;
   onUpdateRentalDates: (
     lineId: string,
     rentalDates: { rentalStartDate?: string; rentalEndDate?: string }
@@ -65,6 +66,7 @@ interface CartProps {
   isTablet?: boolean;
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
+  isExpenseMode?: boolean;
 }
 
 const CartContent = ({
@@ -93,7 +95,12 @@ const CartContent = ({
   containerVariants,
   itemVariants,
   workers,
+  isExpenseMode,
 }: Omit<CartProps, "isMobile" | "isOpen" | "onOpenChange">) => {
+  const { t } = useLanguage();
+  const titleKey = isExpenseMode ? "cart.expenseTitle" : "cart.title";
+  const emptyTitleKey = isExpenseMode ? "cart.expenseTitle" : "cart.emptyTitle";
+  const emptyDescKey = isExpenseMode ? "cart.expenseEmptyDescription" : "cart.emptyDescription";
   return (
     <div className="flex flex-col h-full overflow-hidden min-w-0">
       <div className="p-3 sm:p-4 md:p-5 border-b flex justify-between items-center flex-shrink-0">
@@ -103,11 +110,11 @@ const CartContent = ({
           </div>
           <div>
             <h2 className="text-base sm:text-lg font-semibold flex items-center">
-              Shopping Cart
+              {t(titleKey)}
             </h2>
             {cart.length > 0 && (
               <p className="text-[10px] sm:text-xs text-muted-foreground">
-                {cartItemCount} {cartItemCount === 1 ? "item" : "items"}
+                {cartItemCount} {cartItemCount === 1 ? t("cart.item") : t("cart.items")}
               </p>
             )}
           </div>
@@ -119,7 +126,7 @@ const CartContent = ({
             className="h-8 sm:h-9 text-xs sm:text-sm text-destructive hover:text-destructive hover:bg-destructive/10 touch-manipulation"
             onClick={onClearCart}
           >
-            Clear
+            {t("cart.clear")}
           </Button>
         )}
       </div>
@@ -162,10 +169,9 @@ const CartContent = ({
                   <EmptyMedia variant="icon">
                     <ShoppingCart className="h-16 w-16 text-muted-foreground" />
                   </EmptyMedia>
-                  <EmptyTitle>Your cart is empty</EmptyTitle>
+                  <EmptyTitle>{t(emptyTitleKey)}</EmptyTitle>
                   <EmptyDescription>
-                    Add products by clicking on them or using the Quick Add
-                    button
+                    {t(emptyDescKey)}
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>
@@ -191,6 +197,7 @@ const CartContent = ({
           onCustomerClick={onCustomerClick}
           onAddCustomLine={onAddCustomLine}
           onCheckoutClick={onCheckoutClick}
+          isExpenseMode={isExpenseMode}
         />
       </div>
     </div>
@@ -220,11 +227,15 @@ export function Cart({
   onCheckoutClick,
   containerVariants,
   itemVariants,
+  workers,
   isMobile = false,
   isTablet = false,
   isOpen,
   onOpenChange,
+  isExpenseMode = false,
 }: CartProps) {
+  const { t } = useLanguage();
+  const titleKey = isExpenseMode ? "cart.expenseTitle" : "cart.title";
   const cartContent = (
     <CartContent
       cart={cart}
@@ -249,6 +260,8 @@ export function Cart({
       onCheckoutClick={onCheckoutClick}
       containerVariants={containerVariants}
       itemVariants={itemVariants}
+      workers={workers}
+      isExpenseMode={isExpenseMode}
     />
   );
 
@@ -258,7 +271,7 @@ export function Cart({
       <Drawer open={isOpen} onOpenChange={onOpenChange}>
         <DrawerContent className="max-h-[90vh] flex flex-col">
           <DrawerHeader className="sr-only">
-            <DrawerTitle>Shopping Cart</DrawerTitle>
+            <DrawerTitle>{t(titleKey)}</DrawerTitle>
           </DrawerHeader>
           {cartContent}
         </DrawerContent>
@@ -266,12 +279,12 @@ export function Cart({
     );
   }
 
-  // Desktop/Tablet: Show as sidebar
+  // Desktop/Tablet: Show as sidebar (overflow-hidden prevents overlap/layout glitches)
   return (
     <div
       className={`w-full ${
         isTablet ? "md:w-80 md:max-w-80" : "md:w-96 md:max-w-96"
-      } card flex flex-col flex-shrink-0 min-w-0 max-h-[95vh]`}
+      } card flex flex-col flex-shrink-0 min-w-0 max-h-[95vh] overflow-hidden`}
     >
       {cartContent}
     </div>

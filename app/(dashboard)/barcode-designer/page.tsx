@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useLanguage } from "@/components/language-provider";
 import { motion } from "framer-motion";
 import {
   Card,
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
@@ -50,6 +52,7 @@ const BARCODE_TYPES = [
 ];
 
 export default function BarcodeGeneratorPage() {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const { products, updateExistingProduct } = usePosData();
   const [barcodeValue, setBarcodeValue] = useState("");
@@ -638,7 +641,7 @@ export default function BarcodeGeneratorPage() {
     show: { y: 0, opacity: 1 },
   };
 
-   return  <h1 className="text-2xl font-bold tracking-tight">Coming Soon!</h1>
+   return  <h1 className="text-2xl font-bold tracking-tight">{t("common.comingSoon")}</h1>
 
   return (
     <motion.div
@@ -860,7 +863,7 @@ export default function BarcodeGeneratorPage() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/50">
+                <SwitchRow className="p-3 rounded-lg border bg-muted/50">
                   <Label htmlFor="show-text" className="text-sm font-medium">
                     Show Text
                   </Label>
@@ -869,7 +872,7 @@ export default function BarcodeGeneratorPage() {
                     checked={showText}
                     onCheckedChange={setShowText}
                   />
-                </div>
+                </SwitchRow>
               </div>
 
               <Separator />

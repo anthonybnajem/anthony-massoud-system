@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { RefreshCw } from "lucide-react";
 import { type BarcodeTemplate, BARCODE_TEMPLATES } from "../utils/barcodeUtils";
 
@@ -133,7 +134,7 @@ export function CustomTemplateCard({
         </div>
 
         <div className="space-y-2 pt-2">
-          <div className="flex items-center space-x-2">
+          <SwitchRow switchFirst>
             <Switch
               id="show-name"
               checked={template.showName}
@@ -142,8 +143,8 @@ export function CustomTemplateCard({
               }
             />
             <Label htmlFor="show-name">Show Product Name</Label>
-          </div>
-          <div className="flex items-center space-x-2">
+          </SwitchRow>
+          <SwitchRow switchFirst>
             <Switch
               id="show-price"
               checked={template.showPrice}
@@ -152,8 +153,8 @@ export function CustomTemplateCard({
               }
             />
             <Label htmlFor="show-price">Show Price</Label>
-          </div>
-          <div className="flex items-center space-x-2">
+          </SwitchRow>
+          <SwitchRow switchFirst>
             <Switch
               id="show-sku"
               checked={template.showSku}
@@ -162,7 +163,7 @@ export function CustomTemplateCard({
               }
             />
             <Label htmlFor="show-sku">Show SKU</Label>
-          </div>
+          </SwitchRow>
         </div>
       </CardContent>
       <CardFooter>

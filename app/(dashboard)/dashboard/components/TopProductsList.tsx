@@ -10,17 +10,19 @@ import {
 } from "@/components/ui/empty";
 import { Package } from "lucide-react";
 import { type Product } from "@/components/pos-data-provider";
+import { useLanguage } from "@/components/language-provider";
 
 interface TopProductsListProps {
   products: Product[];
 }
 
 export function TopProductsList({ products }: TopProductsListProps) {
+  const { t } = useLanguage();
   return (
     <Card className="col-span-1">
       <CardHeader>
         <CardTitle className="text-lg font-medium text-slate-700">
-          Top Selling Products
+          {t("dashboard.topSellingProducts")}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -55,7 +57,7 @@ export function TopProductsList({ products }: TopProductsListProps) {
                       </p>
                     </div>
                   </div>
-                  <p className="text-right text-sm font-medium text-slate-700">
+                  <p className="text-end text-sm font-medium text-slate-700">
                     ${product.price.toFixed(2)}
                   </p>
                 </div>
@@ -67,9 +69,9 @@ export function TopProductsList({ products }: TopProductsListProps) {
               <EmptyMedia variant="icon">
                 <Package className="h-6 w-6" />
               </EmptyMedia>
-              <EmptyTitle>No products added yet</EmptyTitle>
+              <EmptyTitle>{t("dashboard.noProductsAdded")}</EmptyTitle>
               <EmptyDescription>
-                Add products to see your top sellers here.
+                {t("dashboard.addProductsToSee")}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>

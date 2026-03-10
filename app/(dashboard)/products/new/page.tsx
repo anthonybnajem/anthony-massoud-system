@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePosData, type Product } from "@/components/pos-data-provider";
+import { useLanguage } from "@/components/language-provider";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -63,7 +64,7 @@ const productSchema = z.object({
   taxRate: z.number().min(0, "Tax rate must be a positive number").optional(),
   tags: z.array(z.string()).optional(),
   attributes: z.record(z.string(), z.string()).optional(),
-  saleType: z.enum(["item", "weight", "rental"]),
+  saleType: z.enum(["item", "weight", "rental", "item_and_rental"]),
   unitLabel: z.string().min(1, "Unit label is required"),
   unitIncrement: z
     .number()
@@ -89,6 +90,7 @@ const productSchema = z.object({
 type ProductFormValues = z.infer<typeof productSchema>;
 
 export default function NewProductPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const { toast } = useToast();
   const { categories, addNewProduct } = usePosData();
@@ -148,7 +150,7 @@ export default function NewProductPage() {
       ) {
         form.setValue("unitIncrement", DEFAULT_WEIGHT_INCREMENT);
       }
-    } else if (saleType === "rental") {
+    } else if (saleType === "rental" || saleType === "item_and_rental") {
       if (
         !form.getValues("unitLabel") ||
         form.getValues("unitLabel") === DEFAULT_ITEM_UNIT_LABEL ||
@@ -207,7 +209,7 @@ export default function NewProductPage() {
     if (pricingMode === "variation" && (!data.variations || data.variations.length === 0)) {
       form.setError("variations", {
         type: "manual",
-        message: "Add at least one variation",
+        message: t("products.addAtLeastOneVariation"),
       });
       return;
     }
@@ -223,17 +225,16 @@ export default function NewProductPage() {
       addNewProduct(finalData);
 
       toast({
-        title: "Product Created",
-        description: `${data.name} has been successfully created.`,
+        title: t("products.productCreated"),
+        description: t("products.productCreatedDesc", { name: data.name }),
       });
 
-      // Navigate back to products page
       router.push("/products");
     } catch (error) {
       console.error("Error creating product:", error);
       toast({
-        title: "Error",
-        description: "Failed to create product. Please try again.",
+        title: t("products.errorCreatingProduct"),
+        description: t("products.errorCreatingProductDesc"),
         variant: "destructive",
       });
     }
@@ -270,10 +271,10 @@ export default function NewProductPage() {
         </Link>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Create New Product
+            {t("products.createNewProduct")}
           </h1>
           <p className="text-muted-foreground">
-            Add a new product to your inventory
+            {t("products.createNewProductSubtitle")}
           </p>
         </div>
       </motion.div>
@@ -283,7 +284,7 @@ export default function NewProductPage() {
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg font-semibold">
-              Product Information
+              {t("products.productInformation")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -298,19 +299,19 @@ export default function NewProductPage() {
                       value="basic"
                       className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
                     >
-                      Basic Info
+                      {t("products.basicInfo")}
                     </TabsTrigger>
                     <TabsTrigger
                       value="details"
                       className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
                     >
-                      Details
+                      {t("products.details")}
                     </TabsTrigger>
                     <TabsTrigger
                       value="advanced"
                       className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
                     >
-                      Advanced
+                      {t("products.advanced")}
                     </TabsTrigger>
                   </TabsList>
 
@@ -321,12 +322,12 @@ export default function NewProductPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>
-                            Product Name{" "}
+                            {t("products.productNameLabel")}{" "}
                             <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="Enter product name"
+                              placeholder={t("products.enterProductName")}
                               {...field}
                               className="border-2 focus:border-primary"
                             />
@@ -343,8 +344,8 @@ export default function NewProductPage() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>
-                              Selling Price{" "}
-                              <span className="text-muted-foreground text-xs font-normal">(optional)</span>
+                              {t("products.sellingPrice")}{" "}
+                              <span className="text-muted-foreground text-xs font-normal">{t("products.optional")}</span>
                             </FormLabel>
                             <FormControl>
                               <Input
@@ -360,7 +361,7 @@ export default function NewProductPage() {
                               />
                             </FormControl>
                             <FormDescription className="text-xs">
-                              Leave empty for rent-only items
+                              {t("products.leaveEmptyRentOnly")}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -373,8 +374,8 @@ export default function NewProductPage() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>
-                              Renting Price{" "}
-                              <span className="text-muted-foreground text-xs font-normal">(optional)</span>
+                              {t("products.rentingPrice")}{" "}
+                              <span className="text-muted-foreground text-xs font-normal">{t("products.optional")}</span>
                             </FormLabel>
                             <FormControl>
                               <Input
@@ -390,7 +391,7 @@ export default function NewProductPage() {
                               />
                             </FormControl>
                             <FormDescription className="text-xs">
-                              Leave empty if not available for rent
+                              {t("products.leaveEmptyNotRent")}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -403,7 +404,7 @@ export default function NewProductPage() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>
-                              Stock <span className="text-destructive">*</span>
+                              {t("products.stock")} <span className="text-destructive">*</span>
                             </FormLabel>
                             <FormControl>
                               <Input
@@ -423,7 +424,7 @@ export default function NewProductPage() {
                     </div>
 
                     <FormItem>
-                      <FormLabel>Pricing Setup</FormLabel>
+                      <FormLabel>{t("products.pricingSetup")}</FormLabel>
                       <Select
                         value={pricingMode}
                         onValueChange={(value) =>
@@ -434,21 +435,20 @@ export default function NewProductPage() {
                       >
                         <FormControl>
                           <SelectTrigger className="border-2">
-                            <SelectValue placeholder="Select pricing setup" />
+                            <SelectValue placeholder={t("products.selectPricingSetup")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="stable">
-                            Stable (Single Price)
+                            {t("products.stableSinglePrice")}
                           </SelectItem>
                           <SelectItem value="variation">
-                            Variations (Size/Type Pricing)
+                            {t("products.variationsPricing")}
                           </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Stable uses one product price. Variation mode sets
-                        separate sell/rental prices per variation.
+                        {t("products.stableVariationDesc")}
                       </FormDescription>
                     </FormItem>
 
@@ -457,25 +457,25 @@ export default function NewProductPage() {
                       name="saleType"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Selling Method</FormLabel>
+                          <FormLabel>{t("products.sellingMethod")}</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             value={field.value}
                           >
                             <FormControl>
                               <SelectTrigger className="border-2">
-                                <SelectValue placeholder="Select selling method" />
+                                <SelectValue placeholder={t("products.selectSellingMethod")} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="item">Per Item</SelectItem>
-                              <SelectItem value="weight">By Weight</SelectItem>
-                              <SelectItem value="rental">Rental</SelectItem>
+                              <SelectItem value="item">{t("products.perItem")}</SelectItem>
+                              <SelectItem value="weight">{t("products.byWeight")}</SelectItem>
+                              <SelectItem value="rental">{t("products.rental")}</SelectItem>
+                              <SelectItem value="item_and_rental">{t("products.rentAndSale")}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormDescription>
-                            Choose whether this product is sold individually, by
-                            weight, or rented.
+                            {t("products.chooseQuantitiesDesc")}
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -488,17 +488,16 @@ export default function NewProductPage() {
                         name="unitLabel"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Unit Label</FormLabel>
+                            <FormLabel>{t("products.unitLabel")}</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="e.g. unit, kg, m (meters)"
+                                placeholder={t("products.unitPlaceholder")}
                                 {...field}
                                 className="border-2 focus:border-primary"
                               />
                             </FormControl>
                             <FormDescription>
-                              Displayed next to quantity totals (e.g. kg, pcs,
-                              m for height).
+                              {t("products.unitLabelDesc")}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -509,7 +508,7 @@ export default function NewProductPage() {
                         name="unitIncrement"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Quantity Step</FormLabel>
+                            <FormLabel>{t("products.quantityStep")}</FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -526,8 +525,7 @@ export default function NewProductPage() {
                               />
                             </FormControl>
                             <FormDescription>
-                              Minimum amount added/removed per tap. Use decimals
-                              for weight products.
+                              {t("products.quantityStepDesc")}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -541,7 +539,7 @@ export default function NewProductPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>
-                            Category <span className="text-destructive">*</span>
+                            {t("products.category")} <span className="text-destructive">*</span>
                           </FormLabel>
                           <Select
                             onValueChange={field.onChange}
@@ -549,7 +547,7 @@ export default function NewProductPage() {
                           >
                             <FormControl>
                               <SelectTrigger className="border-2">
-                                <SelectValue placeholder="Select a category" />
+                                <SelectValue placeholder={t("products.selectCategoryPlaceholder")} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -573,11 +571,11 @@ export default function NewProductPage() {
                       name="barcode"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Barcode</FormLabel>
+                          <FormLabel>{t("products.barcodePlaceholder")}</FormLabel>
                           <div className="flex gap-2">
                             <FormControl>
                               <Input
-                                placeholder="Barcode"
+                                placeholder={t("products.barcodePlaceholder")}
                                 {...field}
                                 value={generatedBarcode || field.value || ""}
                                 onChange={(e) => {
@@ -601,11 +599,11 @@ export default function NewProductPage() {
                               className="gap-2"
                             >
                               <Plus className="h-4 w-4" />
-                              Generate
+                              {t("products.generate")}
                             </Button>
                           </div>
                           <FormDescription>
-                            Optional. Leave blank to auto-generate.
+                            {t("products.barcodeOptionalDesc")}
                           </FormDescription>
                         </FormItem>
                       )}
@@ -616,16 +614,16 @@ export default function NewProductPage() {
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Description</FormLabel>
+                          <FormLabel>{t("products.description")}</FormLabel>
                           <FormControl>
                             <Textarea
-                              placeholder="Product description"
+                              placeholder={t("products.descriptionPlaceholder")}
                               className="min-h-[100px] border-2 focus:border-primary"
                               {...field}
                             />
                           </FormControl>
                           <FormDescription>
-                            Optional. Describe your product in detail.
+                            {t("products.descriptionOptionalDesc")}
                           </FormDescription>
                         </FormItem>
                       )}
@@ -636,7 +634,7 @@ export default function NewProductPage() {
                       name="image"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Product Image</FormLabel>
+                          <FormLabel>{t("products.productImage")}</FormLabel>
                           <FormControl>
                             <ImageUpload
                               value={field.value || ""}
@@ -644,7 +642,7 @@ export default function NewProductPage() {
                             />
                           </FormControl>
                           <FormDescription>
-                            Upload a product image (optional).
+                            {t("products.imageOptionalDesc")}
                           </FormDescription>
                         </FormItem>
                       )}
@@ -658,16 +656,16 @@ export default function NewProductPage() {
                         name="sku"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>SKU</FormLabel>
+                            <FormLabel>{t("reports.sku")}</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="SKU"
+                                placeholder={t("reports.sku")}
                                 {...field}
                                 className="border-2 focus:border-primary"
                               />
                             </FormControl>
                             <FormDescription>
-                              Stock Keeping Unit (optional).
+                              {t("products.skuOptionalDesc")}
                             </FormDescription>
                           </FormItem>
                         )}
@@ -678,7 +676,7 @@ export default function NewProductPage() {
                         name="cost"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Cost</FormLabel>
+                            <FormLabel>{t("inventory.cost")}</FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -694,7 +692,7 @@ export default function NewProductPage() {
                               />
                             </FormControl>
                             <FormDescription>
-                              Product cost price (optional).
+                              {t("products.costOptionalDesc")}
                             </FormDescription>
                           </FormItem>
                         )}
@@ -706,7 +704,7 @@ export default function NewProductPage() {
                       name="taxable"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Taxable</FormLabel>
+                          <FormLabel>{t("products.taxableLabel")}</FormLabel>
                           <Select
                             onValueChange={(value) =>
                               field.onChange(value === "true")
@@ -715,16 +713,16 @@ export default function NewProductPage() {
                           >
                             <FormControl>
                               <SelectTrigger className="border-2">
-                                <SelectValue placeholder="Select taxable status" />
+                                <SelectValue placeholder={t("products.selectTaxablePlaceholder")} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="true">Yes</SelectItem>
-                              <SelectItem value="false">No</SelectItem>
+                              <SelectItem value="true">{t("common.yes")}</SelectItem>
+                              <SelectItem value="false">{t("common.no")}</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormDescription>
-                            Whether this product is taxable.
+                            {t("products.taxableDesc")}
                           </FormDescription>
                         </FormItem>
                       )}
@@ -735,7 +733,7 @@ export default function NewProductPage() {
                       name="taxRate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Tax Rate (%)</FormLabel>
+                          <FormLabel>{t("products.taxRateLabel")}</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -749,7 +747,7 @@ export default function NewProductPage() {
                             />
                           </FormControl>
                           <FormDescription>
-                            Tax rate percentage (optional).
+                            {t("products.taxRateOptionalDesc")}
                           </FormDescription>
                         </FormItem>
                       )}
@@ -760,10 +758,10 @@ export default function NewProductPage() {
                       name="tags"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Tags</FormLabel>
+                          <FormLabel>{t("products.tags")}</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="Comma-separated tags (e.g., tag1, tag2, tag3)"
+                              placeholder={t("products.tagsPlaceholderLong")}
                               {...field}
                               value={
                                 Array.isArray(field.value)
@@ -781,7 +779,7 @@ export default function NewProductPage() {
                             />
                           </FormControl>
                           <FormDescription>
-                            Add tags separated by commas (optional).
+                            {t("products.tagsOptionalDesc")}
                           </FormDescription>
                           {field.value && field.value.length > 0 && (
                             <div className="flex flex-wrap gap-2 mt-2">
@@ -804,10 +802,9 @@ export default function NewProductPage() {
                         name="variations"
                         render={() => (
                           <FormItem>
-                            <FormLabel>Product Variations</FormLabel>
+                            <FormLabel>{t("products.productVariations")}</FormLabel>
                             <FormDescription>
-                              Add size/material variations (e.g., 4mm, 10mm,
-                              12mm), each with selling and rental prices.
+                              {t("products.variationsDesc")}
                             </FormDescription>
                             <div className="space-y-4">
                               {variationFields.map((field, index) => (
@@ -820,10 +817,10 @@ export default function NewProductPage() {
                                   name={`variations.${index}.name`}
                                   render={({ field }) => (
                                     <FormItem className="flex-1">
-                                      <FormLabel>Variation Name</FormLabel>
+                                      <FormLabel>{t("products.variationName")}</FormLabel>
                                       <FormControl>
                                         <Input
-                                          placeholder="e.g., Rebar 10mm"
+                                          placeholder={t("products.variationNamePlaceholder")}
                                           {...field}
                                           className="border-2 focus:border-primary"
                                         />
@@ -837,7 +834,7 @@ export default function NewProductPage() {
                                   name={`variations.${index}.price`}
                                   render={({ field }) => (
                                     <FormItem className="w-full">
-                                      <FormLabel>Sell Price</FormLabel>
+                                      <FormLabel>{t("products.sellPrice")}</FormLabel>
                                       <FormControl>
                                         <Input
                                           type="number"
@@ -861,7 +858,7 @@ export default function NewProductPage() {
                                   name={`variations.${index}.rentalPrice`}
                                   render={({ field }) => (
                                     <FormItem className="w-full">
-                                      <FormLabel>Rental Price</FormLabel>
+                                      <FormLabel>{t("products.rentalPriceLabel")}</FormLabel>
                                       <FormControl>
                                         <Input
                                           type="number"
@@ -885,7 +882,7 @@ export default function NewProductPage() {
                                   name={`variations.${index}.stock`}
                                   render={({ field }) => (
                                     <FormItem className="w-full">
-                                      <FormLabel>Stock</FormLabel>
+                                      <FormLabel>{t("products.stock")}</FormLabel>
                                       <FormControl>
                                     <Input
                                       type="number"
@@ -929,7 +926,7 @@ export default function NewProductPage() {
                                 className="w-full gap-2"
                               >
                                 <Plus className="h-4 w-4" />
-                                Add Variation
+                                {t("products.addVariation")}
                               </Button>
                             </div>
                             <FormMessage />
@@ -939,10 +936,9 @@ export default function NewProductPage() {
                     )}
 
                     <FormItem>
-                      <FormLabel>Custom Attributes</FormLabel>
+                      <FormLabel>{t("products.customAttributes")}</FormLabel>
                       <FormDescription>
-                        Add custom key-value pairs for additional product
-                        information.
+                        {t("products.customAttributesDesc")}
                       </FormDescription>
                       <div className="space-y-3">
                         {Object.entries(attributes).map(([key, value]) => (
@@ -960,7 +956,7 @@ export default function NewProductPage() {
                               onChange={(e) =>
                                 updateAttribute(key, e.target.value)
                               }
-                              placeholder="Value"
+                              placeholder={t("products.valuePlaceholder")}
                               className="flex-1 border-2 focus:border-primary"
                             />
                             <Button
@@ -980,7 +976,7 @@ export default function NewProductPage() {
                           className="w-full gap-2"
                         >
                           <Plus className="h-4 w-4" />
-                          Add Attribute
+                          {t("products.addAttribute")}
                         </Button>
                       </div>
                     </FormItem>
@@ -990,12 +986,12 @@ export default function NewProductPage() {
                 <div className="flex justify-end gap-2 pt-4 border-t">
                   <Link href="/products">
                     <Button type="button" variant="outline" className="gap-2">
-                      Cancel
+                      {t("common.cancel")}
                     </Button>
                   </Link>
                   <Button type="submit" className="gap-2 shadow-sm">
                     <Save className="h-4 w-4" />
-                    Create Product
+                    {t("products.createProduct")}
                   </Button>
                 </div>
               </form>

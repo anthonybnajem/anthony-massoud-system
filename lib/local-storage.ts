@@ -5,6 +5,7 @@ export const LOCAL_STORAGE_KEYS = {
   SIDEBAR_COLLAPSED: "pos-system:sidebar-collapsed",
   THEME: "pos-system:theme",
   LAST_VIEWED_CATEGORY: "pos-system:last-viewed-category",
+  LOCALE: "pos-system:locale",
 }
 
 /**

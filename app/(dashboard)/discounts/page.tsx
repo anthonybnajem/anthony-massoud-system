@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLanguage } from "@/components/language-provider";
 import { useDiscount } from "@/components/discount-provider";
 import { usePosData } from "@/components/pos-data-provider";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
@@ -12,6 +13,7 @@ import { DiscountTable } from "./components/DiscountTable";
 import { AddDiscountDialog } from "./components/AddDiscountDialog";
 import { EditDiscountDialog } from "./components/EditDiscountDialog";
 export default function DiscountsPage() {
+  const { t } = useLanguage();
   const { discounts, addDiscount, updateDiscount, removeDiscount } =
     useDiscount();
   const { products, categories } = usePosData();
@@ -63,14 +65,14 @@ export default function DiscountsPage() {
     <div className="space-y-6 overflow-hidden min-w-0">
       <div className="flex justify-between items-center min-w-0">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Discounts</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("discounts.title")}</h1>
           <p className="text-muted-foreground">
-            Manage discounts and promotions for your store
+            {t("discounts.subtitle")}
           </p>
         </div>
         <Button onClick={() => setIsAddDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Discount
+          {t("discounts.addDiscount")}
         </Button>
       </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/language-provider";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -31,16 +32,17 @@ export function EmployeeFilters({
   sortBy,
   onSortByChange,
 }: EmployeeFiltersProps) {
+  const { t } = useLanguage();
   return (
     <div className="flex flex-col gap-4">
       {/* Search Bar */}
       <div className="relative flex-1 min-w-0">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
-          placeholder="Search employees by name, email, phone..."
+          placeholder={t("employees.searchEmployeesPlaceholder")}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 h-11 border-2 focus:border-primary transition-colors"
+          className="ps-9 h-11 border-2 focus:border-primary transition-colors"
         />
       </div>
 
@@ -48,36 +50,36 @@ export function EmployeeFilters({
       <div className="flex flex-wrap gap-3">
         <Select value={filterRole} onValueChange={onFilterRoleChange}>
           <SelectTrigger className="w-[180px] border-2">
-            <SelectValue placeholder="Role" />
+            <SelectValue placeholder={t("employees.rolePlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Roles</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="manager">Manager</SelectItem>
-            <SelectItem value="cashier">Cashier</SelectItem>
-            <SelectItem value="staff">Staff</SelectItem>
+            <SelectItem value="all">{t("employees.allRoles")}</SelectItem>
+            <SelectItem value="admin">{t("employees.roleAdmin")}</SelectItem>
+            <SelectItem value="manager">{t("employees.roleManager")}</SelectItem>
+            <SelectItem value="cashier">{t("employees.roleCashier")}</SelectItem>
+            <SelectItem value="staff">{t("employees.roleStaff")}</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={filterStatus} onValueChange={onFilterStatusChange}>
           <SelectTrigger className="w-[180px] border-2">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("employees.statusPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="all">{t("employees.allStatus")}</SelectItem>
+            <SelectItem value="active">{t("employees.active")}</SelectItem>
+            <SelectItem value="inactive">{t("employees.inactiveLabel")}</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={sortBy} onValueChange={onSortByChange}>
           <SelectTrigger className="w-[180px] border-2">
-            <SelectValue placeholder="Sort by" />
+            <SelectValue placeholder={t("employees.sortByPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="name">Name</SelectItem>
-            <SelectItem value="role">Role</SelectItem>
-            <SelectItem value="hireDate">Hire Date</SelectItem>
+            <SelectItem value="name">{t("employees.sortName")}</SelectItem>
+            <SelectItem value="role">{t("employees.sortRole")}</SelectItem>
+            <SelectItem value="hireDate">{t("employees.sortHireDate")}</SelectItem>
           </SelectContent>
         </Select>
       </div>

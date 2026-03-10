@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { Bell, Volume2, VolumeX, Save } from "lucide-react";
 
 interface NotificationSettings {
@@ -44,7 +45,7 @@ export function NotificationSettingsForm({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+        <SwitchRow className="p-4 rounded-lg border bg-muted/50">
           <div className="space-y-0.5">
             <Label
               htmlFor="sound-enabled"
@@ -68,11 +69,11 @@ export function NotificationSettingsForm({
               onSettingsChange({ ...settings, soundEnabled: checked })
             }
           />
-        </div>
+        </SwitchRow>
 
         <Separator />
 
-        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+        <SwitchRow className="p-4 rounded-lg border bg-muted/50">
           <div className="space-y-0.5">
             <Label htmlFor="low-stock-alert" className="text-sm font-medium">
               Low Stock Alerts
@@ -88,11 +89,11 @@ export function NotificationSettingsForm({
               onSettingsChange({ ...settings, lowStockAlert: checked })
             }
           />
-        </div>
+        </SwitchRow>
 
         <Separator />
 
-        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+        <SwitchRow className="p-4 rounded-lg border bg-muted/50">
           <div className="space-y-0.5">
             <Label htmlFor="sale-notification" className="text-sm font-medium">
               Sale Notifications
@@ -108,11 +109,11 @@ export function NotificationSettingsForm({
               onSettingsChange({ ...settings, saleNotification: checked })
             }
           />
-        </div>
+        </SwitchRow>
 
         <Separator />
 
-        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+        <SwitchRow className="p-4 rounded-lg border bg-muted/50">
           <div className="space-y-0.5">
             <Label
               htmlFor="error-notifications"
@@ -131,7 +132,7 @@ export function NotificationSettingsForm({
               onSettingsChange({ ...settings, errorNotifications: checked })
             }
           />
-        </div>
+        </SwitchRow>
       </CardContent>
       <CardFooter className="border-t bg-muted/50">
         <Button onClick={onSave} className="gap-2 shadow-sm">

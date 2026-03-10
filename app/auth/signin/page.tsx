@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useLanguage } from "@/components/language-provider";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import {
   Card,
   CardContent,
@@ -22,6 +24,7 @@ import { TEST_EMPLOYEES } from "@/lib/seed-employees";
 export default function SignInPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -51,7 +54,7 @@ export default function SignInPage() {
       const employee = employees.find((e) => e.email === email && e.isActive);
 
       if (!employee || !employee.password) {
-        setError("Invalid email or password");
+        setError(t("auth.invalidCredentials"));
         setIsLoading(false);
         return;
       }
@@ -59,7 +62,7 @@ export default function SignInPage() {
       const isValid = await verifyPassword(password, employee.password);
 
       if (!isValid) {
-        setError("Invalid email or password");
+        setError(t("auth.invalidCredentials"));
         setIsLoading(false);
         return;
       }
@@ -77,14 +80,14 @@ export default function SignInPage() {
       });
 
       if (result?.error) {
-        setError("Invalid email or password");
+        setError(t("auth.invalidCredentials"));
       } else if (result?.ok) {
         router.push(callbackUrl);
         router.refresh();
       }
     } catch (err) {
       console.error("Login error:", err);
-      setError("An error occurred. Please try again.");
+      setError(t("auth.errorGeneric"));
     } finally {
       setIsLoading(false);
     }
@@ -102,13 +105,16 @@ export default function SignInPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 p-4">
-      <div className="gap-6">
+      <div className="gap-6 w-full max-w-md relative pt-12">
+        <div className="absolute top-4 end-0">
+          <LanguageSwitcher variant="default" />
+        </div>
         {/* Login Form */}
         <Card className="border-2 shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
+            <CardTitle className="text-2xl font-bold">{t("auth.signIn")}</CardTitle>
             <CardDescription>
-              Enter your credentials to access the  system
+              {t("auth.signInDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -121,13 +127,13 @@ export default function SignInPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("auth.email")}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder={t("auth.emailPlaceholder")}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
@@ -138,13 +144,13 @@ export default function SignInPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("auth.password")}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
                     type="password"
-                    placeholder="Enter your password"
+                    placeholder={t("auth.passwordPlaceholder")}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10"
@@ -155,8 +161,8 @@ export default function SignInPage() {
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                <LogIn className="mr-2 h-4 w-4" />
-                {isLoading ? "Signing in..." : "Sign In"}
+                <LogIn className="me-2 h-4 w-4" />
+                {isLoading ? t("auth.signingIn") : t("auth.signIn")}
               </Button>
             </form>
           </CardContent>

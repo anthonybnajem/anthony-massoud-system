@@ -22,6 +22,7 @@ import {
   type ClosingReport,
   type Employee,
 } from "@/components/pos-data-provider";
+import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 
 interface ClosingReportTableProps {
@@ -35,6 +36,7 @@ export function ClosingReportTable({
   employees,
   onView,
 }: ClosingReportTableProps) {
+  const { t } = useTranslation();
   const getEmployeeName = (employeeId: string) => {
     const employee = employees.find((e) => e.id === employeeId);
     return employee?.name || "Unknown";
@@ -63,8 +65,10 @@ export function ClosingReportTable({
           <TableRow>
             <TableHead>Date</TableHead>
             <TableHead>Employee</TableHead>
-            <TableHead>Total Sales</TableHead>
-            <TableHead>Transactions</TableHead>
+            <TableHead>{t("reports.totalSales")}</TableHead>
+            <TableHead>{t("reports.transactions")}</TableHead>
+            <TableHead>{t("reports.expenseOut")}</TableHead>
+            <TableHead>{t("reports.incomeNet")}</TableHead>
             <TableHead>Cash Difference</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
@@ -80,6 +84,12 @@ export function ClosingReportTable({
                 ${report.totalSales.toFixed(2)}
               </TableCell>
               <TableCell>{report.totalTransactions}</TableCell>
+              <TableCell className="font-medium">
+                ${Math.abs(report.expenseOut ?? 0).toFixed(2)}
+              </TableCell>
+              <TableCell className="font-semibold">
+                ${(report.incomeNet ?? report.totalSales).toFixed(2)}
+              </TableCell>
               <TableCell>
                 <Badge
                   variant={

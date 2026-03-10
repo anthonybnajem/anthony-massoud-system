@@ -12,6 +12,7 @@ import {
 import { Search, Plus } from "lucide-react";
 import { type Category } from "@/components/pos-data-provider";
 import Link from "next/link";
+import { useLanguage } from "@/components/language-provider";
 
 interface ProductFiltersProps {
   searchQuery: string;
@@ -34,28 +35,27 @@ export function ProductFilters({
   categories,
   onAddProduct,
 }: ProductFiltersProps) {
+  const { t } = useLanguage();
   return (
     <div className="flex flex-col gap-4">
-      {/* Search Bar */}
       <div className="relative flex-1 min-w-0">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
-          placeholder="Search products by name, SKU, barcode..."
+          placeholder={t("products.searchPlaceholder")}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 h-11 border-2 focus:border-primary transition-colors"
+          className="ps-9 h-11 border-2 focus:border-primary transition-colors"
         />
       </div>
 
-      {/* Filters and Actions */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex flex-wrap gap-3 flex-1">
           <Select value={filterCategory} onValueChange={onFilterCategoryChange}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Category" />
+              <SelectValue placeholder={t("products.category")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="all">{t("inventory.allCategories")}</SelectItem>
               {categories.map((category) => (
                 <SelectItem key={category.id} value={category.id}>
                   {category.name}
@@ -66,13 +66,13 @@ export function ProductFilters({
 
           <Select value={sortBy} onValueChange={onSortByChange}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sort by" />
+              <SelectValue placeholder={t("inventory.sortBy")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="name">Name</SelectItem>
-              <SelectItem value="price">Price</SelectItem>
-              <SelectItem value="stock">Stock</SelectItem>
-              <SelectItem value="category">Category</SelectItem>
+              <SelectItem value="name">{t("inventory.name")}</SelectItem>
+              <SelectItem value="price">{t("products.price")}</SelectItem>
+              <SelectItem value="stock">{t("products.stock")}</SelectItem>
+              <SelectItem value="category">{t("products.category")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -80,12 +80,12 @@ export function ProductFilters({
         <div className="flex gap-2">
           <Button onClick={onAddProduct} variant="outline" className="gap-2">
             <Plus className="h-4 w-4" />
-            Quick Add
+            {t("products.quickAdd")}
           </Button>
           <Link href="/products/new">
             <Button className="gap-2 shadow-sm">
               <Plus className="h-4 w-4" color="white"/>
-              Create New Product
+              {t("products.createNewProduct")}
             </Button>
           </Link>
         </div>

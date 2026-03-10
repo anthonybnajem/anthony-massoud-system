@@ -107,6 +107,10 @@ export type Sale = {
   updatedAt?: Date;
   voidReason?: string;
   voidedAt?: Date;
+  /** Whether the customer paid this sale: paid, unpaid, or partially_paid */
+  paymentStatus?: "paid" | "unpaid" | "partially_paid";
+  /** When paymentStatus is partially_paid, the amount already paid */
+  amountPaid?: number;
 };
 
 export type ExpenseItemType = "product" | "worker" | "service" | "custom";
@@ -115,6 +119,8 @@ export type ExpenseItem = {
   id: string;
   type: ExpenseItemType;
   productId?: string;
+  /** When set with productId, restock applies to this variation's stock. */
+  variationId?: string;
   workerId?: string;
   serviceId?: string;
   description?: string;
@@ -124,6 +130,8 @@ export type ExpenseItem = {
   notes?: string;
 };
 
+export type ExpenseTypeKind = "restock" | "expense_out";
+
 export type Expense = {
   id: string;
   items: ExpenseItem[];
@@ -132,6 +140,8 @@ export type Expense = {
   date: Date;
   vendor?: string;
   notes?: string;
+  /** When "restock", this expense is an inventory restock (Add Stock). When "expense_out" or omitted, money leaving the business. */
+  expenseType?: ExpenseTypeKind;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -320,6 +330,10 @@ export type ClosingReport = {
   cashDifference: number;
   totalSales: number;
   totalTransactions: number;
+  /** Total expense-out amount during the shift period */
+  expenseOut?: number;
+  /** Net income: totalSales - expenseOut */
+  incomeNet?: number;
   paymentMethods: Record<string, number>;
   salesByEmployee?: Record<string, number>;
   notes?: string;
@@ -647,13 +661,15 @@ const withProductMeasurementDefaults = (product: Product): Product => {
       ? "weight"
       : product.saleType === "rental"
       ? "rental"
+      : product.saleType === "item_and_rental"
+      ? "item_and_rental"
       : "item";
 
   const unitLabel =
     product.unitLabel?.trim() ||
     (saleType === "weight"
       ? DEFAULT_WEIGHT_UNIT_LABEL
-      : saleType === "rental"
+      : saleType === "rental" || saleType === "item_and_rental"
       ? DEFAULT_RENTAL_UNIT_LABEL
       : DEFAULT_ITEM_UNIT_LABEL);
 
@@ -663,7 +679,7 @@ const withProductMeasurementDefaults = (product: Product): Product => {
       ? rawIncrement
       : saleType === "weight"
       ? DEFAULT_WEIGHT_INCREMENT
-      : saleType === "rental"
+      : saleType === "rental" || saleType === "item_and_rental"
       ? DEFAULT_RENTAL_INCREMENT
       : DEFAULT_ITEM_INCREMENT;
 

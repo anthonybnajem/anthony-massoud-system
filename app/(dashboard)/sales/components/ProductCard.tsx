@@ -5,6 +5,7 @@ import { type Product } from "@/components/pos-data-provider";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/components/language-provider";
 import { Plus, Package } from "lucide-react";
 import {
   formatStockDisplay,
@@ -18,6 +19,7 @@ interface ProductCardProps {
   currencySymbol: string;
   onAddToCart: (product: Product) => void;
   onQuickAdd: (e: React.MouseEvent, product: Product) => void;
+  /** When undefined, card renders without Framer Motion to avoid browser freeze with many items */
   variants?: any;
   isTablet?: boolean;
 }
@@ -30,14 +32,23 @@ export function ProductCard({
   variants,
   isTablet = false,
 }: ProductCardProps) {
+  const { t } = useLanguage();
   const saleType = getSaleType(product);
   const unitLabel = getUnitLabel(product);
-  const unitPrice = getProductUnitPrice(product);
+  const sellPrice = getProductUnitPrice(product, false);
+  const rentPrice = getProductUnitPrice(product, true);
+  const isRentalOnly = rentPrice > 0 && sellPrice <= 0;
+  const unitPrice = sellPrice > 0 ? sellPrice : rentPrice;
   const stockLabel = formatStockDisplay(product);
   const hasVariations = (product.variations || []).length > 0;
 
+  const Wrapper = variants ? motion.div : "div";
+  const wrapperProps = variants
+    ? { variants, className: "h-full" }
+    : { className: "h-full" };
+
   return (
-    <motion.div variants={variants} className="h-full">
+    <Wrapper {...wrapperProps}>
       <Card
         className="card h-full flex flex-col cursor-pointer active:scale-[0.98] transition-all duration-200 group touch-manipulation hover:shadow-[0_14px_34px_rgba(15,23,42,0.14)]"
         onClick={() => onAddToCart(product)}
@@ -59,7 +70,7 @@ export function ProductCard({
               variant={product.stock === 0 ? "destructive" : "secondary"}
               className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 shadow-sm text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1"
             >
-              {product.stock === 0 ? "Out" : `${stockLabel} left`}
+              {product.stock === 0 ? t("sales.stockOut") : `${stockLabel} ${t("sales.stockLeft")}`}
             </Badge>
           )}
         </div>
@@ -88,7 +99,7 @@ export function ProductCard({
                 isTablet ? "mb-2" : "mb-1 sm:mb-2"
               } line-clamp-1`}
             >
-              {product.category?.name || "Uncategorized"}
+              {product.category?.name || t("sales.uncategorized")}
             </p>
             {product.sku && (
               <p
@@ -96,7 +107,7 @@ export function ProductCard({
                   isTablet ? "text-xs" : "text-[9px] sm:text-xs"
                 } text-muted-foreground/70 line-clamp-1`}
               >
-                SKU: {product.sku}
+                {t("sales.sku")}: {product.sku}
               </p>
             )}
           </div>
@@ -110,6 +121,11 @@ export function ProductCard({
                 isTablet ? "text-lg" : "text-base sm:text-lg md:text-xl"
               } font-bold text-primary`}
             >
+              {isRentalOnly && (
+                <span className="text-xs font-medium text-muted-foreground mr-1">
+                  {t("checkout.rent")}:{" "}
+                </span>
+              )}
               {currencySymbol}
               {unitPrice.toFixed(2)}
               <span className="ml-1 text-xs font-medium text-muted-foreground">
@@ -118,12 +134,17 @@ export function ProductCard({
             </p>
             {saleType === "weight" && (
               <Badge variant="outline" className="mt-1 text-[10px] uppercase">
-                Sold by weight
+                {t("sales.soldByWeight")}
               </Badge>
             )}
-            {saleType === "rental" && (
+            {(saleType === "rental" || isRentalOnly) && (
               <Badge variant="outline" className="mt-1 text-[10px] uppercase">
-                Rental item
+                {t("sales.rentalItem")}
+              </Badge>
+            )}
+            {saleType === "item_and_rental" && (
+              <Badge variant="outline" className="mt-1 text-[10px] uppercase">
+                {t("products.rentAndSale")}
               </Badge>
             )}
           </div>
@@ -155,20 +176,21 @@ export function ProductCard({
             />
             <span className="hidden xs:inline">
               {hasVariations
-                ? "Choose Size"
+                ? t("sales.chooseSize")
                 : saleType === "weight"
-                ? "Enter Weight"
+                ? t("sales.enterWeight")
                 : saleType === "rental"
-                ? "Add Rental"
-                : "Quick Add"}
+                ? t("sales.addRental")
+                : saleType === "item_and_rental"
+                ? t("sales.rentOrSale")
+                : t("sales.quickAdd")}
             </span>
             <span className="xs:hidden">
-              {/* {saleType === "weight" ? "Weight" : "Add"} */}
-              Add
+              {t("sales.add")}
             </span>
           </Button>
         </CardFooter>
       </Card>
-    </motion.div>
+    </Wrapper>
   );
 }

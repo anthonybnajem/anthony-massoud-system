@@ -1,14 +1,21 @@
 "use client";
 
+import { useLanguage } from "@/components/language-provider";
 import { type Discount } from "@/lib/db";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Percent, DollarSign, Edit, Trash2 } from "lucide-react";
+import { Percent, DollarSign, Edit, Trash2, MoreVertical } from "lucide-react";
 import {
   type Product,
   type Category,
 } from "@/components/pos-data-provider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DiscountTableRowProps {
   discount: Discount;
@@ -27,6 +34,7 @@ export function DiscountTableRow({
   categoryMap,
   currencySymbol,
 }: DiscountTableRowProps) {
+  const { t } = useLanguage();
   const formatDiscountValue = (discount: Discount) => {
     return discount.type === "percentage"
       ? `${discount.value}`
@@ -39,7 +47,7 @@ export function DiscountTableRow({
           ?.map((id) => productMap.get(id))
           .filter((product): product is Product => Boolean(product)) || [];
       if (selectedProducts.length === 0) {
-        return <p className="text-sm text-muted-foreground">No products selected</p>;
+        return <p className="text-sm text-muted-foreground">{t("discounts.noProductsSelected")}</p>;
       }
       return (
         <div className="space-y-1">
@@ -62,7 +70,7 @@ export function DiscountTableRow({
           })}
           {selectedProducts.length > 3 && (
             <p className="text-xs text-muted-foreground">
-              +{selectedProducts.length - 3} more
+              {t("discounts.moreCount", { count: selectedProducts.length - 3 })}
             </p>
           )}
         </div>
@@ -74,7 +82,7 @@ export function DiscountTableRow({
           ?.map((id) => categoryMap.get(id))
           .filter((category): category is Category => Boolean(category)) || [];
       if (selectedCategories.length === 0) {
-        return <p className="text-sm text-muted-foreground">No categories selected</p>;
+        return <p className="text-sm text-muted-foreground">{t("discounts.noCategoriesSelected")}</p>;
       }
       return (
         <div className="flex flex-wrap gap-1">
@@ -87,12 +95,12 @@ export function DiscountTableRow({
       );
     }
     if (discount.appliesTo === "all") {
-      return <p className="text-sm text-muted-foreground">All products</p>;
+      return <p className="text-sm text-muted-foreground">{t("discounts.allProducts")}</p>;
     }
     if (discount.appliesTo === "cart") {
       return (
         <p className="text-sm text-muted-foreground">
-          Entire cart subtotal
+          {t("discounts.entireCartSubtotal")}
         </p>
       );
     }
@@ -106,9 +114,9 @@ export function DiscountTableRow({
       <TableCell>
         <div className="flex items-center">
           {discount.type === "percentage" ? (
-            <Percent className="mr-1 h-4 w-4 text-muted-foreground" />
+            <Percent className="me-1 h-4 w-4 text-muted-foreground" />
           ) : (
-            <DollarSign className="mr-1 h-4 w-4 text-muted-foreground" />
+            <DollarSign className="me-1 h-4 w-4 text-muted-foreground" />
           )}
           {formatDiscountValue(discount)}
         </div>
@@ -116,34 +124,41 @@ export function DiscountTableRow({
       <TableCell>
         <Badge variant="outline">
           {discount.appliesTo === "all"
-            ? "All Products"
+            ? t("discounts.badgeAllProducts")
             : discount.appliesTo === "cart"
-            ? "Cart Total"
+            ? t("discounts.badgeCartTotal")
             : discount.appliesTo === "category"
-            ? "Categories"
-            : "Specific Products"}
+            ? t("discounts.badgeCategories")
+            : t("discounts.badgeSpecificProducts")}
         </Badge>
       </TableCell>
       <TableCell>{targetDetails()}</TableCell>
       <TableCell>
         <Badge variant={discount.isActive ? "default" : "secondary"}>
-          {discount.isActive ? "Active" : "Inactive"}
+          {discount.isActive ? t("discounts.active") : t("discounts.inactive")}
         </Badge>
       </TableCell>
       <TableCell>
-        <div className="flex space-x-2">
-          <Button variant="ghost" size="icon" onClick={() => onEdit(discount)}>
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-destructive"
-            onClick={() => onDelete(discount.id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onEdit(discount)}>
+              <Edit className="me-2 h-4 w-4" />
+              {t("common.edit")}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={() => onDelete(discount.id)}
+            >
+              <Trash2 className="me-2 h-4 w-4" />
+              {t("common.delete")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </TableCell>
     </TableRow>
   );

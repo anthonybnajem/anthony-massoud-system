@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLanguage } from "@/components/language-provider";
 import { usePosData, type Product } from "@/components/pos-data-provider";
 import {
   Card,
@@ -18,6 +19,7 @@ import { ProductTable } from "./components/ProductTable";
 import { Package } from "lucide-react";
 
 export default function ProductsPage() {
+  const { t } = useLanguage();
   const {
     products,
     categories,
@@ -103,9 +105,9 @@ export default function ProductsPage() {
       {/* Header Section */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Products</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("products.title")}</h1>
           <p className="text-muted-foreground">
-            Manage your product inventory and catalog
+            {t("products.subtitle")}
           </p>
         </div>
       </div>
@@ -134,10 +136,10 @@ export default function ProductsPage() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
-              Product Inventory
+              {t("products.inventoryTitle")}
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              {filteredProducts.length} of {products.length} products
+              {filteredProducts.length} {t("products.of")} {products.length} {t("products.productsCount")}
             </p>
           </div>
         </CardHeader>

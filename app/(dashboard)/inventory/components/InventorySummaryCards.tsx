@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, AlertTriangle, XCircle, DollarSign } from "lucide-react";
 import { type Product } from "@/components/pos-data-provider";
+import { useLanguage } from "@/components/language-provider";
 
 interface InventorySummaryCardsProps {
   products: Product[];
@@ -11,6 +12,7 @@ interface InventorySummaryCardsProps {
 export function InventorySummaryCards({
   products,
 }: InventorySummaryCardsProps) {
+  const { t } = useLanguage();
   const totalProducts = products.length;
   const lowStockThreshold = 5;
   const lowStockProducts = products.filter(
@@ -24,33 +26,33 @@ export function InventorySummaryCards({
 
   const cards = [
     {
-      title: "Total Products",
+      title: t("inventory.totalProducts"),
       value: totalProducts.toString(),
       icon: Package,
-      description: "Products in inventory",
+      description: t("inventory.productsInInventory"),
       className: "border-primary/20 bg-primary/5",
     },
     {
-      title: "Low Stock",
+      title: t("inventory.lowStock"),
       value: lowStockProducts.length.toString(),
       icon: AlertTriangle,
-      description: "Products below low-stock threshold",
+      description: t("inventory.belowThreshold"),
       className: "border-orange-500/20 bg-orange-500/5",
       variant: lowStockProducts.length > 0 ? "destructive" : undefined,
     },
     {
-      title: "Out of Stock",
+      title: t("inventory.outOfStock"),
       value: outOfStockProducts.length.toString(),
       icon: XCircle,
-      description: "Products with zero stock",
+      description: t("inventory.zeroStock"),
       className: "border-red-500/20 bg-red-500/5",
       variant: outOfStockProducts.length > 0 ? "destructive" : undefined,
     },
     {
-      title: "Total Value",
+      title: t("inventory.totalValue"),
       value: `$${totalValue.toFixed(2)}`,
       icon: DollarSign,
-      description: "Inventory value at cost",
+      description: t("inventory.valueAtCost"),
       className: "border-green-500/20 bg-green-500/5",
     },
   ];

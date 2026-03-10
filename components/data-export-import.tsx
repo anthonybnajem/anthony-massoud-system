@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useRef } from "react"
+import { useLanguage } from "@/components/language-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
@@ -12,6 +13,7 @@ import { settingsApi } from "@/lib/db"
 import JSZip from "jszip"
 
 export function DataExportImport() {
+  const { t } = useLanguage()
   const [isExporting, setIsExporting] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -22,7 +24,7 @@ export function DataExportImport() {
   const handleExport = async () => {
     setIsExporting(true)
     setProgress(0)
-    setProgressText("Preparing data...")
+    setProgressText(t("dataExport.preparingData"))
 
     try {
       // Create a new JSZip instance
@@ -30,23 +32,23 @@ export function DataExportImport() {
 
       // Get all data
       setProgress(10)
-      setProgressText("Fetching products data...")
+      setProgressText(t("dataExport.fetchingProducts"))
       const data = await exportAllData()
 
       // Add data as JSON file
       setProgress(30)
-      setProgressText("Adding data to archive...")
+      setProgressText(t("dataExport.addingToArchive"))
       zip.file("pos-data.json", JSON.stringify(data, null, 2))
 
       // Get receipt settings to extract logo
       setProgress(50)
-      setProgressText("Processing receipt settings...")
+      setProgressText(t("dataExport.processingReceipt"))
       const receiptSettings = await settingsApi.getReceiptSettings()
 
       // If there's a logo, extract and add it
       if (receiptSettings.storeLogo) {
         setProgress(60)
-        setProgressText("Processing logo image...")
+        setProgressText(t("dataExport.processingLogo"))
 
         try {
           // Convert base64 to blob
@@ -75,7 +77,7 @@ export function DataExportImport() {
 
       // Process product images
       setProgress(70)
-      setProgressText("Processing product images...")
+      setProgressText(t("dataExport.processingImages"))
 
       if (data.products && data.products.length > 0) {
         let processedImages = 0
@@ -110,7 +112,7 @@ export function DataExportImport() {
 
                 processedImages++
                 setProgress(70 + Math.floor((processedImages / totalImages) * 20))
-                setProgressText(`Processing product images (${processedImages}/${totalImages})...`)
+                setProgressText(t("dataExport.processingImagesCount", { current: processedImages, total: totalImages }))
               } catch (error) {
                 console.error(`Error processing image for product ${product.id}:`, error)
               }
@@ -121,7 +123,7 @@ export function DataExportImport() {
 
       // Generate the zip file
       setProgress(90)
-      setProgressText("Generating archive file...")
+      setProgressText(t("dataExport.generatingArchive"))
       const content = await zip.generateAsync(
         {
           type: "blob",
@@ -137,7 +139,7 @@ export function DataExportImport() {
 
       // Create download link
       setProgress(100)
-      setProgressText("Download ready!")
+      setProgressText(t("dataExport.downloadReady"))
       const url = URL.createObjectURL(content)
       const link = document.createElement("a")
       link.href = url
@@ -147,14 +149,14 @@ export function DataExportImport() {
       document.body.removeChild(link)
 
       toast({
-        title: "Data Exported",
-        description: "Your data has been exported successfully as a ZIP archive.",
+        title: t("dataExport.exportSuccess"),
+        description: t("dataExport.exportSuccessDesc"),
       })
     } catch (error) {
       console.error("Export error:", error)
       toast({
-        title: "Export Failed",
-        description: "There was an error exporting your data.",
+        title: t("dataExport.exportFailed"),
+        description: t("dataExport.exportFailedDesc"),
         variant: "destructive",
       })
     } finally {
@@ -178,19 +180,19 @@ export function DataExportImport() {
 
     setIsImporting(true)
     setProgress(0)
-    setProgressText("Reading file...")
+    setProgressText(t("dataExport.readingFile"))
 
     try {
       // Check if it's a zip file
       if (file.type === "application/zip" || file.name.endsWith(".zip")) {
-        setProgressText("Processing ZIP archive...")
+        setProgressText(t("dataExport.processingZip"))
 
         // Read the zip file
         const zip = new JSZip()
         const zipData = await zip.loadAsync(file)
 
         setProgress(30)
-        setProgressText("Extracting data...")
+        setProgressText(t("dataExport.extractingData"))
 
         // Get the JSON data file
         const dataFile = zipData.file("pos-data.json")
@@ -202,49 +204,49 @@ export function DataExportImport() {
         const data = JSON.parse(jsonContent)
 
         setProgress(60)
-        setProgressText("Importing data...")
+        setProgressText(t("dataExport.importing"))
 
         // Import the data
         await importAllData(data)
 
         setProgress(100)
-        setProgressText("Import complete!")
+        setProgressText(t("dataExport.importComplete"))
 
         toast({
-          title: "Data Imported",
-          description: "Your data has been imported successfully from the ZIP archive. The page will refresh.",
+          title: t("dataExport.importSuccess"),
+          description: t("dataExport.importSuccessDescZip"),
         })
       } else {
         // Assume it's a JSON file
-        setProgressText("Processing JSON file...")
+        setProgressText(t("dataExport.processingJson"))
 
         // Read the JSON file
         const reader = new FileReader()
         reader.onload = async (e) => {
           try {
             setProgress(30)
-            setProgressText("Parsing data...")
+            setProgressText(t("dataExport.parsingData"))
 
             const data = JSON.parse(e.target?.result as string)
 
             setProgress(60)
-            setProgressText("Importing data...")
+            setProgressText(t("dataExport.importing"))
 
             // Import the data
             await importAllData(data)
 
             setProgress(100)
-            setProgressText("Import complete!")
+            setProgressText(t("dataExport.importComplete"))
 
             toast({
-              title: "Data Imported",
-              description: "Your data has been imported successfully. The page will refresh.",
+              title: t("dataExport.importSuccess"),
+              description: t("dataExport.importSuccessDesc"),
             })
           } catch (error) {
             console.error("Import error:", error)
             toast({
-              title: "Import Failed",
-              description: "There was an error importing your data. Please check the file format.",
+              title: t("dataExport.importFailed"),
+              description: t("dataExport.importFailedDesc"),
               variant: "destructive",
             })
           } finally {
@@ -267,8 +269,8 @@ export function DataExportImport() {
     } catch (error) {
       console.error("Import error:", error)
       toast({
-        title: "Import Failed",
-        description: "There was an error importing your data. Please check the file format.",
+        title: t("dataExport.importFailed"),
+        description: t("dataExport.importFailedDesc"),
         variant: "destructive",
       })
       setIsImporting(false)
@@ -278,26 +280,24 @@ export function DataExportImport() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Data Portability</CardTitle>
-        <CardDescription>Export or import your  data for backup or migration</CardDescription>
+        <CardTitle>{t("dataExport.portabilityTitle")}</CardTitle>
+        <CardDescription>{t("dataExport.portabilityDesc")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-sm text-muted-foreground">
-          <p>
-            Export your data as a ZIP archive for backup purposes or to migrate to another device. The archive includes:
-          </p>
+          <p>{t("dataExport.exportIntro")}</p>
           <ul className="mt-2 space-y-1">
             <li className="flex items-center">
-              <FileText className="h-4 w-4 mr-2 text-blue-500" />
-              All your  data (products, categories, sales, etc.)
+              <FileText className="h-4 w-4 me-2 text-blue-500" />
+              {t("dataExport.exportItem1")}
             </li>
             <li className="flex items-center">
-              <ImageIcon className="h-4 w-4 mr-2 text-green-500" />
-              Store logo and product images
+              <ImageIcon className="h-4 w-4 me-2 text-green-500" />
+              {t("dataExport.exportItem2")}
             </li>
             <li className="flex items-center">
-              <FileArchive className="h-4 w-4 mr-2 text-amber-500" />
-              Receipt design settings
+              <FileArchive className="h-4 w-4 me-2 text-amber-500" />
+              {t("dataExport.exportItem3")}
             </li>
           </ul>
         </div>
@@ -317,12 +317,12 @@ export function DataExportImport() {
             {isExporting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Exporting...
+                {t("dataExport.exporting")}
               </>
             ) : (
               <>
                 <Download className="mr-2 h-4 w-4" />
-                Export Data
+                {t("dataExport.exportData")}
               </>
             )}
           </Button>
@@ -335,12 +335,12 @@ export function DataExportImport() {
             {isImporting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Importing...
+                {t("dataExport.importing")}
               </>
             ) : (
               <>
                 <Upload className="mr-2 h-4 w-4" />
-                Import Data
+                {t("dataExport.importData")}
               </>
             )}
           </Button>
@@ -349,10 +349,7 @@ export function DataExportImport() {
       </CardContent>
       <CardFooter className="text-xs text-muted-foreground flex items-start">
         <Database className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
-        <p>
-          Importing data will overwrite your current data. Make sure to export your current data first if you want to
-          keep it. The system supports both JSON and ZIP archive formats for import.
-        </p>
+        <p>{t("dataExport.importWarning")}</p>
       </CardFooter>
     </Card>
   )

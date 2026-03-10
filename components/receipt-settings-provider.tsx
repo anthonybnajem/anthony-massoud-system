@@ -4,6 +4,7 @@ import type React from "react"
 
 import { createContext, useContext, useEffect, useState } from "react"
 import { useToast } from "@/components/ui/use-toast"
+import { useLanguage } from "@/components/language-provider"
 import { settingsApi, type ReceiptSettings, DEFAULT_RECEIPT_SETTINGS } from "@/lib/db"
 
 type ReceiptSettingsContextType = {
@@ -26,6 +27,7 @@ export function ReceiptSettingsProvider({
   const [settings, setSettings] = useState<ReceiptSettings>(DEFAULT_RECEIPT_SETTINGS)
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
+  const { t } = useLanguage()
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -35,8 +37,8 @@ export function ReceiptSettingsProvider({
       } catch (error) {
         console.error("Failed to load receipt settings:", error)
         toast({
-          title: "Settings Error",
-          description: "Failed to load receipt settings. Using defaults.",
+          title: t("settings.settingsError"),
+          description: t("settings.errorLoadReceipt"),
           variant: "destructive",
         })
       } finally {
@@ -45,7 +47,7 @@ export function ReceiptSettingsProvider({
     }
 
     loadSettings()
-  }, [toast])
+  }, [toast, t])
 
   const updateSettings = async (newSettings: Partial<ReceiptSettings>) => {
     try {
@@ -53,14 +55,14 @@ export function ReceiptSettingsProvider({
       await settingsApi.saveReceiptSettings(updatedSettings)
       setSettings(updatedSettings)
       toast({
-        title: "Settings Updated",
-        description: "Receipt settings have been updated",
+        title: t("settings.settingsUpdated"),
+        description: t("settings.receiptSettingsUpdated"),
       })
     } catch (error) {
       console.error("Failed to update receipt settings:", error)
       toast({
-        title: "Settings Error",
-        description: "Failed to update receipt settings",
+        title: t("settings.settingsError"),
+        description: t("settings.errorSaveReceipt"),
         variant: "destructive",
       })
     }

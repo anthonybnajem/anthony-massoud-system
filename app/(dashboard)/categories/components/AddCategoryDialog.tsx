@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/language-provider";
 import {
   Dialog,
   DialogContent,
@@ -20,13 +21,14 @@ export function AddCategoryDialog({
   onClose,
   onSubmit,
 }: AddCategoryDialogProps) {
+  const { t } = useLanguage();
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New Category</DialogTitle>
+          <DialogTitle>{t("categories.addNewCategory")}</DialogTitle>
           <DialogDescription>
-            Enter the details for the new category.
+            {t("categories.addNewCategoryDesc")}
           </DialogDescription>
         </DialogHeader>
         <CategoryForm
@@ -35,7 +37,7 @@ export function AddCategoryDialog({
             onClose();
           }}
           onCancel={onClose}
-          submitLabel="Add Category"
+          submitLabel={t("categories.addCategory")}
         />
       </DialogContent>
     </Dialog>

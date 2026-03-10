@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useLanguage } from "@/components/language-provider";
 import { type Product } from "@/components/pos-data-provider";
 import { TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ export function ProductTableRow({
   onDelete,
   variants,
 }: ProductTableRowProps) {
+  const { t } = useLanguage();
   const saleType = getSaleType(product);
   const unitLabel = getUnitLabel(product);
   const unitIncrement = getUnitIncrement(product);
@@ -45,8 +47,8 @@ export function ProductTableRow({
       exit={{ opacity: 0, height: 0 }}
       className="hover:bg-muted/50 transition-colors"
     >
-      <TableCell>
-        <div className="flex items-center gap-3">
+      <TableCell className="text-start">
+        <div className="flex items-center gap-3 justify-start text-start">
           <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden border border-border flex-shrink-0">
             {product.image ? (
               <img
@@ -73,15 +75,15 @@ export function ProductTableRow({
           </div>
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell className="text-start">
         <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
           {product.category.name}
         </span>
       </TableCell>
-      <TableCell>
+      <TableCell className="text-start">
         <div className="flex flex-col">
           <span className="font-semibold text-sm">
-            Sell:{" "}
+            {t("checkout.sell")}:{" "}
             {(product.price ?? 0) > 0
               ? `$${(product.price ?? 0).toFixed(2)}`
               : (typeof product.rentalPrice === "number" && product.rentalPrice > 0)
@@ -89,7 +91,7 @@ export function ProductTableRow({
                 : "$0.00"}
           </span>
           <span className="text-xs text-muted-foreground">
-            Rent:{" "}
+            {t("checkout.rent")}:{" "}
             {typeof product.rentalPrice === "number" && product.rentalPrice > 0
               ? `$${product.rentalPrice.toFixed(2)}`
               : (product.price ?? 0) > 0
@@ -98,22 +100,24 @@ export function ProductTableRow({
           </span>
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell className="text-start">
         <div className="flex flex-col">
           <span className="font-medium capitalize">
             {saleType === "weight"
-              ? `By Weight (${unitLabel})`
+              ? t("products.byWeightUnit", { unit: unitLabel })
               : saleType === "rental"
-              ? `Rental (${unitLabel})`
-              : `Per ${unitLabel}`}
+              ? t("products.rentalUnit", { unit: unitLabel })
+              : saleType === "item_and_rental"
+              ? t("products.rentAndSale")
+              : t("products.perUnit", { unit: unitLabel })}
           </span>
           <span className="text-xs text-muted-foreground">
-            Step {formatMeasurementValue(unitIncrement)}
+            {t("products.stepLabel", { value: formatMeasurementValue(unitIncrement) })}
           </span>
         </div>
       </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-2">
+      <TableCell className="text-start">
+        <div className="flex items-center gap-2 justify-start">
           <span
             className={`font-medium ${
               product.stock === 0
@@ -126,11 +130,11 @@ export function ProductTableRow({
             {formattedStock}
           </span>
           {product.stock <= 5 && product.stock > 0 && (
-            <span className="text-xs text-muted-foreground">(Low)</span>
+            <span className="text-xs text-muted-foreground">{t("products.low")}</span>
           )}
         </div>
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-end">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-9 w-9">
@@ -139,15 +143,15 @@ export function ProductTableRow({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
             <DropdownMenuItem onClick={() => onEdit(product)}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
+              <Edit className="me-2 h-4 w-4" />
+              {t("common.edit")}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onClick={() => onDelete(product)}
             >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
+              <Trash2 className="me-2 h-4 w-4" />
+              {t("common.delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

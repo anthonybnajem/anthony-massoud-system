@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { ArrowLeft, FolderKanban, UserPlus2, Wrench } from "lucide-react";
 import { usePosData } from "@/components/pos-data-provider";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
+import { useLanguage } from "@/components/language-provider";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -50,6 +51,7 @@ type AggregateRow = {
 };
 
 export default function ProjectDetailsPage() {
+  const { t } = useLanguage();
   const params = useParams();
   const projectId = decodeURIComponent((params?.projectId as string) || "");
   const {
@@ -81,9 +83,9 @@ export default function ProjectDetailsPage() {
     if (!project) return "";
     return (
       customers.find((customer) => customer.id === project.customerId)?.name ||
-      "Unknown customer"
+      t("projects.unknownCustomer")
     );
-  }, [customers, project]);
+  }, [customers, project, t]);
 
   const projectSales = useMemo(
     () =>
@@ -102,7 +104,7 @@ export default function ProjectDetailsPage() {
         const key = item.productId;
         const current = map.get(key) || {
           key,
-          name: item.product?.name || item.productId || "Item",
+          name: item.product?.name || item.productId || t("projects.item"),
           quantity: 0,
           amount: 0,
         };
@@ -112,7 +114,7 @@ export default function ProjectDetailsPage() {
       });
     });
     return Array.from(map.values()).sort((a, b) => b.amount - a.amount);
-  }, [projectSales]);
+  }, [projectSales, t]);
 
   const rentedRows = useMemo(() => {
     const map = new Map<string, AggregateRow>();
@@ -123,7 +125,7 @@ export default function ProjectDetailsPage() {
         const key = item.productId;
         const current = map.get(key) || {
           key,
-          name: item.product?.name || item.productId || "Item",
+          name: item.product?.name || item.productId || t("projects.item"),
           quantity: 0,
           amount: 0,
         };
@@ -133,7 +135,7 @@ export default function ProjectDetailsPage() {
       });
     });
     return Array.from(map.values()).sort((a, b) => b.amount - a.amount);
-  }, [projectSales]);
+  }, [projectSales, t]);
 
   const totals = useMemo(() => {
     const soldQty = soldRows.reduce((sum, row) => sum + row.quantity, 0);
@@ -205,8 +207,8 @@ export default function ProjectDetailsPage() {
       <div className="space-y-6">
         <Button asChild variant="ghost" size="sm">
           <Link href="/projects">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            <ArrowLeft className="me-2 h-4 w-4" />
+            {t("common.back")}
           </Link>
         </Button>
         <Empty>
@@ -214,9 +216,9 @@ export default function ProjectDetailsPage() {
             <EmptyMedia variant="icon">
               <FolderKanban className="h-6 w-6" />
             </EmptyMedia>
-            <EmptyTitle>Project not found</EmptyTitle>
+            <EmptyTitle>{t("projects.projectNotFound")}</EmptyTitle>
             <EmptyDescription>
-              This project does not exist or was removed.
+              {t("projects.projectNotFoundDesc")}
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -229,14 +231,14 @@ export default function ProjectDetailsPage() {
       <div className="flex items-center gap-3 flex-wrap">
         <Button asChild variant="ghost" size="sm">
           <Link href="/projects">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            <ArrowLeft className="me-2 h-4 w-4" />
+            {t("common.back")}
           </Link>
         </Button>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
           <p className="text-muted-foreground">
-            {customerName} • {project.location || "No location"}
+            {customerName} • {project.location || t("projects.noLocation")}
           </p>
         </div>
       </div>
@@ -244,7 +246,7 @@ export default function ProjectDetailsPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Receipts</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("projects.receipts")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{projectSales.length}</p>
@@ -252,7 +254,7 @@ export default function ProjectDetailsPage() {
         </Card>
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Sold Qty</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("projects.soldQty")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{totals.soldQty}</p>
@@ -260,7 +262,7 @@ export default function ProjectDetailsPage() {
         </Card>
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Rented Qty</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("projects.rentedQty")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{totals.rentedQty}</p>
@@ -268,7 +270,7 @@ export default function ProjectDetailsPage() {
         </Card>
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Sold Amount</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("projects.soldAmount")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
@@ -279,7 +281,7 @@ export default function ProjectDetailsPage() {
         </Card>
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Active Rentals</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("projects.activeRentals")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{totals.activeRentals}</p>
@@ -291,19 +293,19 @@ export default function ProjectDetailsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Wrench className="h-5 w-5 text-primary" />
-            Project Workforce
+            {t("projects.projectWorkforce")}
           </CardTitle>
           <CardDescription>
-            Assign workers to this project with role and daily rate.
+            {t("projects.assignWorkersDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 lg:grid-cols-5">
             <div className="space-y-2 lg:col-span-2">
-              <Label>Worker</Label>
+              <Label>{t("workers.worker")}</Label>
               <Select value={selectedWorkerId} onValueChange={setSelectedWorkerId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select worker" />
+                  <SelectValue placeholder={t("projects.selectWorkerPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {workers.map((worker) => (
@@ -316,15 +318,15 @@ export default function ProjectDetailsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Role</Label>
+              <Label>{t("workers.role")}</Label>
               <Input
                 value={assignmentRole}
                 onChange={(event) => setAssignmentRole(event.target.value)}
-                placeholder="Foreman / Welder / Installer"
+                placeholder={t("projects.specialtyPlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label>Start Date</Label>
+              <Label>{t("workers.startDate")}</Label>
               <Input
                 type="date"
                 value={assignmentStartDate}
@@ -332,7 +334,7 @@ export default function ProjectDetailsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Daily Rate</Label>
+              <Label>{t("workers.dailyRate")}</Label>
               <Input
                 type="number"
                 min={0}
@@ -344,12 +346,12 @@ export default function ProjectDetailsPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Notes</Label>
+            <Label>{t("projects.notes")}</Label>
             <Textarea
               value={assignmentNotes}
               onChange={(event) => setAssignmentNotes(event.target.value)}
               rows={2}
-              placeholder="Shift pattern, scope, manpower notes..."
+              placeholder={t("projects.shiftNotesPlaceholder")}
             />
           </div>
           <div className="flex justify-end">
@@ -357,8 +359,8 @@ export default function ProjectDetailsPage() {
               onClick={handleAssignWorker}
               disabled={isAssigning || !selectedWorkerId || !assignmentStartDate}
             >
-              <UserPlus2 className="mr-2 h-4 w-4" />
-              {isAssigning ? "Assigning..." : "Assign Worker"}
+              <UserPlus2 className="me-2 h-4 w-4" />
+              {isAssigning ? t("projects.assigning") : t("projects.assignWorker")}
             </Button>
           </div>
 
@@ -366,20 +368,20 @@ export default function ProjectDetailsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Worker</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Start</TableHead>
-                  <TableHead>End</TableHead>
-                  <TableHead>Rate/Day</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead>{t("workers.worker")}</TableHead>
+                  <TableHead>{t("workers.role")}</TableHead>
+                  <TableHead>{t("projects.start")}</TableHead>
+                  <TableHead>{t("projects.end")}</TableHead>
+                  <TableHead>{t("projects.ratePerDay")}</TableHead>
+                  <TableHead>{t("receipts.statusLabel")}</TableHead>
+                  <TableHead className="text-end">{t("projects.action")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {projectAssignments.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground">
-                      No workers assigned yet.
+                      {t("projects.noWorkersAssignedYet")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -390,14 +392,14 @@ export default function ProjectDetailsPage() {
                         <TableCell>
                           <div>
                             <p className="font-medium">
-                              {worker?.name || "Unknown worker"}
+                              {worker?.name || t("projects.unknownWorker")}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {worker?.specialty || "General labor"}
+                              {worker?.specialty || t("projects.generalLabor")}
                             </p>
                           </div>
                         </TableCell>
-                        <TableCell>{assignment.role || "Assigned worker"}</TableCell>
+                        <TableCell>{assignment.role || t("projects.assignedWorker")}</TableCell>
                         <TableCell>
                           {format(new Date(assignment.startDate), "MMM dd, yyyy")}
                         </TableCell>
@@ -421,18 +423,18 @@ export default function ProjectDetailsPage() {
                             {assignment.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-end">
                           {assignment.status === "active" ? (
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => markAssignmentCompleted(assignment.id)}
                             >
-                              Complete
+                              {t("projects.complete")}
                             </Button>
                           ) : (
                             <span className="text-xs text-muted-foreground">
-                              Closed
+                              {t("projects.closed")}
                             </span>
                           )}
                         </TableCell>
@@ -448,20 +450,20 @@ export default function ProjectDetailsPage() {
 
       <Card className="border-2">
         <CardHeader>
-          <CardTitle>Sold Items</CardTitle>
-          <CardDescription>Items sold under this project.</CardDescription>
+          <CardTitle>{t("projects.soldItems")}</CardTitle>
+          <CardDescription>{t("projects.itemsSoldUnder")}</CardDescription>
         </CardHeader>
         <CardContent>
           {soldRows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No sold items yet.</p>
+            <p className="text-sm text-muted-foreground">{t("projects.noSoldItemsYet")}</p>
           ) : (
             <div className="rounded-lg border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Qty</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>{t("projects.item")}</TableHead>
+                    <TableHead>{t("projects.qty")}</TableHead>
+                    <TableHead className="text-end">{t("reports.amount")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -469,7 +471,7 @@ export default function ProjectDetailsPage() {
                     <TableRow key={row.key}>
                       <TableCell>{row.name}</TableCell>
                       <TableCell>{row.quantity}</TableCell>
-                      <TableCell className="text-right font-semibold">
+                      <TableCell className="text-end font-semibold">
                         {currencySymbol}
                         {row.amount.toFixed(2)}
                       </TableCell>
@@ -484,20 +486,20 @@ export default function ProjectDetailsPage() {
 
       <Card className="border-2">
         <CardHeader>
-          <CardTitle>Rented Items</CardTitle>
-          <CardDescription>Items rented under this project.</CardDescription>
+          <CardTitle>{t("projects.rentedItems")}</CardTitle>
+          <CardDescription>{t("projects.itemsRentedUnder")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {rentedRows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No rented items yet.</p>
+            <p className="text-sm text-muted-foreground">{t("projects.noRentedItemsYet")}</p>
           ) : (
             <div className="rounded-lg border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Qty</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>{t("projects.item")}</TableHead>
+                    <TableHead>{t("projects.qty")}</TableHead>
+                    <TableHead className="text-end">{t("reports.amount")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -505,7 +507,7 @@ export default function ProjectDetailsPage() {
                     <TableRow key={row.key}>
                       <TableCell>{row.name}</TableCell>
                       <TableCell>{row.quantity}</TableCell>
-                      <TableCell className="text-right font-semibold">
+                      <TableCell className="text-end font-semibold">
                         {currencySymbol}
                         {row.amount.toFixed(2)}
                       </TableCell>
@@ -520,9 +522,9 @@ export default function ProjectDetailsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Receipt</TableHead>
-                  <TableHead>Rental Period</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("receipts.receipt")}</TableHead>
+                  <TableHead>{t("projects.rentalPeriod")}</TableHead>
+                  <TableHead>{t("receipts.statusLabel")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -548,7 +550,7 @@ export default function ProjectDetailsPage() {
                               new Date(sale.rentalEndDate),
                               "PPp"
                             )}`
-                          : "No rental dates"}
+                          : t("projects.noRentalDates")}
                       </TableCell>
                       <TableCell>
                         <Badge

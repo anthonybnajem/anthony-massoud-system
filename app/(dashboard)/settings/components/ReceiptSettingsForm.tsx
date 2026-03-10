@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { Save } from "lucide-react";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
 
@@ -31,7 +32,7 @@ export function ReceiptSettingsForm() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+        <SwitchRow className="p-4 rounded-lg border bg-muted/50">
           <div className="space-y-0.5">
             <Label htmlFor="show-logo" className="text-sm font-medium">
               Show Store Logo
@@ -45,11 +46,11 @@ export function ReceiptSettingsForm() {
             checked={settings.showLogo}
             onCheckedChange={(checked) => updateSettings({ showLogo: checked })}
           />
-        </div>
+        </SwitchRow>
 
         <Separator />
 
-        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+        <SwitchRow className="p-4 rounded-lg border bg-muted/50">
           <div className="space-y-0.5">
             <Label htmlFor="show-tax" className="text-sm font-medium">
               Show Tax Details
@@ -63,11 +64,11 @@ export function ReceiptSettingsForm() {
             checked={settings.showTax}
             onCheckedChange={(checked) => updateSettings({ showTax: checked })}
           />
-        </div>
+        </SwitchRow>
 
         <Separator />
 
-        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+        <SwitchRow className="p-4 rounded-lg border bg-muted/50">
           <div className="space-y-0.5">
             <Label htmlFor="custom-message" className="text-sm font-medium">
               Add Custom Message
@@ -85,7 +86,7 @@ export function ReceiptSettingsForm() {
               })
             }
           />
-        </div>
+        </SwitchRow>
 
         {settings.thankYouMessage && (
           <div className="space-y-2">
@@ -106,7 +107,7 @@ export function ReceiptSettingsForm() {
 
         <Separator />
 
-        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+        <SwitchRow className="p-4 rounded-lg border bg-muted/50">
           <div className="space-y-0.5">
             <Label htmlFor="print-auto" className="text-sm font-medium">
               Print Automatically
@@ -122,7 +123,7 @@ export function ReceiptSettingsForm() {
               updateSettings({ printAutomatically: checked })
             }
           />
-        </div>
+        </SwitchRow>
       </CardContent>
       <CardFooter className="border-t bg-muted/50">
         <Button

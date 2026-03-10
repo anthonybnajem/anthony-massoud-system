@@ -34,6 +34,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { useLanguage } from "@/components/language-provider";
 
 export interface ProductBreakdownRow {
   productId: string;
@@ -52,20 +53,19 @@ interface ProductBreakdownTableProps {
 }
 
 const ROWS_PER_PAGE_OPTIONS = ["25", "50", "100"] as const;
-const SORTABLE_COLUMNS: Array<{
-  key: keyof ProductBreakdownRow;
-  label: string;
-  align?: "right";
-}> = [
-  { key: "name", label: "Product" },
-  { key: "category", label: "Category" },
-  { key: "sku", label: "SKU" },
-  { key: "quantity", label: "Units", align: "right" },
-  { key: "revenue", label: "Revenue", align: "right" },
-  { key: "avgPrice", label: "Avg. Price", align: "right" },
+const SORTABLE_COLUMN_KEYS = [
+  { key: "name" as const, labelKey: "reports.product" },
+  { key: "category" as const, labelKey: "reports.category" },
+  { key: "sku" as const, labelKey: "reports.sku" },
+  { key: "quantity" as const, labelKey: "reports.units", align: "right" as const },
+  { key: "revenue" as const, labelKey: "reports.revenue", align: "right" as const },
+  { key: "avgPrice" as const, labelKey: "reports.avgPrice", align: "right" as const },
 ];
+/** @deprecated Use SORTABLE_COLUMN_KEYS */
+const SORTABLE_COLUMNS = SORTABLE_COLUMN_KEYS;
 
 export function ProductBreakdownTable({ data, isLoading, onExport }: ProductBreakdownTableProps) {
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState<(typeof ROWS_PER_PAGE_OPTIONS)[number]>("50");
   const [sortConfig, setSortConfig] = useState<{
@@ -148,11 +148,11 @@ export function ProductBreakdownTable({ data, isLoading, onExport }: ProductBrea
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <PackageSearch className="h-5 w-5 text-primary" />
-            Product Breakdown
+            {t("reports.productBreakdown")}
           </CardTitle>
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
             <Input
-              placeholder="Search product, SKU, or category"
+              placeholder={t("reports.searchProductPlaceholder")}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
@@ -163,12 +163,12 @@ export function ProductBreakdownTable({ data, isLoading, onExport }: ProductBrea
               }
             >
               <SelectTrigger className="sm:w-[160px]">
-                <SelectValue placeholder="Rows" />
+                <SelectValue placeholder={t("reports.rows")} />
               </SelectTrigger>
               <SelectContent>
                 {ROWS_PER_PAGE_OPTIONS.map((option) => (
                   <SelectItem key={option} value={option}>
-                    {option} / page
+                    {option} {t("reports.rowsPerPage")}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -182,7 +182,7 @@ export function ProductBreakdownTable({ data, isLoading, onExport }: ProductBrea
               className="gap-2"
             >
               <Download className="h-3.5 w-3.5" />
-              Export
+              {t("reports.export")}
             </Button>
           </div>
         </div>
@@ -192,10 +192,10 @@ export function ProductBreakdownTable({ data, isLoading, onExport }: ProductBrea
           <Table>
             <TableHeader>
               <TableRow>
-                {SORTABLE_COLUMNS.map((column) => (
+                {SORTABLE_COLUMN_KEYS.map((column) => (
                   <TableHead
-                    key={column.key as string}
-                    className={column.align === "right" ? "text-right" : undefined}
+                    key={column.key}
+                    className={column.align === "right" ? "text-end" : undefined}
                     aria-sort={
                       sortConfig.column === column.key
                         ? sortConfig.direction === "asc"
@@ -209,7 +209,7 @@ export function ProductBreakdownTable({ data, isLoading, onExport }: ProductBrea
                       className="inline-flex items-center gap-1 text-sm font-medium"
                       onClick={() => handleSort(column.key)}
                     >
-                      {column.label}
+                      {t(column.labelKey)}
                       <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
                     </button>
                   </TableHead>
@@ -219,11 +219,11 @@ export function ProductBreakdownTable({ data, isLoading, onExport }: ProductBrea
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={SORTABLE_COLUMNS.length} className="py-8">
+                  <TableCell colSpan={SORTABLE_COLUMN_KEYS.length} className="py-8">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Spinner className="h-6 w-6" />
                       <p className="text-sm text-muted-foreground">
-                        Crunching product totals...
+                        {t("reports.crunchingProductTotals")}
                       </p>
                     </div>
                   </TableCell>
@@ -237,23 +237,23 @@ export function ProductBreakdownTable({ data, isLoading, onExport }: ProductBrea
                           <span>{row.name}</span>
                         </div>
                       </TableCell>
-                      <TableCell>{row.category || "Uncategorized"}</TableCell>
+                      <TableCell>{row.category || t("reports.uncategorized")}</TableCell>
                       <TableCell>{row.sku || "-"}</TableCell>
-                      <TableCell className="text-right">{row.quantity.toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-semibold">
+                      <TableCell className="text-end">{row.quantity.toFixed(2)}</TableCell>
+                      <TableCell className="text-end font-semibold">
                         ${row.revenue.toFixed(2)}
                       </TableCell>
-                      <TableCell className="text-right text-sm text-muted-foreground">
+                      <TableCell className="text-end text-sm text-muted-foreground">
                         ${row.avgPrice.toFixed(2)}
                       </TableCell>
                     </TableRow>
                   ))}
                   <TableRow className="bg-muted/40 font-semibold">
-                    <TableCell>Total</TableCell>
+                    <TableCell>{t("reports.total")}</TableCell>
                     <TableCell colSpan={2}></TableCell>
-                    <TableCell className="text-right">{totals.quantity.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">${totals.revenue.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">{totals.quantity.toFixed(2)}</TableCell>
+                    <TableCell className="text-end">${totals.revenue.toFixed(2)}</TableCell>
+                    <TableCell className="text-end">
                       ${totals.quantity ? (totals.revenue / totals.quantity).toFixed(2) : "0.00"}
                     </TableCell>
                   </TableRow>
@@ -261,7 +261,7 @@ export function ProductBreakdownTable({ data, isLoading, onExport }: ProductBrea
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={SORTABLE_COLUMNS.length}
+                    colSpan={SORTABLE_COLUMN_KEYS.length}
                     className="py-8"
                   >
                     <Empty>
@@ -269,9 +269,9 @@ export function ProductBreakdownTable({ data, isLoading, onExport }: ProductBrea
                         <EmptyMedia variant="icon">
                           <PackageSearch className="h-6 w-6" />
                         </EmptyMedia>
-                        <EmptyTitle>No sales in this range</EmptyTitle>
+                        <EmptyTitle>{t("reports.noSalesInRange")}</EmptyTitle>
                         <EmptyDescription>
-                          There are no products sold for the selected dates/filters.
+                          {t("reports.noProductsSoldInRange")}
                         </EmptyDescription>
                       </EmptyHeader>
                     </Empty>
@@ -284,12 +284,11 @@ export function ProductBreakdownTable({ data, isLoading, onExport }: ProductBrea
         {processedRows.length > 0 && (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-t text-sm">
             <p className="text-muted-foreground">
-              Showing {page * Number(rowsPerPage) + 1}–
-              {Math.min(
-                (page + 1) * Number(rowsPerPage),
-                processedRows.length
-              )}{" "}
-              of {processedRows.length} products
+              {t("reports.showingXOfYProducts", {
+                from: page * Number(rowsPerPage) + 1,
+                to: Math.min((page + 1) * Number(rowsPerPage), processedRows.length),
+                total: processedRows.length,
+              })}
             </p>
             <div className="flex items-center gap-2">
               <Button
@@ -300,7 +299,7 @@ export function ProductBreakdownTable({ data, isLoading, onExport }: ProductBrea
                 className="gap-1"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
-                Previous
+                {t("common.previous")}
               </Button>
               <Button
                 variant="outline"
@@ -311,7 +310,7 @@ export function ProductBreakdownTable({ data, isLoading, onExport }: ProductBrea
                 disabled={page >= totalPages - 1}
                 className="gap-1"
               >
-                Next
+                {t("common.next")}
                 <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </div>

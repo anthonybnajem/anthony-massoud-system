@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
+import { useLanguage } from "@/components/language-provider"
 import { useSubscription } from "@/components/subscription-provider"
 import { useLicense } from "@/components/license-provider"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,6 +29,7 @@ import {
 } from "@/components/ui/dialog"
 
 export default function SubscriptionPage() {
+  const { t } = useLanguage()
   const { tier, upgradeTier, lastSynced, syncHistory } = useSubscription()
   const {
     licenseInfo,
@@ -58,8 +60,8 @@ export default function SubscriptionPage() {
   const handleActivateLicense = async () => {
     if (!newLicenseKey) {
       toast({
-        title: "License Key Required",
-        description: "Please enter a valid license key",
+        title: t("alerts.licenseKeyRequired"),
+        description: t("alerts.licenseKeyRequiredDesc"),
         variant: "destructive",
       })
       return
@@ -79,8 +81,8 @@ export default function SubscriptionPage() {
     const success = await deactivateLicense()
     if (success) {
       toast({
-        title: "License Deactivated",
-        description: "Your license has been deactivated and reverted to Free plan.",
+        title: t("alerts.licenseDeactivated"),
+        description: t("alerts.licenseDeactivatedDesc"),
       })
     }
   }
@@ -178,15 +180,15 @@ export default function SubscriptionPage() {
   return (
     <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6">
       <motion.div variants={itemVariants}>
-        <h1 className="text-2xl font-bold tracking-tight">Subscription</h1>
-        <p className="text-muted-foreground">Manage your subscription plan and features.</p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("subscription.title")}</h1>
+        <p className="text-muted-foreground">{t("subscription.managePlan")}</p>
       </motion.div>
 
       <motion.div variants={itemVariants}>
         <Card>
           <CardHeader>
-            <CardTitle>License Information</CardTitle>
-            <CardDescription>Your license details and status</CardDescription>
+            <CardTitle>{t("subscription.licenseInfo")}</CardTitle>
+            <CardDescription>{t("subscription.licenseDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -257,7 +259,7 @@ export default function SubscriptionPage() {
 
             {tier === "enterprise" && lastSynced && (
               <div className="pt-2 border-t">
-                <p className="text-sm text-muted-foreground">Last synced: {lastSynced.toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">{t("subscription.lastSynced")} {lastSynced.toLocaleString()}</p>
               </div>
             )}
           </CardContent>
@@ -332,8 +334,8 @@ export default function SubscriptionPage() {
         <motion.div variants={itemVariants}>
           <Card>
             <CardHeader>
-              <CardTitle>Sync History</CardTitle>
-              <CardDescription>Recent cloud synchronization activity</CardDescription>
+              <CardTitle>{t("subscription.syncHistory")}</CardTitle>
+              <CardDescription>{t("subscription.syncHistoryDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
               {syncHistory.length > 0 ? (
@@ -343,9 +345,9 @@ export default function SubscriptionPage() {
                       <div>
                         <p className="text-sm font-medium">
                           {record.status === "success" ? (
-                            <span className="text-green-500">Sync successful</span>
+                            <span className="text-green-500">{t("subscription.syncSuccess")}</span>
                           ) : (
-                            <span className="text-red-500">Sync failed</span>
+                            <span className="text-red-500">{t("subscription.syncFailed")}</span>
                           )}
                         </p>
                         <p className="text-xs text-muted-foreground">{record.message}</p>
@@ -360,7 +362,7 @@ export default function SubscriptionPage() {
                     <EmptyMedia variant="icon">
                       <RefreshCw className="h-6 w-6" />
                     </EmptyMedia>
-                    <EmptyTitle>No sync history available</EmptyTitle>
+                    <EmptyTitle>{t("subscription.noSyncHistory")}</EmptyTitle>
                     <EmptyDescription>
                       Sync history will appear here after you sync your data to the cloud.
                     </EmptyDescription>
@@ -376,8 +378,8 @@ export default function SubscriptionPage() {
       <Dialog open={isLicenseDialogOpen} onOpenChange={setIsLicenseDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Activate License</DialogTitle>
-            <DialogDescription>Enter your license key to activate premium features</DialogDescription>
+            <DialogTitle>{t("subscription.activateLicense")}</DialogTitle>
+            <DialogDescription>{t("subscription.activateDesc")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
@@ -385,7 +387,7 @@ export default function SubscriptionPage() {
               <Label htmlFor="license-key">License Key</Label>
               <Input
                 id="license-key"
-                placeholder="Enter your license key"
+                placeholder={t("subscription.licenseKeyPlaceholder")}
                 value={newLicenseKey}
                 onChange={(e) => setNewLicenseKey(e.target.value)}
               />

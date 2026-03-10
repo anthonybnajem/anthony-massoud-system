@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useLanguage } from "@/components/language-provider";
 
 type UserRole = "admin" | "manager" | "cashier" | "staff";
 
@@ -25,6 +26,7 @@ export function AuthGuard({
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -42,7 +44,7 @@ export function AuthGuard({
         <div className="flex min-h-screen items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">{t("auth.loading")}</p>
           </div>
         </div>
       )
@@ -56,7 +58,7 @@ export function AuthGuard({
         <div className="flex min-h-screen items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Redirecting to login...</p>
+            <p className="text-muted-foreground">{t("auth.redirectingToLogin")}</p>
           </div>
         </div>
       )
@@ -74,9 +76,9 @@ export function AuthGuard({
       return (
         <div className="flex min-h-screen items-center justify-center p-4">
           <div className="text-center space-y-4 max-w-md">
-            <h2 className="text-2xl font-bold">Access Denied</h2>
+            <h2 className="text-2xl font-bold">{t("auth.accessDenied")}</h2>
             <p className="text-muted-foreground">
-              You don't have permission to access this page. Required role:{" "}
+              {t("auth.accessDeniedDesc")}{" "}
               {Array.isArray(requiredRole)
                 ? requiredRole.join(" or ")
                 : requiredRole}
@@ -85,7 +87,7 @@ export function AuthGuard({
               onClick={() => router.push("/dashboard")}
               className="text-primary hover:underline"
             >
-              Go to Dashboard
+              {t("auth.goToDashboard")}
             </button>
           </div>
         </div>

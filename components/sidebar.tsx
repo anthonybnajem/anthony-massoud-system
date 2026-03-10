@@ -4,6 +4,8 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
+import { useLanguage } from "@/components/language-provider";
+import type { TranslationKey } from "@/lib/translations";
 import {
   Home,
   ShoppingCart,
@@ -53,100 +55,98 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
-
 interface NavItem {
   href: string;
-  label: string;
+  label: TranslationKey;
   icon: LucideIcon;
 }
 
-// Role requirements for navigation items
+// Role requirements for navigation items – labels are translation keys
 const navMain: (NavItem & { roles?: string[] })[] = [
-  { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/sales", label: "Sales", icon: ShoppingCart },
-  { href: "/expenses", label: "Expenses", icon: ArrowDownCircle },
+  { href: "/dashboard", label: "nav.dashboard", icon: Home },
+  { href: "/sales", label: "nav.sales", icon: ShoppingCart },
+  { href: "/expenses", label: "nav.expenses", icon: ArrowDownCircle },
   {
     href: "/customers",
-    label: "Customers",
+    label: "nav.customers",
     icon: UserCircle2,
     roles: ["admin", "manager", "cashier"],
   },
   {
     href: "/projects",
-    label: "Projects",
+    label: "nav.projects",
     icon: FolderKanban,
     roles: ["admin", "manager", "cashier"],
   },
   {
     href: "/workers",
-    label: "Workers",
+    label: "nav.workers",
     icon: Wrench,
     roles: ["admin", "manager", "cashier"],
   },
   {
     href: "/services",
-    label: "Services",
+    label: "nav.services",
     icon: Briefcase,
     roles: ["admin", "manager", "cashier"],
   },
-  { href: "/products", label: "Products", icon: Package },
+  { href: "/products", label: "nav.products", icon: Package },
   {
     href: "/inventory",
-    label: "Inventory",
+    label: "nav.inventory",
     icon: Warehouse,
     roles: ["admin", "manager"],
   },
-  
-  { href: "/categories", label: "Categories", icon: LayoutGrid },
-  { href: "/discounts", label: "Discounts", icon: Percent },
+  { href: "/categories", label: "nav.categories", icon: LayoutGrid },
+  { href: "/discounts", label: "nav.discounts", icon: Percent },
   {
     href: "/employees",
-    label: "Users",
+    label: "nav.users",
     icon: Users,
     roles: ["admin", "manager"],
   },
 ];
 
 const navTools: NavItem[] = [
-  // { href: "/barcode-designer", label: "Barcode Designer", icon: Barcode },
-  { href: "/barcode-generator", label: "Barcode Generator", icon: QrCode },
-  { href: "/receipt-designer", label: "Receipt Designer", icon: Receipt },
+  { href: "/barcode-generator", label: "nav.barcodeGenerator", icon: QrCode },
+  { href: "/receipt-designer", label: "nav.receiptDesigner", icon: Receipt },
 ];
 
 const navReports: (NavItem & { roles?: string[] })[] = [
-   {
+  {
     href: "/inventory/history",
-    label: "History",
+    label: "nav.history",
     icon: History,
     roles: ["admin", "manager", "cashier"],
   },
   {
     href: "/receipts",
-    label: "Recent Receipts",
+    label: "nav.recentReceipts",
     icon: Receipt,
     roles: ["admin", "manager", "cashier"],
   },
   {
     href: "/reports",
-    label: "Reports",
+    label: "nav.reportsPage",
     icon: BarChart3,
     roles: ["admin", "manager", "cashier"],
   },
   {
     href: "/data-export",
-    label: "Data Export",
+    label: "nav.dataExport",
     icon: ClipboardList,
     roles: ["admin"],
   },
   {
     href: "/tutorial",
-    label: "Tutorial",
+    label: "nav.tutorial",
     icon: BookOpen,
   },
 ];
 
 function NavMain({ items }: { items: (NavItem & { roles?: string[] })[] }) {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const { data: session } = useSession();
   const userRole = session?.user?.role as string | undefined;
 
@@ -166,13 +166,13 @@ function NavMain({ items }: { items: (NavItem & { roles?: string[] })[] }) {
           pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
           <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+            <SidebarMenuButton asChild isActive={isActive} tooltip={t(item.label)}>
               <Link href={item.href}>
                 <Icon />
-                <span>{item.label}</span>
+                <span>{t(item.label)}</span>
                   {( item.href == "/customers" || item.href == "/discounts" ) && (
                     <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
-                      New
+                      {t("nav.badgeNew")}
                     </Badge>
                   )}
               </Link>
@@ -186,6 +186,7 @@ function NavMain({ items }: { items: (NavItem & { roles?: string[] })[] }) {
 
 function NavTools({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
+  const { t } = useLanguage();
 
   return (
     <SidebarMenu>
@@ -194,10 +195,10 @@ function NavTools({ items }: { items: NavItem[] }) {
         const isActive = pathname === item.href;
         return (
           <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+            <SidebarMenuButton asChild isActive={isActive} tooltip={t(item.label)}>
               <Link href={item.href}>
                 <Icon />
-                <span>{item.label}</span>
+                <span>{t(item.label)}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -209,6 +210,7 @@ function NavTools({ items }: { items: NavItem[] }) {
 
 function NavReports({ items }: { items: (NavItem & { roles?: string[] })[] }) {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const { data: session } = useSession();
   const userRole = session?.user?.role as string | undefined;
 
@@ -228,14 +230,14 @@ function NavReports({ items }: { items: (NavItem & { roles?: string[] })[] }) {
         const isActive = pathname === item.href;
         return (
           <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+            <SidebarMenuButton asChild isActive={isActive} tooltip={t(item.label)}>
               <Link href={item.href}>
                 <Icon />
                 <span className="flex items-center gap-2">
-                  {item.label}
+                  {t(item.label)}
                   {item.href === "/reports" && (
                     <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
-                      New
+                      {t("nav.badgeNew")}
                     </Badge>
                   )}
                 </span>
@@ -250,11 +252,12 @@ function NavReports({ items }: { items: (NavItem & { roles?: string[] })[] }) {
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const { state } = useSidebar();
   const { data: session } = useSession();
   const isSettingsActive = pathname === "/settings";
   const userRole = session?.user?.role as string | undefined;
-  const userName = session?.user?.name || "User";
+  const userName = session?.user?.name || t("common.user");
   const userEmail = session?.user?.email || "";
 
   // Check if user can access settings (admin or manager)
@@ -270,9 +273,9 @@ export function AppSidebar() {
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <Package className="size-4" />
                 </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Massoud System</span>
-                  <span className="truncate text-xs">Point of Sale</span>
+                <div className="grid flex-1 text-start text-sm leading-tight">
+                  <span className="truncate font-semibold">{t("app.name")}</span>
+                  <span className="truncate text-xs">{t("app.tagline")}</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -281,19 +284,19 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("nav.main")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <NavMain items={navMain} />
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Tools</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("nav.tools")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <NavTools items={navTools} />
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Reports</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("nav.reports")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <NavReports items={navReports} />
           </SidebarGroupContent>
@@ -307,22 +310,21 @@ export function AppSidebar() {
                 size="lg"
                 asChild
                 isActive={isSettingsActive}
-                tooltip="Settings"
+                tooltip={t("nav.settings")}
               >
                 <Link href="/settings">
                   <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                     <Settings className="size-4" />
                   </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
+                  <div className="grid flex-1 text-start text-sm leading-tight">
                     <span className="truncate font-semibold">
-                      {state === "collapsed" ? "Settings" : "System Settings"}
+                      {state === "collapsed" ? t("nav.settings") : t("nav.systemSettings")}
                     </span>
                   </div>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
-          <br/>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -353,21 +355,21 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>{t("nav.myAccount")}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => signOut({ callbackUrl: "/auth/signin" })}
                   className="text-destructive cursor-pointer"
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
+                  <LogOut className="me-2 h-4 w-4" />
+                  {t("nav.logout")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-      <SidebarRail />
+      <SidebarRail aria-label={t("common.toggleSidebar")} title={t("common.toggleSidebar")} />
     </Sidebar>
   );
 }

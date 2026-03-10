@@ -1,4 +1,4 @@
-export type ProductSaleType = "item" | "weight" | "rental";
+export type ProductSaleType = "item" | "weight" | "rental" | "item_and_rental";
 
 export const DEFAULT_ITEM_UNIT_LABEL = "unit";
 export const DEFAULT_WEIGHT_UNIT_LABEL = "kg";

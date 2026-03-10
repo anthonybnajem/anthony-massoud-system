@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Wrench, Plus, Pencil, Trash2 } from "lucide-react";
+import { Wrench, Plus, Pencil, Trash2, MoreVertical } from "lucide-react";
+import { useLanguage } from "@/components/language-provider";
 import { usePosData } from "@/components/pos-data-provider";
 import {
   Card,
@@ -15,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import {
   Dialog,
   DialogContent,
@@ -38,15 +40,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const billingTypeLabels: Record<"per_day" | "per_count" | "custom", string> = {
-  per_day: "Per Day",
-  per_count: "Per Count",
-  custom: "Custom",
-};
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function ServicesPage() {
+  const { t } = useLanguage();
   const { services, addService, updateService, removeService } = usePosData();
+
+  const getBillingLabel = (type: "per_day" | "per_count" | "custom") =>
+    type === "per_day" ? t("services.perDay") : type === "per_count" ? t("services.perCount") : t("services.custom");
 
   const [query, setQuery] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -143,11 +149,10 @@ export default function ServicesPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
           <Wrench className="h-6 w-6 text-primary" />
-          Services
+          {t("services.title")}
         </h1>
         <p className="text-muted-foreground max-w-2xl">
-          Manage service pricing, billing types, and taxable defaults for
-          custom labor lines.
+          {t("services.subtitle")}
         </p>
       </div>
 
@@ -158,12 +163,13 @@ export default function ServicesPage() {
               {/* <CardTitle>Service Catalog</CardTitle> */}
               <CardDescription>
                 {filteredServices.length}{" "}
-                {filteredServices.length === 1 ? "service" : "services"} found
+                {filteredServices.length === 1 ? t("services.serviceSingular") : t("services.services")}{" "}
+                {t("services.found")}
               </CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
               <Input
-                placeholder="Search by name or description"
+                placeholder={t("services.searchPlaceholder")}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 className="sm:max-w-xs"
@@ -175,7 +181,7 @@ export default function ServicesPage() {
                 }}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Add Service
+                {t("services.addService")}
               </Button>
             </div>
           </div>
@@ -185,12 +191,12 @@ export default function ServicesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Billing Type</TableHead>
-                  <TableHead>Unit</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Taxable</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t("services.service")}</TableHead>
+                  <TableHead>{t("services.billingType")}</TableHead>
+                  <TableHead>{t("services.unit")}</TableHead>
+                  <TableHead>{t("services.price")}</TableHead>
+                  <TableHead>{t("services.taxable")}</TableHead>
+                  <TableHead className="text-right">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -198,7 +204,7 @@ export default function ServicesPage() {
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-10">
                       <p className="text-sm text-muted-foreground">
-                        No services found. Add your first service above.
+                        {t("services.noServicesFound")}
                       </p>
                     </TableCell>
                   </TableRow>
@@ -214,29 +220,32 @@ export default function ServicesPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        {billingTypeLabels[service.billingType]}
+                        {getBillingLabel(service.billingType)}
                       </TableCell>
                       <TableCell>{service.unitLabel || "—"}</TableCell>
                       <TableCell>${Number(service.price || 0).toFixed(2)}</TableCell>
-                      <TableCell>{service.taxable !== false ? "Yes" : "No"}</TableCell>
+                      <TableCell>{service.taxable !== false ? t("common.yes") : t("common.no")}</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEdit(service.id)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive"
-                            onClick={() => removeService(service.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEdit(service.id)}>
+                              <Pencil className="me-2 h-4 w-4" />
+                              {t("common.edit")}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => removeService(service.id)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="me-2 h-4 w-4" />
+                              {t("common.delete")}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))
@@ -250,19 +259,19 @@ export default function ServicesPage() {
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add Service</DialogTitle>
+            <DialogTitle>{t("services.addService")}</DialogTitle>
             <DialogDescription>
-              Define a new service for sales and checkout.
+              {t("services.addServiceDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
             <div className="space-y-2">
-              <Label>Service Name</Label>
+              <Label>{t("services.serviceName")}</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Price</Label>
+                <Label>{t("services.price")}</Label>
                 <Input
                   type="number"
                   min="0"
@@ -272,7 +281,7 @@ export default function ServicesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Billing Type</Label>
+                <Label>{t("services.billingType")}</Label>
                 <Select
                   value={billingType}
                   onValueChange={(value) =>
@@ -280,37 +289,37 @@ export default function ServicesPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder={t("services.selectType")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="per_day">Per Day</SelectItem>
-                    <SelectItem value="per_count">Per Count</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
+                    <SelectItem value="per_day">{t("services.perDay")}</SelectItem>
+                    <SelectItem value="per_count">{t("services.perCount")}</SelectItem>
+                    <SelectItem value="custom">{t("services.custom")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Unit Label</Label>
+                <Label>{t("services.unitLabel")}</Label>
                 <Input
-                  placeholder="day, hour, service"
+                  placeholder={t("services.unitPlaceholder")}
                   value={unitLabel}
                   onChange={(e) => setUnitLabel(e.target.value)}
                 />
               </div>
-              <div className="flex items-center justify-between rounded-md border px-3 py-2">
+              <SwitchRow className="rounded-md border px-3 py-2">
                 <div>
-                  <p className="text-sm font-medium">Taxable</p>
+                  <p className="text-sm font-medium">{t("services.taxable")}</p>
                   <p className="text-xs text-muted-foreground">
-                    Apply sales tax by default
+                    {t("services.applySalesTaxDefault")}
                   </p>
                 </div>
                 <Switch checked={taxable} onCheckedChange={setTaxable} />
-              </div>
+              </SwitchRow>
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label>{t("services.description")}</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -319,10 +328,10 @@ export default function ServicesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleAdd} disabled={isSaving}>
-              Save Service
+              {t("services.saveService")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -331,19 +340,19 @@ export default function ServicesPage() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit Service</DialogTitle>
+            <DialogTitle>{t("services.editService")}</DialogTitle>
             <DialogDescription>
-              Update this service details and defaults.
+              {t("services.editServiceDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
             <div className="space-y-2">
-              <Label>Service Name</Label>
+              <Label>{t("services.serviceName")}</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Price</Label>
+                <Label>{t("services.price")}</Label>
                 <Input
                   type="number"
                   min="0"
@@ -353,7 +362,7 @@ export default function ServicesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Billing Type</Label>
+                <Label>{t("services.billingType")}</Label>
                 <Select
                   value={billingType}
                   onValueChange={(value) =>
@@ -361,37 +370,37 @@ export default function ServicesPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder={t("services.selectType")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="per_day">Per Day</SelectItem>
-                    <SelectItem value="per_count">Per Count</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
+                    <SelectItem value="per_day">{t("services.perDay")}</SelectItem>
+                    <SelectItem value="per_count">{t("services.perCount")}</SelectItem>
+                    <SelectItem value="custom">{t("services.custom")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Unit Label</Label>
+                <Label>{t("services.unitLabel")}</Label>
                 <Input
-                  placeholder="day, hour, service"
+                  placeholder={t("services.unitPlaceholder")}
                   value={unitLabel}
                   onChange={(e) => setUnitLabel(e.target.value)}
                 />
               </div>
-              <div className="flex items-center justify-between rounded-md border px-3 py-2">
+              <SwitchRow className="rounded-md border px-3 py-2">
                 <div>
-                  <p className="text-sm font-medium">Taxable</p>
+                  <p className="text-sm font-medium">{t("services.taxable")}</p>
                   <p className="text-xs text-muted-foreground">
-                    Apply sales tax by default
+                    {t("services.applySalesTaxDefault")}
                   </p>
                 </div>
                 <Switch checked={taxable} onCheckedChange={setTaxable} />
-              </div>
+              </SwitchRow>
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label>{t("services.description")}</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -400,10 +409,10 @@ export default function ServicesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleEdit} disabled={isSaving}>
-              Save Changes
+              {t("common.saveChanges")}
             </Button>
           </DialogFooter>
         </DialogContent>

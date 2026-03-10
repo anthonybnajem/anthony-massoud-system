@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/language-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
@@ -27,19 +28,20 @@ interface RevenueChartProps {
 }
 
 export function RevenueChart({ data, isLoading }: RevenueChartProps) {
+  const { t } = useLanguage();
   return (
     <Card className="border-2 shadow-sm">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <BarChart className="h-5 w-5 text-primary" />
-          Revenue Over Time
+          {t("reports.revenueOverTime")}
         </CardTitle>
       </CardHeader>
       <CardContent className="h-80">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-2">
             <Spinner className="h-6 w-6" />
-            <p className="text-sm text-muted-foreground">Loading data...</p>
+            <p className="text-sm text-muted-foreground">{t("reports.loadingData")}</p>
           </div>
         ) : data.length === 0 ? (
           <Empty>
@@ -47,9 +49,9 @@ export function RevenueChart({ data, isLoading }: RevenueChartProps) {
               <EmptyMedia variant="icon">
                 <BarChart className="h-6 w-6" />
               </EmptyMedia>
-              <EmptyTitle>No data available</EmptyTitle>
+              <EmptyTitle>{t("reports.noDataAvailable")}</EmptyTitle>
               <EmptyDescription>
-                No revenue data found for the selected date range.
+                {t("reports.noDataAvailable")}
               </EmptyDescription>
             </EmptyHeader>
           </Empty>

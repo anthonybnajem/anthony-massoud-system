@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { usePosData } from "@/components/pos-data-provider";
+import { useLanguage } from "@/components/language-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { History } from "lucide-react";
 import { StockMovementHistory } from "../components/StockMovementHistory";
@@ -22,6 +23,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { stockMovementsApi } from "@/lib/db";
 
 export default function InventoryHistoryPage() {
+  const { t } = useLanguage();
   const { stockMovements, products, fetchData } = usePosData();
   const { toast } = useToast();
   const [filterType, setFilterType] = useState<string>("all");
@@ -59,8 +61,8 @@ export default function InventoryHistoryPage() {
   const handleExportMovements = () => {
     if (filteredMovements.length === 0) {
       toast({
-        title: "Nothing to Export",
-        description: "No stock movements match the current filters.",
+        title: t("inventory.nothingToExport"),
+        description: t("inventory.noStockMovementsMatch"),
       });
       return;
     }
@@ -90,8 +92,8 @@ export default function InventoryHistoryPage() {
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Export Ready",
-      description: `${filteredMovements.length} movements exported as JSON.`,
+      title: t("inventory.exportReady"),
+      description: t("inventory.movementsExportedJson", { count: filteredMovements.length }),
     });
   };
 
@@ -113,8 +115,8 @@ export default function InventoryHistoryPage() {
 
       if (movements.length === 0) {
         toast({
-          title: "Import Failed",
-          description: "No valid stock movements found in the file.",
+          title: t("inventory.importFailed"),
+          description: t("inventory.noValidMovementsInFile"),
           variant: "destructive",
         });
         return;
@@ -141,14 +143,14 @@ export default function InventoryHistoryPage() {
 
       await fetchData();
       toast({
-        title: "Import Complete",
-        description: `${movements.length} stock movements imported.`,
+        title: t("inventory.importComplete"),
+        description: t("inventory.movementsImported", { count: movements.length }),
       });
     } catch (error) {
       console.error("Failed to import stock movements:", error);
       toast({
-        title: "Import Failed",
-        description: "Could not import the provided file.",
+        title: t("inventory.importFailed"),
+        description: t("inventory.couldNotImportFile"),
         variant: "destructive",
       });
     } finally {
@@ -166,8 +168,8 @@ export default function InventoryHistoryPage() {
   const handleExportCSV = () => {
     if (filteredMovements.length === 0) {
       toast({
-        title: "Nothing to Export",
-        description: "No stock movements match the current filters.",
+        title: t("inventory.nothingToExport"),
+        description: t("inventory.noStockMovementsMatch"),
       });
       return;
     }
@@ -186,19 +188,27 @@ export default function InventoryHistoryPage() {
       "Date",
     ];
 
+    const isSystemIdNote = (notes: string | undefined) =>
+      !notes ||
+      /^Sale ID: .+$/.test(notes) ||
+      /Restock.*Expense ID: .+/.test(notes) ||
+      /^Expense ID: .+$/.test(notes);
+    const exportNotes = (notes: string | undefined) =>
+      isSystemIdNote(notes) ? "" : (notes || "");
+
     const rows = filteredMovements.map((movement) => {
       const product =
         products.find((p) => p.id === movement.productId) || null;
       return [
         movement.id,
-        product?.name || "Unknown Product",
+        product?.name || t("inventory.unknownProduct"),
         movement.productId,
         movement.type,
         movement.quantity.toString(),
         movement.previousStock.toString(),
         movement.newStock.toString(),
         movement.reason || "",
-        movement.notes || "",
+        exportNotes(movement.notes),
         movement.userId || "",
         new Date(movement.date).toISOString(),
       ];
@@ -230,8 +240,8 @@ export default function InventoryHistoryPage() {
     URL.revokeObjectURL(url);
 
     toast({
-      title: "Export Ready",
-      description: `${filteredMovements.length} movements exported as CSV.`,
+      title: t("inventory.exportReady"),
+      description: t("inventory.movementsExportedCsv", { count: filteredMovements.length }),
     });
   };
 
@@ -253,70 +263,81 @@ export default function InventoryHistoryPage() {
           <History className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              Stock Movement History
+              {t("inventory.stockMovementHistory")}
             </h1>
             <p className="text-muted-foreground mt-1">
-              View all stock movements and adjustments
+              {t("inventory.viewAllStockMovements")}
             </p>
           </div>
         </div>
       </motion.div>
 
-      {/* Filters */}
+      {/* Filters + Actions in one row */}
       <motion.div variants={itemVariants}>
         <Card className="border-2 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold">Filters</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Movement Type</Label>
-                <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger className="border-2">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="adjustment">Adjustment</SelectItem>
-                    <SelectItem value="sale">Sale</SelectItem>
-                    <SelectItem value="purchase">Purchase</SelectItem>
-                    <SelectItem value="return">Return</SelectItem>
-                    <SelectItem value="transfer">Transfer</SelectItem>
-                  </SelectContent>
-                </Select>
+          <CardContent className="pt-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1 lg:max-w-2xl">
+                <div className="space-y-2">
+                  <Label>{t("inventory.movementType")}</Label>
+                  <Select value={filterType} onValueChange={setFilterType}>
+                    <SelectTrigger className="border-2">
+                      <SelectValue placeholder={t("inventory.allTypes")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t("inventory.allTypes")}</SelectItem>
+                      <SelectItem value="adjustment">{t("inventory.adjustment")}</SelectItem>
+                      <SelectItem value="sale">{t("inventory.sale")}</SelectItem>
+                      <SelectItem value="purchase">{t("inventory.purchase")}</SelectItem>
+                      <SelectItem value="return">{t("inventory.return")}</SelectItem>
+                      <SelectItem value="transfer">{t("inventory.transfer")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("reports.product")}</Label>
+                  <Select value={filterProduct} onValueChange={setFilterProduct}>
+                    <SelectTrigger className="border-2">
+                      <SelectValue placeholder={t("inventory.allProducts")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t("inventory.allProducts")}</SelectItem>
+                      {products.map((product) => (
+                        <SelectItem key={product.id} value={product.id}>
+                          {product.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("reports.dateRange")}</Label>
+                  <Select value={dateRange} onValueChange={setDateRange}>
+                    <SelectTrigger className="border-2">
+                      <SelectValue placeholder={t("inventory.dateRangePlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t("inventory.allTime")}</SelectItem>
+                      <SelectItem value="7">{t("inventory.last7Days")}</SelectItem>
+                      <SelectItem value="30">{t("inventory.last30Days")}</SelectItem>
+                      <SelectItem value="90">{t("inventory.last90Days")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-
-              <div className="space-y-2">
-                <Label>Product</Label>
-                <Select value={filterProduct} onValueChange={setFilterProduct}>
-                  <SelectTrigger className="border-2">
-                    <SelectValue placeholder="All Products" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Products</SelectItem>
-                    {products.map((product) => (
-                      <SelectItem key={product.id} value={product.id}>
-                        {product.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Date Range</Label>
-                <Select value={dateRange} onValueChange={setDateRange}>
-                  <SelectTrigger className="border-2">
-                    <SelectValue placeholder="Date Range" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Time</SelectItem>
-                    <SelectItem value="7">Last 7 Days</SelectItem>
-                    <SelectItem value="30">Last 30 Days</SelectItem>
-                    <SelectItem value="90">Last 90 Days</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <Button variant="outline" onClick={handleExportMovements}>
+                  {t("inventory.exportJson")}
+                </Button>
+                <Button variant="outline" onClick={handleExportCSV}>
+                  {t("inventory.exportCsv")}
+                </Button>
+                <Button variant="default" onClick={triggerImport} disabled={isImporting}>
+                  {isImporting ? t("inventory.importing") : t("inventory.import")}
+                </Button>
+                <p className="text-sm text-muted-foreground lg:ml-1">
+                  {t("inventory.movementsCount", { count: filteredMovements.length })}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -326,30 +347,6 @@ export default function InventoryHistoryPage() {
       {/* History Table */}
       <motion.div variants={itemVariants}>
         <Card className="border-2 shadow-sm overflow-hidden">
-          <CardHeader className="pb-3">
-            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-2">
-                <History className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg font-semibold">
-                  Movement History
-                </CardTitle>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={handleExportMovements}>
-                  Export JSON
-                </Button>
-                <Button variant="outline" onClick={handleExportCSV}>
-                  Export CSV
-                </Button>
-                <Button variant="default" onClick={triggerImport} disabled={isImporting}>
-                  {isImporting ? "Importing..." : "Import"}
-                </Button>
-                <p className="text-sm text-muted-foreground md:ml-3">
-                  {filteredMovements.length} movements
-                </p>
-              </div>
-            </div>
-          </CardHeader>
           <CardContent className="overflow-hidden min-w-0 p-0">
             <StockMovementHistory
               movements={filteredMovements}

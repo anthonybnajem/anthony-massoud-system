@@ -15,6 +15,7 @@ import {
   EmptyDescription,
 } from "@/components/ui/empty";
 import { Package } from "lucide-react";
+import { useLanguage } from "@/components/language-provider";
 import { InventoryTableRow } from "./InventoryTableRow";
 import { type Product } from "@/components/pos-data-provider";
 import { AnimatePresence } from "framer-motion";
@@ -30,6 +31,7 @@ export function InventoryTable({
   onAdjust,
   itemVariants,
 }: InventoryTableProps) {
+  const { t } = useLanguage();
   if (products.length === 0) {
     return (
       <Empty>
@@ -37,9 +39,9 @@ export function InventoryTable({
           <EmptyMedia variant="icon">
             <Package className="h-6 w-6" />
           </EmptyMedia>
-          <EmptyTitle>No products found</EmptyTitle>
+          <EmptyTitle>{t("products.noProductsFound")}</EmptyTitle>
           <EmptyDescription>
-            No products match your current filters.
+            {t("inventory.noProductsMatchFilter")}
           </EmptyDescription>
         </EmptyHeader>
       </Empty>
@@ -51,12 +53,12 @@ export function InventoryTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[300px]">Product</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Stock</TableHead>
-            <TableHead>Cost</TableHead>
-            <TableHead>Value</TableHead>
-            <TableHead className="w-[70px]">Actions</TableHead>
+            <TableHead className="w-[300px] text-start">{t("products.product")}</TableHead>
+            <TableHead className="text-start">{t("products.category")}</TableHead>
+            <TableHead className="text-start">{t("products.stock")}</TableHead>
+            <TableHead className="text-start">{t("inventory.cost")}</TableHead>
+            <TableHead className="text-start">{t("inventory.value")}</TableHead>
+            <TableHead className="w-[70px] text-end">{t("common.actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

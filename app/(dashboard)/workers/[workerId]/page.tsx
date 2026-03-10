@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { ArrowLeft, Briefcase, FolderKanban, Wrench } from "lucide-react";
 import { usePosData } from "@/components/pos-data-provider";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
+import { useLanguage } from "@/components/language-provider";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -43,6 +44,7 @@ import {
 } from "@/components/ui/empty";
 
 export default function WorkerDetailsPage() {
+  const { t } = useLanguage();
   const params = useParams();
   const workerId = decodeURIComponent((params?.workerId as string) || "");
   const {
@@ -140,8 +142,8 @@ export default function WorkerDetailsPage() {
       <div className="space-y-6">
         <Button asChild variant="ghost" size="sm">
           <Link href="/workers">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            <ArrowLeft className="me-2 h-4 w-4" />
+            {t("common.back")}
           </Link>
         </Button>
         <Empty>
@@ -149,9 +151,9 @@ export default function WorkerDetailsPage() {
             <EmptyMedia variant="icon">
               <Wrench className="h-6 w-6" />
             </EmptyMedia>
-            <EmptyTitle>Worker not found</EmptyTitle>
+            <EmptyTitle>{t("workers.workerNotFound")}</EmptyTitle>
             <EmptyDescription>
-              This worker does not exist or was archived.
+              {t("workers.workerNotFoundDesc")}
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
@@ -164,14 +166,14 @@ export default function WorkerDetailsPage() {
       <div className="flex items-center gap-3 flex-wrap">
         <Button asChild variant="ghost" size="sm">
           <Link href="/workers">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            <ArrowLeft className="me-2 h-4 w-4" />
+            {t("common.back")}
           </Link>
         </Button>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{worker.name}</h1>
           <p className="text-muted-foreground">
-            {worker.specialty || "General labor"} • {currencySymbol}
+            {worker.specialty || t("workers.generalLabor")} • {currencySymbol}
             {worker.dailyRate.toFixed(2)}/day
           </p>
         </div>
@@ -180,7 +182,7 @@ export default function WorkerDetailsPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("workers.activeProjects")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{activeAssignments.length}</p>
@@ -188,7 +190,7 @@ export default function WorkerDetailsPage() {
         </Card>
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Assignments</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("workers.totalAssignments")}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{assignments.length}</p>
@@ -196,18 +198,18 @@ export default function WorkerDetailsPage() {
         </Card>
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Phone</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("workers.phone")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm font-medium">{worker.phone || "Not set"}</p>
+            <p className="text-sm font-medium">{worker.phone || t("workers.notSet")}</p>
           </CardContent>
         </Card>
         <Card className="border-2 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Email</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("workers.email")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm font-medium">{worker.email || "Not set"}</p>
+            <p className="text-sm font-medium">{worker.email || t("workers.notSet")}</p>
           </CardContent>
         </Card>
       </div>
@@ -216,16 +218,16 @@ export default function WorkerDetailsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Briefcase className="h-5 w-5 text-primary" />
-            Assign New Job
+            {t("workers.assignNewJob")}
           </CardTitle>
           <CardDescription>
-            Assign this worker to a linked project or a custom standalone job.
+            {t("workers.assignNewJobDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-1">
-              <Label>Assignment Type</Label>
+              <Label>{t("workers.assignmentType")}</Label>
               <Select
                 value={assignmentMode}
                 onValueChange={(value) =>
@@ -236,27 +238,27 @@ export default function WorkerDetailsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="project">By Project</SelectItem>
-                  <SelectItem value="custom">Custom Job</SelectItem>
+                  <SelectItem value="project">{t("workers.byProject")}</SelectItem>
+                  <SelectItem value="custom">{t("workers.customJob")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
-              <Label>Role</Label>
+              <Label>{t("workers.role")}</Label>
               <Input
                 value={role}
                 onChange={(event) => setRole(event.target.value)}
-                placeholder="Foreman / Welder / Installer"
+                placeholder={t("workers.rolePlaceholder")}
               />
             </div>
           </div>
 
           {assignmentMode === "project" ? (
             <div className="space-y-1">
-              <Label>Project</Label>
+              <Label>{t("workers.projectLabel")}</Label>
               <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a project" />
+                  <SelectValue placeholder={t("workers.selectProject")} />
                 </SelectTrigger>
                 <SelectContent>
                   {projects.map((project) => (
@@ -270,27 +272,27 @@ export default function WorkerDetailsPage() {
           ) : (
             <div className="grid gap-3 md:grid-cols-3">
               <div className="space-y-1 md:col-span-1">
-                <Label>Custom Job Name</Label>
+                <Label>{t("workers.customJobName")}</Label>
                 <Input
                   value={customJobName}
                   onChange={(event) => setCustomJobName(event.target.value)}
-                  placeholder="Night shift wiring"
+                  placeholder={t("workers.customJobNamePlaceholder")}
                 />
               </div>
               <div className="space-y-1">
-                <Label>Customer / Company</Label>
+                <Label>{t("workers.customerCompany")}</Label>
                 <Input
                   value={customCustomerName}
                   onChange={(event) => setCustomCustomerName(event.target.value)}
-                  placeholder="Private client name"
+                  placeholder={t("workers.customCustomerPlaceholder")}
                 />
               </div>
               <div className="space-y-1">
-                <Label>Location</Label>
+                <Label>{t("workers.location")}</Label>
                 <Input
                   value={customLocation}
                   onChange={(event) => setCustomLocation(event.target.value)}
-                  placeholder="Site location"
+                  placeholder={t("workers.locationPlaceholder")}
                 />
               </div>
             </div>
@@ -298,7 +300,7 @@ export default function WorkerDetailsPage() {
 
           <div className="grid gap-3 md:grid-cols-3">
             <div className="space-y-1">
-              <Label>Start Date</Label>
+              <Label>{t("workers.startDate")}</Label>
               <Input
                 type="date"
                 value={startDate}
@@ -306,7 +308,7 @@ export default function WorkerDetailsPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label>Rate / Day</Label>
+              <Label>{t("workers.ratePerDay")}</Label>
               <Input
                 type="number"
                 min={0}
@@ -317,12 +319,12 @@ export default function WorkerDetailsPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label>Notes</Label>
+              <Label>{t("workers.notes")}</Label>
               <Textarea
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
                 rows={1}
-                placeholder="Optional job notes"
+                placeholder={t("workers.optionalJobNotes")}
               />
             </div>
           </div>
@@ -336,7 +338,7 @@ export default function WorkerDetailsPage() {
                 (assignmentMode === "custom" && !customJobName.trim())
               }
             >
-              {isAssigning ? "Assigning..." : "Assign Job"}
+              {isAssigning ? t("workers.assigning") : t("workers.assignJob")}
             </Button>
           </div>
         </CardContent>
@@ -344,26 +346,26 @@ export default function WorkerDetailsPage() {
 
       <Card className="border-2">
         <CardHeader>
-          <CardTitle>Where He Is Working Now</CardTitle>
+          <CardTitle>{t("workers.whereWorkingNow")}</CardTitle>
           <CardDescription>
-            Active project and custom assignments for this worker.
+            {t("workers.activeAssignmentsDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {activeAssignments.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No active assignment right now.
+              {t("workers.noActiveAssignment")}
             </p>
           ) : (
             <div className="rounded-lg border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Job</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Start</TableHead>
-                    <TableHead>Rate/Day</TableHead>
+                    <TableHead>{t("workers.job")}</TableHead>
+                    <TableHead>{t("workers.customerHeader")}</TableHead>
+                    <TableHead>{t("workers.role")}</TableHead>
+                    <TableHead>{t("workers.start")}</TableHead>
+                    <TableHead>{t("workers.ratePerDayHeader")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -384,15 +386,15 @@ export default function WorkerDetailsPage() {
                           ) : assignment.customJobName ? (
                             <span>{assignment.customJobName}</span>
                           ) : (
-                            "Unspecified custom job"
+                            t("workers.unspecifiedCustomJob")
                           )}
                         </TableCell>
                         <TableCell>
                           {project
-                            ? customerMap[project.customerId] || "Unknown customer"
+                            ? customerMap[project.customerId] || t("workers.unknownCustomer")
                             : assignment.customCustomerName || "—"}
                         </TableCell>
-                        <TableCell>{assignment.role || "Assigned worker"}</TableCell>
+                        <TableCell>{assignment.role || t("workers.assignedWorker")}</TableCell>
                         <TableCell>
                           {format(new Date(assignment.startDate), "MMM dd, yyyy")}
                         </TableCell>
@@ -412,24 +414,24 @@ export default function WorkerDetailsPage() {
 
       <Card className="border-2">
         <CardHeader>
-          <CardTitle>Assignment History</CardTitle>
-          <CardDescription>All current and completed project assignments.</CardDescription>
+          <CardTitle>{t("workers.assignmentHistory")}</CardTitle>
+          <CardDescription>{t("workers.assignmentHistoryDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           {assignments.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No assignment history yet.
+              {t("workers.noAssignmentHistoryYet")}
             </p>
           ) : (
             <div className="rounded-lg border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Job</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Start</TableHead>
-                    <TableHead>End</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{t("workers.job")}</TableHead>
+                    <TableHead>{t("workers.role")}</TableHead>
+                    <TableHead>{t("workers.start")}</TableHead>
+                    <TableHead>{t("workers.end")}</TableHead>
+                    <TableHead>{t("workers.status")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -444,10 +446,10 @@ export default function WorkerDetailsPage() {
                             <FolderKanban className="h-4 w-4 text-muted-foreground" />
                             {project
                               ? project.name
-                              : assignment.customJobName || "Custom job"}
+                              : assignment.customJobName || t("workers.customJobLabel")}
                           </div>
                         </TableCell>
-                        <TableCell>{assignment.role || "Assigned worker"}</TableCell>
+                        <TableCell>{assignment.role || t("workers.assignedWorker")}</TableCell>
                         <TableCell>
                           {format(new Date(assignment.startDate), "MMM dd, yyyy")}
                         </TableCell>
@@ -462,7 +464,9 @@ export default function WorkerDetailsPage() {
                               assignment.status === "active" ? "default" : "secondary"
                             }
                           >
-                            {assignment.status}
+                            {assignment.status === "active"
+                              ? t("workers.statusActive")
+                              : t("workers.statusComplete")}
                           </Badge>
                         </TableCell>
                       </TableRow>

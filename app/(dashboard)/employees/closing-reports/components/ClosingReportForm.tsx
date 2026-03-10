@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Calculator } from "lucide-react";
-import { type Shift, type Sale } from "@/components/pos-data-provider";
+import { type Shift, type Sale, usePosData } from "@/components/pos-data-provider";
+import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 
 interface ClosingReportFormProps {
@@ -31,6 +32,8 @@ export function ClosingReportForm({
   onGenerate,
   onCancel,
 }: ClosingReportFormProps) {
+  const { t } = useTranslation();
+  const { expenses } = usePosData();
   const [startCash, setStartCash] = useState("");
   const [endCash, setEndCash] = useState("");
   const [notes, setNotes] = useState("");
@@ -51,6 +54,15 @@ export function ClosingReportForm({
 
   const totalSales = shiftSales.reduce((sum, sale) => sum + sale.total, 0);
   const totalTransactions = shiftSales.length;
+  const shiftExpenseOut = expenses
+    .filter(
+      (exp) =>
+        new Date(exp.date) >= shiftStart &&
+        new Date(exp.date) <= shiftEnd &&
+        exp.expenseType === "expense_out"
+    )
+    .reduce((sum, exp) => sum + exp.total, 0);
+  const incomeNet = totalSales - Math.abs(shiftExpenseOut);
   const cashSales =
     shiftSales
       .filter((s) => s.paymentMethod === "cash")
@@ -123,6 +135,14 @@ export function ClosingReportForm({
             <div>
               <span className="text-muted-foreground">Cash Sales:</span>{" "}
               <span className="font-semibold">${cashSales.toFixed(2)}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">{t("reports.expenseOut")}:</span>{" "}
+              <span className="font-semibold">${Math.abs(shiftExpenseOut).toFixed(2)}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">{t("reports.incomeNet")}:</span>{" "}
+              <span className="font-semibold">${incomeNet.toFixed(2)}</span>
             </div>
           </div>
           {/* Sales by Employee Breakdown */}

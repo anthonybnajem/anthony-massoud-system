@@ -1,11 +1,13 @@
 "use client"
 
 import { useOnlineStatus } from "./online-status-provider"
+import { useLanguage } from "./language-provider"
 import { Wifi, WifiOff } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function OnlineStatusIndicator() {
   const { isOnline } = useOnlineStatus()
+  const { t } = useLanguage()
 
   return (
     <div className="flex items-center gap-2">
@@ -20,12 +22,12 @@ export function OnlineStatusIndicator() {
         {isOnline ? (
           <>
             <Wifi className="h-3.5 w-3.5" />
-            <span>Online</span>
+            <span>{t("common.online")}</span>
           </>
         ) : (
           <>
             <WifiOff className="h-3.5 w-3.5" />
-            <span>Offline</span>
+            <span>{t("common.offline")}</span>
           </>
         )}
       </div>

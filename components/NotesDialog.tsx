@@ -9,6 +9,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/components/language-provider";
 
 interface NotesDialogProps {
   isOpen: boolean;
@@ -25,21 +26,22 @@ export default function NotesDialog({
   setSaleNotes,
   saveNotes,
 }: NotesDialogProps) {
+  const { t } = useLanguage();
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Sale Notes</DialogTitle>
+          <DialogTitle>{t("checkout.saleNotesTitle")}</DialogTitle>
           <DialogDescription>
-            Add notes to this sale for reference.
+            {t("checkout.saleNotesDesc")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="sale-notes">Notes</Label>
+            <Label htmlFor="sale-notes">{t("cart.notes")}</Label>
             <Textarea
               id="sale-notes"
-              placeholder="Enter notes about this sale..."
+              placeholder={t("checkout.notesPlaceholder")}
               value={saleNotes}
               onChange={(e) => setSaleNotes(e.target.value)}
               rows={5}
@@ -48,9 +50,9 @@ export default function NotesDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
-          <Button onClick={saveNotes}>Save Notes</Button>
+          <Button onClick={saveNotes}>{t("checkout.saveNotesButton")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

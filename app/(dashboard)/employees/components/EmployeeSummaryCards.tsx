@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/language-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, UserCheck, Clock, UserX } from "lucide-react";
 import { type Employee, type Shift } from "@/components/pos-data-provider";
@@ -13,6 +14,7 @@ export function EmployeeSummaryCards({
   employees,
   shifts,
 }: EmployeeSummaryCardsProps) {
+  const { t } = useLanguage();
   const totalEmployees = employees.length;
   const activeEmployees = employees.filter((e) => e.isActive).length;
   const onShiftCount = shifts.filter((s) => s.status === "active").length;
@@ -20,31 +22,31 @@ export function EmployeeSummaryCards({
 
   const cards = [
     {
-      title: "Total Employees",
+      title: t("employees.totalEmployees"),
       value: totalEmployees.toString(),
       icon: Users,
-      description: "All employees",
+      description: t("employees.allEmployeesDesc"),
       className: "border-primary/20 bg-primary/5",
     },
     {
-      title: "Active Employees",
+      title: t("employees.activeEmployees"),
       value: activeEmployees.toString(),
       icon: UserCheck,
-      description: "Currently active",
+      description: t("employees.currentlyActive"),
       className: "border-green-500/20 bg-green-500/5",
     },
     {
-      title: "On Shift",
+      title: t("employees.onShift"),
       value: onShiftCount.toString(),
       icon: Clock,
-      description: "Currently working",
+      description: t("employees.currentlyWorking"),
       className: "border-blue-500/20 bg-blue-500/5",
     },
     {
-      title: "Inactive",
+      title: t("employees.inactiveLabel"),
       value: inactiveEmployees.toString(),
       icon: UserX,
-      description: "Inactive employees",
+      description: t("employees.inactiveEmployeesDesc"),
       className: "border-gray-500/20 bg-gray-500/5",
     },
   ];

@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/language-provider";
 import {
   Table,
   TableBody,
@@ -32,6 +33,7 @@ export function EmployeeTable({
   onDelete,
   itemVariants,
 }: EmployeeTableProps) {
+  const { t } = useLanguage();
   if (employees.length === 0) {
     return (
       <Empty>
@@ -39,9 +41,9 @@ export function EmployeeTable({
           <EmptyMedia variant="icon">
             <Users className="h-6 w-6" />
           </EmptyMedia>
-          <EmptyTitle>No employees found</EmptyTitle>
+          <EmptyTitle>{t("employees.noEmployeesFound")}</EmptyTitle>
           <EmptyDescription>
-            No employees match your current filters.
+            {t("employees.noEmployeesMatchFilters")}
           </EmptyDescription>
         </EmptyHeader>
       </Empty>
@@ -53,11 +55,11 @@ export function EmployeeTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[300px]">Employee</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Hire Date</TableHead>
-            <TableHead className="w-[70px]">Actions</TableHead>
+            <TableHead className="w-[300px] text-start">{t("employees.employeeHeader")}</TableHead>
+            <TableHead className="text-start">{t("employees.roleHeader")}</TableHead>
+            <TableHead className="text-start">{t("employees.statusHeader")}</TableHead>
+            <TableHead className="text-start">{t("employees.hireDateHeader")}</TableHead>
+            <TableHead className="w-[70px] text-end">{t("employees.actionsHeader")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

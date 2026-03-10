@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useLanguage } from "@/components/language-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import {
   Select,
   SelectContent,
@@ -45,6 +47,7 @@ export function CustomLineItemDialog({
   onClose,
   onSave,
 }: CustomLineItemDialogProps) {
+  const { t } = useLanguage();
   const [name, setName] = useState("");
   const [price, setPrice] = useState("0");
   const [quantity, setQuantity] = useState("1");
@@ -105,20 +108,20 @@ export function CustomLineItemDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>{title !== undefined ? title : t("sales.addCustomItem")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
-              <Label>Service / Item Name</Label>
+              <Label>{t("sales.customLineItemName")}</Label>
               <Input
-                placeholder="Custom service name"
+                placeholder={t("sales.customLineItemNamePlaceholder")}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label>Price</Label>
+              <Label>{t("sales.price")}</Label>
               <Input
                 type="number"
                 min="0"
@@ -128,7 +131,7 @@ export function CustomLineItemDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label>Quantity</Label>
+              <Label>{t("sales.quantity")}</Label>
               <Input
                 type="number"
                 min="0.01"
@@ -138,21 +141,21 @@ export function CustomLineItemDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label>Unit Label (optional)</Label>
+              <Label>{t("sales.unitLabelOptional")}</Label>
               <Input
-                placeholder="day, hour, service..."
+                placeholder={t("sales.unitLabelPlaceholder")}
                 value={unitLabel}
                 onChange={(event) => setUnitLabel(event.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label>Worker (optional)</Label>
+              <Label>{t("sales.workerOptional")}</Label>
               <Select value={workerId || "__none__"} onValueChange={(value) => setWorkerId(value === "__none__" ? "" : value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select worker" />
+                  <SelectValue placeholder={t("sales.selectWorker")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">None</SelectItem>
+                  <SelectItem value="__none__">{t("sales.none")}</SelectItem>
                   {workers.map((worker) => (
                     <SelectItem key={worker.id} value={worker.id}>
                       {worker.name}
@@ -162,38 +165,43 @@ export function CustomLineItemDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Service Type (optional)</Label>
+              <Label>{t("sales.serviceTypeOptional")}</Label>
               <Input
-                placeholder="Installation, Delivery, Labor..."
+                placeholder={t("sales.serviceTypePlaceholder")}
                 value={serviceType}
                 onChange={(event) => setServiceType(event.target.value)}
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>Notes (optional)</Label>
+              <Label>{t("sales.notesOptional")}</Label>
               <textarea
-                className="w-full rounded-[14px] border border-white/30 bg-white/20 px-3 py-2 text-sm text-slate-700 backdrop-blur-[16px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                className="w-full rounded-[14px] border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus-visible:outline-none focus-visible:border-slate-500"
                 rows={3}
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
               />
             </div>
-            <div className="flex items-center justify-between rounded-[14px] border border-white/30 bg-white/20 px-3 py-2">
-              <div>
-                <p className="text-sm font-medium text-slate-700">Taxable</p>
+            <SwitchRow className="rounded-[14px] border border-slate-300 bg-white px-3 py-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-slate-700">{t("sales.taxable")}</p>
                 <p className="text-xs text-slate-500">
-                  Apply sales tax to this line
+                  {t("sales.taxableDesc")}
                 </p>
               </div>
-              <Switch checked={taxable} onCheckedChange={setTaxable} />
-            </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="text-xs text-muted-foreground" aria-hidden>
+                  {taxable ? t("common.on") : t("common.off")}
+                </span>
+                <Switch checked={taxable} onCheckedChange={setTaxable} />
+              </div>
+            </SwitchRow>
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
-          <Button onClick={handleSave}>Save</Button>
+          <Button onClick={handleSave}>{t("common.save")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

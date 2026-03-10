@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/language-provider";
 import { motion } from "framer-motion";
 import { type Category } from "@/components/pos-data-provider";
 import { TableCell } from "@/components/ui/table";
@@ -27,6 +28,7 @@ export function CategoryTableRow({
   onDelete,
   variants,
 }: CategoryTableRowProps) {
+  const { t } = useLanguage();
   return (
     <motion.tr
       variants={variants}
@@ -34,17 +36,17 @@ export function CategoryTableRow({
       animate="show"
       exit={{ opacity: 0, height: 0 }}
     >
-      <TableCell>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
+      <TableCell className="text-start">
+        <div className="flex items-center gap-3 justify-start text-start">
+          <div className="w-8 h-8 rounded bg-muted flex items-center justify-center flex-shrink-0">
             <Tags className="h-4 w-4 text-muted-foreground" />
           </div>
           <p className="font-medium">{category.name}</p>
         </div>
       </TableCell>
-      <TableCell>{category.description || "-"}</TableCell>
-      <TableCell>{productCount}</TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-start">{category.description || "-"}</TableCell>
+      <TableCell className="text-start">{productCount}</TableCell>
+      <TableCell className="text-end">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -53,15 +55,15 @@ export function CategoryTableRow({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onEdit(category)}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
+              <Edit className="me-2 h-4 w-4" />
+              {t("common.edit")}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"
               onClick={() => onDelete(category)}
             >
-              <Trash2 className="mr-2 h-4 w-4"  color="white"/>
-              Delete
+              <Trash2 className="me-2 h-4 w-4" />
+              {t("common.delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

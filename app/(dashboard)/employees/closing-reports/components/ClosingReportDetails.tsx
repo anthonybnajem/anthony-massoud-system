@@ -8,6 +8,7 @@ import {
   type Employee,
   type Shift,
 } from "@/components/pos-data-provider";
+import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import {
   DollarSign,
@@ -29,6 +30,7 @@ export function ClosingReportDetails({
   employee,
   shift,
 }: ClosingReportDetailsProps) {
+  const { t } = useTranslation();
   const averageTransaction =
     report.totalTransactions > 0
       ? report.totalSales / report.totalTransactions
@@ -109,6 +111,22 @@ export function ClosingReportDetails({
                 ${averageTransaction.toFixed(2)}
               </div>
             </div>
+            {(report.expenseOut !== undefined || report.incomeNet !== undefined) && (
+              <>
+                <div className="p-4 rounded-lg bg-amber-500/5 border-2 border-amber-500/20">
+                  <div className="text-sm text-muted-foreground">{t("reports.expenseOut")}</div>
+                  <div className="text-2xl font-bold text-amber-600">
+                    ${Math.abs(report.expenseOut ?? 0).toFixed(2)}
+                  </div>
+                </div>
+                <div className="p-4 rounded-lg bg-emerald-500/5 border-2 border-emerald-500/20">
+                  <div className="text-sm text-muted-foreground">{t("reports.incomeNet")}</div>
+                  <div className="text-2xl font-bold text-emerald-600">
+                    ${(report.incomeNet ?? report.totalSales).toFixed(2)}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

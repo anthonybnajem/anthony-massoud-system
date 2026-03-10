@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import {
   Select,
   SelectContent,
@@ -126,14 +127,14 @@ export function BarcodeSettingsCard({
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 pt-2">
+        <SwitchRow switchFirst className="pt-2">
           <Switch
             id="preview"
             checked={showPreview}
             onCheckedChange={onShowPreviewChange}
           />
           <Label htmlFor="preview">Show Preview</Label>
-        </div>
+        </SwitchRow>
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button variant="outline" onClick={onClearSelection}>

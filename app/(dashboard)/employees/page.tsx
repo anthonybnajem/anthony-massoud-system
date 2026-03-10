@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { usePosData, type Employee } from "@/components/pos-data-provider";
+import { useLanguage } from "@/components/language-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { EditEmployeeDialog } from "./components/EditEmployeeDialog";
 import { DeleteEmployeeDialog } from "./components/DeleteEmployeeDialog";
 
 export default function EmployeesPage() {
+  const { t } = useLanguage();
   const { employees, shifts, addEmployee, updateEmployee, removeEmployee } =
     usePosData();
   const [searchQuery, setSearchQuery] = useState("");
@@ -84,8 +86,6 @@ export default function EmployeesPage() {
     hidden: { y: 20, opacity: 0 },
     show: { y: 0, opacity: 1 },
   };
-  return  <h1 className="text-2xl font-bold tracking-tight">Coming Soon!</h1>
-
   return (
     <motion.div
       variants={containerVariants}
@@ -99,9 +99,9 @@ export default function EmployeesPage() {
           <div className="flex items-center gap-3 mb-2">
             <Users className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Employees</h1>
+              <h1 className="text-3xl font-bold tracking-tight">{t("employees.title")}</h1>
               <p className="text-muted-foreground mt-1">
-                Manage your employees and their information
+                {t("employees.subtitle")}
               </p>
             </div>
           </div>
@@ -110,7 +110,7 @@ export default function EmployeesPage() {
             className="gap-2 shadow-sm"
           >
             <UserPlus className="h-4 w-4" />
-            Add Employee
+            {t("employees.addEmployee")}
           </Button>
         </div>
       </motion.div>
@@ -145,10 +145,10 @@ export default function EmployeesPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
-                Employee List
+                {t("employees.employeeList")}
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                {filteredEmployees.length} of {employees.length} employees
+                {filteredEmployees.length}{t("receipts.of")}{employees.length} {t("employees.employeesCount")}
               </p>
             </div>
           </CardHeader>

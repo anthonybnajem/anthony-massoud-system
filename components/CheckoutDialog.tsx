@@ -8,11 +8,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useLanguage } from "@/components/language-provider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import { User, Mail, Phone, Pencil, ReceiptText, Trash2 } from "lucide-react";
 import type { Worker } from "@/components/pos-data-provider";
 
@@ -89,6 +91,10 @@ interface CheckoutDialogProps {
   workers?: Worker[];
   currencySymbol: string;
   handleCheckout: () => void;
+  paymentStatus: "paid" | "unpaid" | "partially_paid";
+  setPaymentStatus: (status: "paid" | "unpaid" | "partially_paid") => void;
+  amountPaid: number;
+  setAmountPaid: (value: number) => void;
 }
 
 export default function CheckoutDialog({
@@ -124,7 +130,12 @@ export default function CheckoutDialog({
   workers = [],
   currencySymbol,
   handleCheckout,
+  paymentStatus,
+  setPaymentStatus,
+  amountPaid,
+  setAmountPaid,
 }: CheckoutDialogProps) {
+  const { t } = useLanguage();
   const [autoApplyRentalDates, setAutoApplyRentalDates] = useState(false);
   const [editingRows, setEditingRows] = useState<Record<string, boolean>>({});
 
@@ -191,9 +202,9 @@ export default function CheckoutDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[98vw] max-w-6xl h-[94vh] overflow-hidden p-0 gap-0 flex flex-col bg-white text-slate-900 border-slate-200">
         <DialogHeader className="px-5 py-4 border-b border-slate-200 bg-white">
-          <DialogTitle className="text-2xl">Complete Checkout</DialogTitle>
+          <DialogTitle className="text-2xl">{t("checkout.title")}</DialogTitle>
           <DialogDescription className="text-slate-600">
-            Review and edit the full receipt before confirming payment.
+            {t("checkout.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -204,7 +215,7 @@ export default function CheckoutDialog({
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-semibold flex items-center gap-2">
                     <User className="h-4 w-4 text-primary" />
-                    Customer Information
+                    {t("checkout.customerInfo")}
                   </h4>
                   <Button
                     variant="ghost"
@@ -212,7 +223,7 @@ export default function CheckoutDialog({
                     className="h-7 text-xs"
                     onClick={() => setIsCustomerDialogOpen(true)}
                   >
-                    Edit
+                    {t("common.edit")}
                   </Button>
                 </div>
                 <div className="space-y-2">
@@ -243,16 +254,16 @@ export default function CheckoutDialog({
                 onClick={() => setIsCustomerDialogOpen(true)}
               >
                 <User className="mr-2 h-4 w-4" />
-                Add Customer Information
+                {t("checkout.addCustomerInfo")}
               </Button>
             )}
 
             {hasRentalItems && (
               <div className="space-y-3 rounded-lg border border-slate-200 p-4 bg-white">
-                <h4 className="text-sm font-semibold">Default Rental Period</h4>
+                <h4 className="text-sm font-semibold">{t("checkout.defaultRentalPeriod")}</h4>
                 <div className="grid gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-500">From</label>
+                    <label className="text-xs text-slate-500">{t("checkout.from")}</label>
                     <Input
                       type="datetime-local"
                       className={checkoutInputClass}
@@ -261,7 +272,7 @@ export default function CheckoutDialog({
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs text-slate-500">To</label>
+                    <label className="text-xs text-slate-500">{t("checkout.to")}</label>
                     <Input
                       type="datetime-local"
                       className={checkoutInputClass}
@@ -270,24 +281,24 @@ export default function CheckoutDialog({
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2">
+                <SwitchRow className="rounded-md border border-slate-200 px-3 py-2">
                   <div>
-                    <p className="text-sm font-medium">Apply To All Rental Items</p>
+                    <p className="text-sm font-medium">{t("checkout.applyToAllRental")}</p>
                     <p className="text-xs text-slate-500">
-                      Keep all rental lines synced with default dates
+                      {t("checkout.applyToAllRentalDesc")}
                     </p>
                   </div>
                   <Switch
                     checked={autoApplyRentalDates}
                     onCheckedChange={setAutoApplyRentalDates}
                   />
-                </div>
+                </SwitchRow>
               </div>
             )}
 
             <div className="space-y-3 bg-white p-4 rounded-lg border border-slate-200">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-slate-500">Subtotal:</span>
+                <span className="text-slate-500">{t("cart.subtotal")}</span>
                 <span className="font-medium text-slate-900">
                   {currencySymbol}
                   {cartSubtotal.toFixed(2)}
@@ -298,7 +309,7 @@ export default function CheckoutDialog({
                   <Separator className="my-2 bg-slate-200" />
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-slate-500">
-                      Discount{" "}
+                      {t("cart.discount")}{" "}
                       {discountLabel
                         ? `(${discountLabel})`
                         : discountType === "percentage"
@@ -314,7 +325,7 @@ export default function CheckoutDialog({
               )}
               <Separator className="my-2 bg-slate-200" />
               <div className="flex justify-between items-center text-sm">
-                <span className="text-slate-500">Tax ({taxRate}%):</span>
+                <span className="text-slate-500">{t("cart.tax")} ({taxRate}%):</span>
                 <span className="font-medium text-slate-900">
                   {currencySymbol}
                   {taxAmount.toFixed(2)}
@@ -323,12 +334,62 @@ export default function CheckoutDialog({
               <Separator className="my-3 bg-slate-200" />
               <div className="flex justify-between items-center pt-2 border-t border-slate-200">
                 <span className="font-semibold text-base text-slate-900">
-                  Total Amount:
+                  {t("cart.totalAmount")}
                 </span>
                 <span className="text-2xl font-bold text-slate-900">
                   {currencySymbol}
                   {cartTotal.toFixed(2)}
                 </span>
+              </div>
+
+              <Separator className="my-3 bg-slate-200" />
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  {t("checkout.paymentStatus")}
+                </label>
+                <div className="flex flex-col gap-2">
+                  {(["paid", "unpaid", "partially_paid"] as const).map((status) => (
+                    <label
+                      key={status}
+                      className="flex items-center gap-2 cursor-pointer text-sm"
+                    >
+                      <input
+                        type="radio"
+                        name="paymentStatus"
+                        checked={paymentStatus === status}
+                        onChange={() => setPaymentStatus(status)}
+                        className="h-4 w-4 border-slate-400 text-primary"
+                      />
+                      <span>{t(`checkout.paymentStatus.${status}`)}</span>
+                    </label>
+                  ))}
+                </div>
+                {paymentStatus === "partially_paid" && (
+                  <div className="pt-2 space-y-1">
+                    <label className="text-xs text-slate-500">
+                      {t("checkout.amountPaid")}
+                    </label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={cartTotal}
+                      step={0.01}
+                      className={checkoutInputClass}
+                      value={amountPaid === 0 ? "" : amountPaid}
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value);
+                        setAmountPaid(Number.isNaN(v) ? 0 : Math.max(0, Math.min(cartTotal, v)));
+                      }}
+                      placeholder="0"
+                    />
+                    {amountPaid > 0 && (
+                      <p className="text-xs text-slate-500">
+                        {t("checkout.balanceDue")}: {currencySymbol}
+                        {(cartTotal - amountPaid).toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -337,7 +398,7 @@ export default function CheckoutDialog({
             <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between sticky top-0 z-10">
               <h4 className="font-semibold flex items-center gap-2">
                 <ReceiptText className="h-4 w-4 text-primary" />
-                Full Receipt
+                {t("checkout.fullReceipt")}
               </h4>
               <div className="flex items-center gap-3">
                 {onAddCustomLine && (
@@ -347,12 +408,11 @@ export default function CheckoutDialog({
                     className="h-7 text-[11px]"
                     onClick={onAddCustomLine}
                   >
-                    Add Custom Item
+                    {t("cart.addCustomItem")}
                   </Button>
                 )}
                 <span className="text-xs text-slate-500">
-                  {receiptItems.length} line
-                  {receiptItems.length === 1 ? "" : "s"}
+                  {receiptItems.length} {receiptItems.length === 1 ? t("checkout.line") : t("checkout.lines")}
                 </span>
               </div>
             </div>
@@ -378,27 +438,27 @@ export default function CheckoutDialog({
                         ) : null}
                       </p>
                       <p className="text-[11px] text-slate-500">
-                        {item.quantity} {item.unitLabel || "unit"} × {currencySymbol}
+                        {item.quantity} {item.unitLabel || t("common.unit")} × {currencySymbol}
                         {item.unitPrice.toFixed(2)}
                         {!isCustom && (
                           <>
                             {" • "}
-                            Stock:{" "}
+                            {t("checkout.stock")}:{" "}
                             {typeof item.stock === "number" ? item.stock : "—"}{" "}
-                            {item.unitLabel || "unit"}
+                            {item.unitLabel || t("common.unit")}
                           </>
                         )}
                       </p>
                       {isCustom && (item.customLine?.serviceType || item.customLine?.workerName) && (
                         <p className="text-[11px] text-slate-500">
-                          {item.customLine?.serviceType || "Custom"}
+                          {item.customLine?.serviceType || t("checkout.custom")}
                           {item.customLine?.workerName
                             ? ` • ${item.customLine.workerName}`
                             : ""}
                         </p>
                       )}
                     </div>
-                    <div className="text-right">
+                    <div className="text-end">
                       <div className="flex items-center justify-end gap-1">
                         <span className="text-[11px] font-semibold text-slate-900 px-1.5">
                           {currencySymbol}
@@ -417,7 +477,7 @@ export default function CheckoutDialog({
                           }
                         >
                           <Pencil className="h-3 w-3 mr-1" />
-                          {isEditing ? "Done" : "Edit"}
+                          {isEditing ? t("common.done") : t("common.edit")}
                         </Button>
                         <Button
                           type="button"
@@ -435,7 +495,7 @@ export default function CheckoutDialog({
                   <div className="grid gap-0.5 md:grid-cols-3">
                     <div className="space-y-0 md:col-span-1">
                       <label className="text-[11px] text-slate-500">
-                        Qty ({item.unitLabel || "unit"})
+                        {t("checkout.qty")} ({item.unitLabel || t("common.unit")})
                       </label>
                       {isEditing ? (
                         <Input
@@ -453,16 +513,16 @@ export default function CheckoutDialog({
                         />
                       ) : (
                         <div className="h-8 px-0.5 flex items-center text-xs">
-                          {item.quantity} {item.unitLabel || "unit"}
+                          {item.quantity} {item.unitLabel || t("common.unit")}
                         </div>
                       )}
                     </div>
                     <div className="space-y-0 md:col-span-2">
-                      <label className="text-[11px] text-slate-500">Type</label>
+                      <label className="text-[11px] text-slate-500">{t("checkout.type")}</label>
                       {isEditing ? (
                         <div className="h-8 rounded-md border border-slate-200 px-1.5 flex items-center gap-1">
                           {isCustom ? (
-                            <Badge>Custom Line</Badge>
+                            <Badge>{t("checkout.customLine")}</Badge>
                           ) : (
                             <>
                               <Button
@@ -474,7 +534,7 @@ export default function CheckoutDialog({
                                   onReceiptItemModeChange?.(item.id, false)
                                 }
                               >
-                                Sell
+                                {t("checkout.sell")}
                               </Button>
                               <Button
                                 type="button"
@@ -485,7 +545,7 @@ export default function CheckoutDialog({
                                   onReceiptItemModeChange?.(item.id, true)
                                 }
                               >
-                                Rent
+                                {t("checkout.rent")}
                               </Button>
                             </>
                           )}
@@ -493,11 +553,11 @@ export default function CheckoutDialog({
                       ) : (
                         <div className="h-8 px-0.5 flex items-center text-xs">
                           {isCustom ? (
-                            <Badge>Custom Line</Badge>
+                            <Badge>{t("checkout.customLine")}</Badge>
                           ) : item.isRental ? (
-                            <Badge>Rental Line</Badge>
+                            <Badge>{t("checkout.rentalLine")}</Badge>
                           ) : (
-                            <span className="text-slate-500">Sale Line</span>
+                            <span className="text-slate-500">{t("checkout.saleLine")}</span>
                           )}
                         </div>
                       )}
@@ -508,7 +568,7 @@ export default function CheckoutDialog({
                     <div className="grid gap-2 md:grid-cols-2 border border-slate-200 rounded-md p-2.5 bg-slate-50/60">
                       <div className="space-y-1 md:col-span-2">
                         <label className="text-[11px] text-slate-500">
-                          Custom Item Name
+                          {t("checkout.customItemName")}
                         </label>
                         <Input
                           className={checkoutInputClass}
@@ -551,7 +611,7 @@ export default function CheckoutDialog({
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] text-slate-500">
-                          Service Type
+                          {t("checkout.serviceType")}
                         </label>
                         <Input
                           className={checkoutInputClass}
@@ -565,7 +625,7 @@ export default function CheckoutDialog({
                       </div>
                       <div className="space-y-1">
                         <label className="text-[11px] text-slate-500">
-                          Worker
+                          {t("checkout.worker")}
                         </label>
                         {workers.length > 0 ? (
                           <div className="h-8">
@@ -582,7 +642,7 @@ export default function CheckoutDialog({
                                 })
                               }
                             >
-                              <option value="">None</option>
+                              <option value="">{t("checkout.none")}</option>
                               {workers.map((worker) => (
                                 <option key={worker.id} value={worker.id}>
                                   {worker.name}
@@ -604,7 +664,7 @@ export default function CheckoutDialog({
                       </div>
                       <div className="space-y-1 md:col-span-2">
                         <label className="text-[11px] text-slate-500">
-                          Notes
+                          {t("cart.notes")}
                         </label>
                         <textarea
                           className="w-full rounded-md !border !border-slate-400 bg-white px-2 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:!ring-0 focus:!border-slate-500"
@@ -615,13 +675,13 @@ export default function CheckoutDialog({
                           }
                         />
                       </div>
-                      <div className="flex items-center justify-between rounded-md border border-slate-200 px-2 py-1 md:col-span-2">
+                      <SwitchRow className="rounded-md border border-slate-200 px-2 py-1 md:col-span-2">
                         <div>
                           <p className="text-[11px] font-medium text-slate-900">
-                            Taxable
+                            {t("checkout.taxable")}
                           </p>
                           <p className="text-[10px] text-slate-500">
-                            Apply sales tax to this line
+                            {t("checkout.applySalesTax")}
                           </p>
                         </div>
                         <Switch
@@ -632,19 +692,19 @@ export default function CheckoutDialog({
                             handleCustomUpdate(item, { taxable: value })
                           }
                         />
-                      </div>
+                      </SwitchRow>
                     </div>
                   )}
 
                   {item.isRental && isEditing && !isCustom && (
                     <details className="rounded-md border border-slate-200 bg-slate-50">
                       <summary className="cursor-pointer select-none px-2.5 py-1.5 text-[11px] text-slate-500">
-                        Rental Start / Rental End
+                        {t("checkout.rentalStartEnd")}
                       </summary>
                       <div className="grid gap-2 md:grid-cols-2 p-2.5 border-t border-slate-200">
                         <div className="space-y-1">
                           <label className="text-[11px] text-slate-500">
-                            Rental Start
+                            {t("checkout.rentalStart")}
                           </label>
                           <Input
                             type="datetime-local"
@@ -659,7 +719,7 @@ export default function CheckoutDialog({
                         </div>
                         <div className="space-y-1">
                           <label className="text-[11px] text-slate-500">
-                            Rental End
+                            {t("checkout.rentalEnd")}
                           </label>
                           <Input
                             type="datetime-local"
@@ -683,10 +743,10 @@ export default function CheckoutDialog({
 
         <DialogFooter className="gap-2 px-5 py-3 border-t border-slate-200 bg-white justify-end">
           <Button variant="outline" onClick={onClose} className="sm:min-w-28">
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleCheckout} className="sm:min-w-36 h-10 shadow-md">
-            Complete Purchase
+            {t("checkout.completePurchase")}
           </Button>
         </DialogFooter>
       </DialogContent>

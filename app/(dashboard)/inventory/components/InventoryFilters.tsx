@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Search } from "lucide-react";
 import { type Category } from "@/components/pos-data-provider";
+import { useLanguage } from "@/components/language-provider";
 
 interface InventoryFiltersProps {
   searchQuery: string;
@@ -34,27 +35,26 @@ export function InventoryFilters({
   onSortByChange,
   categories,
 }: InventoryFiltersProps) {
+  const { t } = useLanguage();
   return (
     <div className="flex flex-col gap-4">
-      {/* Search Bar */}
       <div className="relative flex-1 min-w-0">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
-          placeholder="Search products by name, SKU, barcode..."
+          placeholder={t("inventory.searchPlaceholder")}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-9 h-11 border-2 focus:border-primary transition-colors"
         />
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <Select value={filterCategory} onValueChange={onFilterCategoryChange}>
           <SelectTrigger className="w-[180px] border-2">
-            <SelectValue placeholder="Category" />
+            <SelectValue placeholder={t("products.category")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">{t("inventory.allCategories")}</SelectItem>
             {categories.map((category) => (
               <SelectItem key={category.id} value={category.id}>
                 {category.name}
@@ -65,25 +65,25 @@ export function InventoryFilters({
 
         <Select value={stockStatus} onValueChange={onStockStatusChange}>
           <SelectTrigger className="w-[180px] border-2">
-            <SelectValue placeholder="Stock Status" />
+            <SelectValue placeholder={t("inventory.stockStatus")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="in_stock">In Stock</SelectItem>
-            <SelectItem value="low_stock">Low Stock</SelectItem>
-            <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+            <SelectItem value="all">{t("inventory.allStatus")}</SelectItem>
+            <SelectItem value="in_stock">{t("inventory.inStock")}</SelectItem>
+            <SelectItem value="low_stock">{t("inventory.lowStock")}</SelectItem>
+            <SelectItem value="out_of_stock">{t("inventory.outOfStock")}</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={sortBy} onValueChange={onSortByChange}>
           <SelectTrigger className="w-[180px] border-2">
-            <SelectValue placeholder="Sort by" />
+            <SelectValue placeholder={t("inventory.sortBy")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="name">Name</SelectItem>
-            <SelectItem value="stock">Stock Level</SelectItem>
-            <SelectItem value="category">Category</SelectItem>
-            <SelectItem value="value">Value</SelectItem>
+            <SelectItem value="name">{t("inventory.name")}</SelectItem>
+            <SelectItem value="stock">{t("inventory.stockLevel")}</SelectItem>
+            <SelectItem value="category">{t("products.category")}</SelectItem>
+            <SelectItem value="value">{t("inventory.value")}</SelectItem>
           </SelectContent>
         </Select>
       </div>

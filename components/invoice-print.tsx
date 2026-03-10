@@ -14,6 +14,7 @@ import type { Sale } from "./pos-data-provider";
 import type { Product } from "@/lib/db";
 import { formatQuantityWithLabel, getProductUnitPrice } from "@/lib/product-measurements";
 import { useToast } from "@/components/ui/use-toast";
+import { useLanguage } from "@/components/language-provider";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
 import { useDiscount } from "@/components/discount-provider";
 import html2canvas from "html2canvas";
@@ -31,6 +32,7 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
   const invoiceRef = useRef<HTMLDivElement>(null);
   const clearReceiptRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { t } = useLanguage();
   const { settings } = useReceiptSettings();
   const { discounts } = useDiscount();
   const [receiptNumber, setReceiptNumber] = useState("");
@@ -66,7 +68,7 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
     if (!sourceRef) {
       toast({
         title: toastMessages.error.title,
-        description: "No receipt content available.",
+        description: t("alerts.noReceiptContent"),
         variant: "destructive",
       });
       return;
@@ -182,16 +184,16 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
       setIsPrinting(true);
       await processReceiptPdf("print", {
         preparing: {
-          title: "Preparing Print",
-          description: "Generating a printable receipt...",
+          title: t("alerts.preparingPrint"),
+          description: t("alerts.generatingReceipt"),
         },
         success: {
-          title: "Sent to Printer",
-          description: "The receipt has been opened in a print window.",
+          title: t("alerts.sentToPrinter"),
+          description: t("alerts.receiptOpenedForPrint"),
         },
         error: {
-          title: "Print Failed",
-          description: "Unable to generate the receipt for printing.",
+          title: t("alerts.printFailed"),
+          description: t("alerts.unableToGenerateReceipt"),
         },
       });
     } finally {
@@ -204,16 +206,16 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
       setIsDownloading(true);
       await processReceiptPdf("download", {
         preparing: {
-          title: "Preparing PDF",
-          description: "Generating a printable receipt preview...",
+          title: t("alerts.preparingPdf"),
+          description: t("alerts.generatingPdfPreview"),
         },
         success: {
-          title: "Download Ready",
-          description: "Your receipt PDF has been saved.",
+          title: t("alerts.downloadReady"),
+          description: t("alerts.receiptPdfSaved"),
         },
         error: {
-          title: "Download Failed",
-          description: "Unable to generate the receipt PDF. Please try again.",
+          title: t("alerts.downloadFailed"),
+          description: t("alerts.unableToGeneratePdf"),
         },
       });
     } finally {
@@ -233,21 +235,21 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
           url: window.location.href,
         });
         toast({
-          title: "Receipt Shared",
-          description: "The receipt has been shared successfully.",
+          title: t("alerts.receiptShared"),
+          description: t("alerts.receiptSharedSuccess"),
         });
       } catch (error) {
         console.error("Error sharing:", error);
         toast({
-          title: "Share Failed",
-          description: "Failed to share the receipt.",
+          title: t("alerts.shareFailed"),
+          description: t("alerts.failedToShareReceipt"),
           variant: "destructive",
         });
       }
     } else {
       toast({
-        title: "Share Not Supported",
-        description: "Your browser does not support the Web Share API.",
+        title: t("alerts.shareNotSupported"),
+        description: t("alerts.shareNotSupportedDesc"),
         variant: "destructive",
       });
     }
@@ -260,16 +262,16 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
         "download",
         {
           preparing: {
-            title: "Preparing Detailed PDF",
-            description: "Rendering a larger and clearer receipt...",
+            title: t("alerts.preparingDetailedPdf"),
+            description: t("alerts.renderingDetailedReceipt"),
           },
           success: {
-            title: "Detailed PDF Ready",
-            description: "Your detailed receipt PDF has been saved.",
+            title: t("alerts.detailedPdfReady"),
+            description: t("alerts.detailedPdfSaved"),
           },
           error: {
-            title: "Detailed PDF Failed",
-            description: "Unable to generate the detailed receipt PDF.",
+            title: t("alerts.detailedPdfFailed"),
+            description: t("alerts.unableDetailedPdf"),
           },
         },
         "clear"
@@ -286,16 +288,16 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
         "print",
         {
           preparing: {
-            title: "Preparing Detailed Print",
-            description: "Rendering a larger and clearer printable receipt...",
+            title: t("alerts.preparingDetailedPrint"),
+            description: t("alerts.renderingDetailedPrint"),
           },
           success: {
-            title: "Detailed Print Ready",
-            description: "The detailed receipt has been opened for printing.",
+            title: t("alerts.detailedPrintReady"),
+            description: t("alerts.detailedPrintOpened"),
           },
           error: {
-            title: "Detailed Print Failed",
-            description: "Unable to generate the detailed printable receipt.",
+            title: t("alerts.detailedPrintFailed"),
+            description: t("alerts.unableDetailedPrint"),
           },
         },
         "clear"
@@ -325,10 +327,10 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-2">Item</th>
+              <th className="text-start py-2">Item</th>
               <th className="text-center py-2">Qty</th>
-              <th className="text-right py-2">Price</th>
-              <th className="text-right py-2">Total</th>
+              <th className="text-end py-2">Price</th>
+              <th className="text-end py-2">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -349,11 +351,11 @@ export function InvoicePrint({ sale, isOpen, onClose }: InvoicePrintProps) {
                       item.quantity
                     )}
                   </td>
-                  <td className="text-right py-2">
+                  <td className="text-end py-2">
                     {settings?.currencySymbol || "$"}
                     {unitPrice.toFixed(2)}
                   </td>
-                  <td className="text-right py-2">
+                  <td className="text-end py-2">
                     {settings?.currencySymbol || "$"}
                     {(unitPrice * item.quantity).toFixed(2)}
                   </td>

@@ -1,7 +1,8 @@
 "use client";
 
+import { useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { useLanguage } from "@/components/language-provider";
 import { type Category } from "@/components/pos-data-provider";
 
 interface CategoryFilterProps {
@@ -12,39 +13,55 @@ interface CategoryFilterProps {
 }
 
 export function CategoryFilter({
-  categories,
+  categories: categoriesProp,
   activeCategory,
   onCategoryChange,
   isTablet = false,
 }: CategoryFilterProps) {
+  const { t } = useLanguage();
+  const categories = Array.isArray(categoriesProp) ? categoriesProp : [];
+
+  const handleAllClick = useCallback(() => {
+    onCategoryChange("all");
+  }, [onCategoryChange]);
+
+  const handleCategoryClick = useCallback(
+    (categoryId: string) => {
+      onCategoryChange(categoryId);
+    },
+    [onCategoryChange]
+  );
+
   return (
-    <div className="w-full">
-      <ScrollArea className="w-full whitespace-nowrap overflow-x-auto min-w-0">
-        <div className="flex space-x-2 pb-1">
+    <div className="w-full min-w-0 overflow-hidden">
+      <div className="overflow-x-auto overflow-y-hidden pb-1 -mx-1 px-1">
+        <div className="flex gap-2 w-max min-w-full whitespace-nowrap">
           <Button
+            type="button"
             variant={activeCategory === "all" ? "default" : "outline"}
             size={isTablet ? "default" : "sm"}
-            onClick={() => onCategoryChange("all")}
-            className={`rounded-full ${
+            onClick={handleAllClick}
+            className={`rounded-full flex-shrink-0 ${
               isTablet ? "h-10 px-5" : "h-9 px-4"
-            } font-medium transition-all shadow-sm hover:shadow-md ${
+            } font-medium transition-colors shadow-sm hover:shadow-md ${
               activeCategory === "all"
                 ? "bg-primary text-primary-foreground"
                 : ""
             }`}
           >
-            All Products
+            {t("sales.allProducts")}
           </Button>
 
           {categories.map((category) => (
             <Button
+              type="button"
               key={category.id}
               variant={activeCategory === category.id ? "default" : "outline"}
               size={isTablet ? "default" : "sm"}
-              onClick={() => onCategoryChange(category.id)}
-              className={`rounded-full ${
+              onClick={() => handleCategoryClick(category.id)}
+              className={`rounded-full flex-shrink-0 ${
                 isTablet ? "h-10 px-5" : "h-9 px-4"
-              } font-medium transition-all shadow-sm hover:shadow-md ${
+              } font-medium transition-colors shadow-sm hover:shadow-md ${
                 activeCategory === category.id ? "scale-105" : ""
               }`}
               style={
@@ -62,7 +79,7 @@ export function CategoryFilter({
                       borderWidth:
                         activeCategory === category.id ? "2px" : "1px",
                     }
-                  : {}
+                  : undefined
               }
             >
               {category.icon && <span className="mr-1.5">{category.icon}</span>}
@@ -70,8 +87,7 @@ export function CategoryFilter({
             </Button>
           ))}
         </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+      </div>
     </div>
   );
 }

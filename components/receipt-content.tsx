@@ -135,10 +135,10 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
             <table className="receipt-table receipt-items w-full text-sm" style={{ borderCollapse: "separate" }}>
               <thead>
                 <tr>
-                  <th className="text-left">Item</th>
+                  <th className="text-start">Item</th>
                   <th className="text-center">Qty</th>
-                  <th className="text-right">Price</th>
-                  <th className="text-right">Total</th>
+                  <th className="text-end">Price</th>
+                  <th className="text-end">Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -155,7 +155,7 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
                   return (
                     <tr key={index}>
                       <td
-                        className="text-left"
+                        className="text-start"
                         style={{
                           ...cellStyle,
                           whiteSpace: "normal",
@@ -167,11 +167,11 @@ export const ReceiptContent = forwardRef<HTMLDivElement, ReceiptContentProps>(
                       <td className="text-center" style={cellStyle}>
                         {lineItem.quantityDisplay ?? lineItem.quantity}
                       </td>
-                      <td className="text-right" style={cellStyle}>
+                      <td className="text-end" style={cellStyle}>
                         {data.currencySymbol}
                         {lineItem.price.toFixed(2)}
                       </td>
-                      <td className="text-right" style={cellStyle}>
+                      <td className="text-end" style={cellStyle}>
                         {data.currencySymbol}
                         {(
                           lineItem.total ?? lineItem.price * lineItem.quantity

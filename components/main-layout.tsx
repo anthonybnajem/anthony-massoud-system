@@ -11,9 +11,36 @@ import { Button } from "@/components/ui/button"
 import { usePosData } from "./pos-data-provider"
 import { useSubscription } from "./subscription-provider"
 import { useLicense } from "./license-provider"
+import { useLanguage } from "./language-provider"
 import { Loader2, AlertCircle, Wifi, WifiOff } from "lucide-react"
 import { StoreSelector } from "./store-selector"
 import { mockApi } from "@/lib/mock-api"
+import type { TranslationKey } from "@/lib/translations"
+
+const PATHNAME_TO_HEADER: Record<string, TranslationKey> = {
+  "/dashboard": "header.dashboard",
+  "/sales": "header.sales",
+  "/products": "header.products",
+  "/categories": "header.categories",
+  "/reports": "header.reports",
+  "/settings": "header.settings",
+  "/expenses": "header.expenses",
+  "/customers": "header.customers",
+  "/projects": "header.projects",
+  "/workers": "header.workers",
+  "/services": "header.services",
+  "/inventory": "header.inventory",
+  "/discounts": "header.discounts",
+  "/barcode-generator": "header.barcodeGenerator",
+  "/receipt-designer": "header.receiptDesigner",
+  "/receipts": "header.recentReceipts",
+  "/data-export": "header.dataExport",
+  "/tutorial": "header.tutorial",
+}
+
+function getHeaderTitle(pathname: string, t: (k: TranslationKey) => string): string {
+  return PATHNAME_TO_HEADER[pathname] ? t(PATHNAME_TO_HEADER[pathname]) : ""
+}
 
 export default function MainLayout({
   children,
@@ -23,6 +50,7 @@ export default function MainLayout({
   const [isSyncing, setIsSyncing] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const pathname = usePathname()
+  const { t } = useLanguage()
   const { syncToCloud } = usePosData()
   const { canUseEnterpriseFeatures, addSyncRecord, stores } = useSubscription()
   const { licenseInfo, licenseStatus } = useLicense()
@@ -47,12 +75,12 @@ export default function MainLayout({
 
   const handleSync = async () => {
     if (!canUseEnterpriseFeatures) {
-      addSyncRecord("failed", "Cloud sync is an Enterprise feature")
+      addSyncRecord("failed", t("sync.enterpriseOnly"))
       return
     }
 
     if (!isOnline) {
-      addSyncRecord("failed", "Cannot sync while offline")
+      addSyncRecord("failed", t("sync.offline"))
       return
     }
 
@@ -65,15 +93,15 @@ export default function MainLayout({
 
         if (response.success) {
           await syncToCloud()
-          addSyncRecord("success", "Data successfully synced to cloud")
+          addSyncRecord("success", t("sync.success"))
         } else {
-          addSyncRecord("failed", response.error || "Failed to sync data to cloud")
+          addSyncRecord("failed", response.error || t("sync.failed"))
         }
       } else {
-        addSyncRecord("failed", "No valid license found")
+        addSyncRecord("failed", t("sync.noLicense"))
       }
     } catch (error) {
-      addSyncRecord("failed", "Failed to sync data to cloud")
+      addSyncRecord("failed", t("sync.failed"))
     } finally {
       setIsSyncing(false)
     }
@@ -91,13 +119,7 @@ export default function MainLayout({
         <header className="flex items-center justify-between px-6 py-3 border-b">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-semibold">
-              {pathname === "/dashboard" && "Dashboard"}
-              {pathname === "/sales" && "Sales"}
-              {pathname === "/products" && "Products"}
-              {pathname === "/categories" && "Categories"}
-              {pathname === "/reports" && "Reports"}
-              {pathname === "/settings" && "Settings"}
-              {/* {pathname === "/settings/subscription" && "Subscription"} */}
+              {getHeaderTitle(pathname, t)}
             </h1>
             {stores.length > 1 && <StoreSelector />}
           </div>
@@ -106,12 +128,12 @@ export default function MainLayout({
               {isOnline ? (
                 <div className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                   <Wifi className="h-3.5 w-3.5" />
-                  <span>Online</span>
+                  <span>{t("common.online")}</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
                   <WifiOff className="h-3.5 w-3.5" />
-                  <span>Offline</span>
+                  <span>{t("common.offline")}</span>
                 </div>
               )}
             </div>
@@ -125,14 +147,14 @@ export default function MainLayout({
               {isSyncing ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Syncing...
+                  {t("common.syncing")}
                 </>
               ) : (
                 <>
                   {(!canUseEnterpriseFeatures || licenseStatus !== "valid") && (
                     <AlertCircle className="w-3 h-3 absolute -top-1 -right-1 text-amber-500" />
                   )}
-                  Sync to Cloud
+                  {t("common.syncToCloud")}
                 </>
               )}
             </Button>

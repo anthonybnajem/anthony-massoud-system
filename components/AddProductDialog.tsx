@@ -19,6 +19,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/image-upload";
+import { useLanguage } from "@/components/language-provider";
 import type { Category, Product } from "@/lib/db";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
@@ -66,7 +67,7 @@ const productSchema = z.object({
   taxRate: z.number().min(0, "Tax rate must be a positive number").optional(),
   tags: z.array(z.string()).optional(),
   attributes: z.record(z.string(), z.string()).optional(),
-  saleType: z.enum(["item", "weight", "rental"]),
+  saleType: z.enum(["item", "weight", "rental", "item_and_rental"]),
   unitLabel: z.string().min(1, "Unit label is required"),
   unitIncrement: z
     .number()
@@ -104,6 +105,7 @@ export default function AddProductDialog({
   categories,
   handleAddProduct,
 }: AddProductDialogProps) {
+  const { t } = useLanguage();
   const [generatedBarcode, setGeneratedBarcode] = useState("");
 
   const generateBarcode = () => {
@@ -165,7 +167,7 @@ export default function AddProductDialog({
       ) {
         form.setValue("unitIncrement", DEFAULT_WEIGHT_INCREMENT);
       }
-    } else if (saleType === "rental") {
+    } else if (saleType === "rental" || saleType === "item_and_rental") {
       if (
         !form.getValues("unitLabel") ||
         form.getValues("unitLabel") === DEFAULT_ITEM_UNIT_LABEL ||
@@ -224,7 +226,7 @@ export default function AddProductDialog({
     if (pricingMode === "variation" && (!data.variations || data.variations.length === 0)) {
       form.setError("variations", {
         type: "manual",
-        message: "Add at least one variation",
+        message: t("products.addAtLeastOneVariation"),
       });
       return;
     }
@@ -246,10 +248,9 @@ export default function AddProductDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Add New Product</DialogTitle>
+          <DialogTitle className="text-2xl">{t("products.addNewProduct")}</DialogTitle>
           <DialogDescription>
-            Enter the details for the new product. All required fields are
-            marked with an asterisk.
+            {t("products.addNewProductDesc")}
           </DialogDescription>
         </DialogHeader>
 
@@ -257,9 +258,9 @@ export default function AddProductDialog({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Tabs defaultValue="basic" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="advanced">Advanced</TabsTrigger>
+                <TabsTrigger value="basic">{t("products.basicInfo")}</TabsTrigger>
+                <TabsTrigger value="details">{t("products.details")}</TabsTrigger>
+                <TabsTrigger value="advanced">{t("products.advanced")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="basic" className="space-y-4 mt-4">
@@ -269,10 +270,10 @@ export default function AddProductDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Product Name <span className="text-destructive">*</span>
+                        {t("products.productNameLabel")} <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter product name" {...field} />
+                        <Input placeholder={t("products.enterProductName")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -286,8 +287,8 @@ export default function AddProductDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Selling Price{" "}
-                          <span className="text-muted-foreground text-xs font-normal">(optional)</span>
+                          {t("products.sellingPrice")}{" "}
+                          <span className="text-muted-foreground text-xs font-normal">{t("products.optional")}</span>
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -302,7 +303,7 @@ export default function AddProductDialog({
                           />
                         </FormControl>
                         <FormDescription className="text-xs">
-                          Leave empty for rent-only items
+                          {t("products.leaveEmptyRentOnly")}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -315,7 +316,7 @@ export default function AddProductDialog({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Stock <span className="text-destructive">*</span>
+                          {t("products.stock")} <span className="text-destructive">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -334,7 +335,7 @@ export default function AddProductDialog({
                 </div>
 
                 <FormItem>
-                  <FormLabel>Pricing Setup</FormLabel>
+                  <FormLabel>{t("products.pricingSetup")}</FormLabel>
                   <Select
                     value={pricingMode}
                     onValueChange={(value) =>
@@ -343,19 +344,18 @@ export default function AddProductDialog({
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select pricing setup" />
+                        <SelectValue placeholder={t("products.selectPricingSetup")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="stable">Stable (Single Price)</SelectItem>
+                      <SelectItem value="stable">{t("products.stableSinglePrice")}</SelectItem>
                       <SelectItem value="variation">
-                        Variations (Size/Type Pricing)
+                        {t("products.variationsPricing")}
                       </SelectItem>
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Stable uses one product price. Variation mode sets separate
-                    sell/rental prices per variation.
+                    {t("products.stableVariationDesc")}
                   </FormDescription>
                 </FormItem>
 
@@ -364,25 +364,25 @@ export default function AddProductDialog({
                   name="saleType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Selling Method</FormLabel>
+                      <FormLabel>{t("products.sellingMethod")}</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select selling method" />
+                            <SelectValue placeholder={t("products.selectSellingMethod")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="item">Per Item</SelectItem>
-                          <SelectItem value="weight">By Weight</SelectItem>
-                          <SelectItem value="rental">Rental</SelectItem>
+                          <SelectItem value="item">{t("products.perItem")}</SelectItem>
+                          <SelectItem value="weight">{t("products.byWeight")}</SelectItem>
+                          <SelectItem value="rental">{t("products.rental")}</SelectItem>
+                          <SelectItem value="item_and_rental">{t("products.rentAndSale")}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Choose how cashiers should enter quantities for this
-                        product, including rentable items.
+                        {t("products.chooseQuantitiesCashier")}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -395,16 +395,15 @@ export default function AddProductDialog({
                     name="unitLabel"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Unit Label</FormLabel>
+                        <FormLabel>{t("products.unitLabel")}</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="e.g. unit, kg, m (meters)"
+                            placeholder={t("products.unitPlaceholder")}
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          Displayed next to quantity totals (e.g. kg, pcs, m
-                          for height).
+                          {t("products.unitLabelDesc")}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -416,7 +415,7 @@ export default function AddProductDialog({
                     name="unitIncrement"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Quantity Step</FormLabel>
+                        <FormLabel>{t("products.quantityStep")}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -430,8 +429,7 @@ export default function AddProductDialog({
                           />
                         </FormControl>
                         <FormDescription>
-                          Minimum amount added/removed per tap. Use decimals for
-                          weight-based products.
+                          {t("products.quantityStepDesc")}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -445,7 +443,7 @@ export default function AddProductDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Category <span className="text-destructive">*</span>
+                        {t("products.category")} <span className="text-destructive">*</span>
                       </FormLabel>
                       <Select
                         onValueChange={field.onChange}
@@ -453,7 +451,7 @@ export default function AddProductDialog({
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
+                            <SelectValue placeholder={t("products.selectCategoryPlaceholder")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -474,11 +472,11 @@ export default function AddProductDialog({
                   name="barcode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Barcode</FormLabel>
+                      <FormLabel>{t("products.barcodePlaceholder")}</FormLabel>
                       <div className="flex gap-2">
                         <FormControl>
                           <Input
-                            placeholder="Barcode"
+                            placeholder={t("products.barcodePlaceholder")}
                             {...field}
                             value={generatedBarcode || field.value || ""}
                             onChange={(e) => {
@@ -499,11 +497,11 @@ export default function AddProductDialog({
                             form.setValue("barcode", barcode);
                           }}
                         >
-                          Generate
+                          {t("products.generate")}
                         </Button>
                       </div>
                       <FormDescription>
-                        Optional. Leave blank to auto-generate.
+                        {t("products.barcodeOptionalDesc")}
                       </FormDescription>
                     </FormItem>
                   )}
@@ -514,16 +512,16 @@ export default function AddProductDialog({
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>{t("products.description")}</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Product description"
+                          placeholder={t("products.descriptionPlaceholder")}
                           className="min-h-[100px]"
                           {...field}
                         />
                       </FormControl>
                       <FormDescription>
-                        Optional. Describe your product in detail.
+                        {t("products.descriptionOptionalDesc")}
                       </FormDescription>
                     </FormItem>
                   )}
@@ -534,7 +532,7 @@ export default function AddProductDialog({
                   name="image"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Product Image</FormLabel>
+                      <FormLabel>{t("products.productImage")}</FormLabel>
                       <FormControl>
                         <ImageUpload
                           value={field.value || ""}
@@ -542,7 +540,7 @@ export default function AddProductDialog({
                         />
                       </FormControl>
                       <FormDescription>
-                        Upload a product image (optional).
+                        {t("products.imageOptionalDesc")}
                       </FormDescription>
                     </FormItem>
                   )}
@@ -556,12 +554,12 @@ export default function AddProductDialog({
                     name="sku"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>SKU</FormLabel>
+                        <FormLabel>{t("reports.sku")}</FormLabel>
                         <FormControl>
-                          <Input placeholder="SKU" {...field} />
+                          <Input placeholder={t("reports.sku")} {...field} />
                         </FormControl>
                         <FormDescription>
-                          Stock Keeping Unit (optional).
+                          {t("products.skuOptionalDesc")}
                         </FormDescription>
                       </FormItem>
                     )}
@@ -572,7 +570,7 @@ export default function AddProductDialog({
                     name="cost"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Cost</FormLabel>
+                        <FormLabel>{t("inventory.cost")}</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -585,7 +583,7 @@ export default function AddProductDialog({
                           />
                         </FormControl>
                         <FormDescription>
-                          Product cost price (optional).
+                          {t("products.costOptionalDesc")}
                         </FormDescription>
                       </FormItem>
                     )}
@@ -597,7 +595,7 @@ export default function AddProductDialog({
                   name="taxable"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Taxable</FormLabel>
+                      <FormLabel>{t("products.taxableLabel")}</FormLabel>
                       <Select
                         onValueChange={(value) =>
                           field.onChange(value === "true")
@@ -606,16 +604,16 @@ export default function AddProductDialog({
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select taxable status" />
+                            <SelectValue placeholder={t("products.selectTaxablePlaceholder")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="true">Yes</SelectItem>
-                          <SelectItem value="false">No</SelectItem>
+                          <SelectItem value="true">{t("common.yes")}</SelectItem>
+                          <SelectItem value="false">{t("common.no")}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Whether this product is taxable.
+                        {t("products.taxableDesc")}
                       </FormDescription>
                     </FormItem>
                   )}
@@ -626,7 +624,7 @@ export default function AddProductDialog({
                   name="taxRate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tax Rate (%)</FormLabel>
+                      <FormLabel>{t("products.taxRateLabel")}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -639,7 +637,7 @@ export default function AddProductDialog({
                         />
                       </FormControl>
                       <FormDescription>
-                        Tax rate percentage (optional).
+                        {t("products.taxRateOptionalDesc")}
                       </FormDescription>
                     </FormItem>
                   )}
@@ -650,10 +648,10 @@ export default function AddProductDialog({
                   name="tags"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tags</FormLabel>
+                      <FormLabel>{t("products.tags")}</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Comma-separated tags (e.g., tag1, tag2, tag3)"
+                          placeholder={t("products.tagsPlaceholderLong")}
                           {...field}
                           value={
                             Array.isArray(field.value)
@@ -670,7 +668,7 @@ export default function AddProductDialog({
                         />
                       </FormControl>
                       <FormDescription>
-                        Add tags separated by commas (optional).
+                        {t("products.tagsOptionalDesc")}
                       </FormDescription>
                       {field.value && field.value.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2">
@@ -693,10 +691,9 @@ export default function AddProductDialog({
                     name="variations"
                     render={() => (
                       <FormItem>
-                        <FormLabel>Product Variations</FormLabel>
+                        <FormLabel>{t("products.productVariations")}</FormLabel>
                         <FormDescription>
-                          Add size/material variations (e.g., 4mm, 10mm, 12mm),
-                          each with selling and rental prices.
+                          {t("products.variationsDesc")}
                         </FormDescription>
                         <div className="space-y-4">
                           {variationFields.map((field, index) => (
@@ -709,10 +706,10 @@ export default function AddProductDialog({
                                 name={`variations.${index}.name`}
                                 render={({ field }) => (
                                   <FormItem className="flex-1">
-                                    <FormLabel>Variation Name</FormLabel>
+                                    <FormLabel>{t("products.variationName")}</FormLabel>
                                     <FormControl>
                                       <Input
-                                        placeholder="e.g., Rebar 10mm"
+                                        placeholder={t("products.variationPlaceholder")}
                                         {...field}
                                       />
                                     </FormControl>
@@ -725,7 +722,7 @@ export default function AddProductDialog({
                                 name={`variations.${index}.price`}
                                 render={({ field }) => (
                                   <FormItem className="w-full">
-                                    <FormLabel>Sell Price</FormLabel>
+                                    <FormLabel>{t("products.sellPrice")}</FormLabel>
                                     <FormControl>
                                       <Input
                                         type="number"
@@ -748,7 +745,7 @@ export default function AddProductDialog({
                                 name={`variations.${index}.rentalPrice`}
                                 render={({ field }) => (
                                   <FormItem className="w-full">
-                                    <FormLabel>Rental Price</FormLabel>
+                                    <FormLabel>{t("products.rentalPriceLabel")}</FormLabel>
                                     <FormControl>
                                       <Input
                                         type="number"
@@ -771,7 +768,7 @@ export default function AddProductDialog({
                                 name={`variations.${index}.stock`}
                                 render={({ field }) => (
                                   <FormItem className="w-full">
-                                    <FormLabel>Stock</FormLabel>
+                                    <FormLabel>{t("products.stock")}</FormLabel>
                                     <FormControl>
                                       <Input
                                         type="number"
@@ -814,7 +811,7 @@ export default function AddProductDialog({
                             className="w-full"
                           >
                             <Plus className="mr-2 h-4 w-4" />
-                            Add Variation
+                            {t("products.addVariation")}
                           </Button>
                         </div>
                         <FormMessage />
@@ -824,10 +821,9 @@ export default function AddProductDialog({
                 )}
 
                 <FormItem>
-                  <FormLabel>Custom Attributes</FormLabel>
+                  <FormLabel>{t("products.customAttributes")}</FormLabel>
                   <FormDescription>
-                    Add custom key-value pairs for additional product
-                    information.
+                    {t("products.customAttributesDesc")}
                   </FormDescription>
                   <div className="space-y-3">
                     {Object.entries(attributes).map(([key, value]) => (
@@ -843,7 +839,7 @@ export default function AddProductDialog({
                         <Input
                           value={value}
                           onChange={(e) => updateAttribute(key, e.target.value)}
-                          placeholder="Value"
+                          placeholder={t("products.valuePlaceholder")}
                           className="flex-1"
                         />
                         <Button
@@ -863,7 +859,7 @@ export default function AddProductDialog({
                       className="w-full"
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Add Attribute
+                      {t("products.addAttribute")}
                     </Button>
                   </div>
                 </FormItem>
@@ -881,9 +877,9 @@ export default function AddProductDialog({
                   setGeneratedBarcode("");
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
-              <Button type="submit">Add Product</Button>
+              <Button type="submit">{t("products.addProductButton")}</Button>
             </DialogFooter>
           </form>
         </Form>

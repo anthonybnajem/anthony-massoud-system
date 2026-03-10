@@ -4,26 +4,35 @@ import * as React from "react"
 import * as SwitchPrimitives from "@radix-ui/react-switch"
 
 import { cn } from "@/lib/utils"
+import { useLanguage } from "@/components/language-provider"
 
 const Switch = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
->(({ className, ...props }, ref) => (
-  <SwitchPrimitives.Root
-    className={cn(
-      "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border border-white/60 bg-white/30 transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:accent-green-bg data-[state=unchecked]:bg-white/30",
-      className
-    )}
-    {...props}
-    ref={ref}
-  >
-    <SwitchPrimitives.Thumb
+>(({ className, ...props }, ref) => {
+  const { dir } = useLanguage()
+  const isRtl = dir === "rtl"
+  return (
+    <SwitchPrimitives.Root
       className={cn(
-        "pointer-events-none block h-5 w-5 rounded-full bg-white shadow-[0_6px_12px_rgba(15,23,42,0.2)] ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0"
+        "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border border-white/60 bg-white/30 transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:accent-green-bg data-[state=unchecked]:bg-gray-300",
+        isRtl && "switch-rtl",
+        className
       )}
-    />
-  </SwitchPrimitives.Root>
-))
+      {...props}
+      ref={ref}
+    >
+      <SwitchPrimitives.Thumb
+        className={cn(
+          "pointer-events-none block h-5 w-5 rounded-full bg-white shadow-[0_6px_12px_rgba(15,23,42,0.2)] ring-0 transition-transform",
+          "data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0",
+          "rtl:data-[state=unchecked]:-translate-x-0 rtl:data-[state=checked]:-translate-x-4",
+          "[.switch-rtl_&]:data-[state=unchecked]:-translate-x-0 [.switch-rtl_&]:data-[state=checked]:-translate-x-5"
+        )}
+      />
+    </SwitchPrimitives.Root>
+  )
+})
 Switch.displayName = SwitchPrimitives.Root.displayName
 
 export { Switch }

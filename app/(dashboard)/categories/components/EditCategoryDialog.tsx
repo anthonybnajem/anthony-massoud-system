@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/language-provider";
 import {
   Dialog,
   DialogContent,
@@ -23,14 +24,15 @@ export function EditCategoryDialog({
   category,
   onSubmit,
 }: EditCategoryDialogProps) {
+  const { t } = useLanguage();
   if (!category) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit Category</DialogTitle>
-          <DialogDescription>Update the category details.</DialogDescription>
+          <DialogTitle>{t("categories.editCategory")}</DialogTitle>
+          <DialogDescription>{t("categories.editCategoryDesc")}</DialogDescription>
         </DialogHeader>
         <CategoryForm
           defaultValues={category}
@@ -39,7 +41,7 @@ export function EditCategoryDialog({
             onClose();
           }}
           onCancel={onClose}
-          submitLabel="Save Changes"
+          submitLabel={t("common.saveChanges")}
         />
       </DialogContent>
     </Dialog>

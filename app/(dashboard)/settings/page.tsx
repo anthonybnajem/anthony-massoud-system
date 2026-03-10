@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Card,
@@ -14,25 +14,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
 import { useTheme } from "next-themes";
+import { useLanguage } from "@/components/language-provider";
 import { settingsApi } from "@/lib/db";
 import { GoogleDriveSync } from "@/components/google-drive-sync";
 import { StoreSettingsForm } from "./components/StoreSettingsForm";
 import { CurrencySettingsForm } from "./components/CurrencySettingsForm";
 import { PrinterSettingsForm } from "./components/PrinterSettingsForm";
 import { AppearanceSettings } from "./components/AppearanceSettings";
+import { LanguageSettings } from "./components/LanguageSettings";
 import { ReceiptSettingsForm } from "./components/ReceiptSettingsForm";
 import { NotificationSettingsForm } from "./components/NotificationSettingsForm";
 import { SyncSettingsForm } from "./components/SyncSettingsForm";
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const { t, setLocale, locale: currentLocale } = useLanguage();
   const { theme, setTheme, resolvedTheme } = useTheme();
-  const { settings: receiptSettings, updateSettings: updateReceiptSettings } =
+  const { settings: receiptSettings, updateSettings: updateReceiptSettings, isLoading: receiptSettingsLoading } =
     useReceiptSettings();
 
   const [storeSettings, setStoreSettings] = useState({
-    name: "Massoud System",
-    address: "Zgharta",
+    name: "",
+    address: "",
     phone: "+961 70008175",
     email: "",
     taxRate: "0",
@@ -66,63 +69,72 @@ export default function SettingsPage() {
     syncOnShutdown: true,
   });
 
-  // Load settings from database
+  // Apply loaded data only once per source so we never overwrite user edits when effect re-runs
+  const hasAppliedLocaleFromDb = useRef(false);
+  const hasLoadedStoreFromReceipt = useRef(false);
+  const hasLoadedAppSettingsFromDb = useRef(false);
+
+  // Load settings from database – only merge into state on first load to avoid glitches
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        // Load receipt settings
-        if (receiptSettings) {
+        // 1) Store settings from receipt provider – apply only once when load has finished
+        if (!receiptSettingsLoading && receiptSettings && !hasLoadedStoreFromReceipt.current) {
+          hasLoadedStoreFromReceipt.current = true;
           setStoreSettings({
-            name: receiptSettings.storeName || "Massoud System",
-            address:
-              receiptSettings.storeAddress || "Zgharta",
+            name: receiptSettings.storeName || t("app.name"),
+            address: receiptSettings.storeAddress || "",
             phone: receiptSettings.storePhone || "+961 70008175",
             email: receiptSettings.storeEmail || "",
             taxRate: receiptSettings.taxRate?.toString() || "7.5",
           });
           setAppSettings((prev) => ({
             ...prev,
-            currencySymbol: receiptSettings.currencySymbol || "$",
+            currencySymbol: receiptSettings.currencySymbol || prev.currencySymbol,
           }));
         }
 
-        // Load app settings
+        // 2) App settings from DB – apply only once
         const appSettingsData = await settingsApi.getAppSettings();
-        if (appSettingsData) {
+        if (appSettingsData && !hasLoadedAppSettingsFromDb.current) {
+          hasLoadedAppSettingsFromDb.current = true;
+          const lang = appSettingsData.language || "en";
+          if (lang === "en" || lang === "ar") {
+            hasAppliedLocaleFromDb.current = true;
+            setLocale(lang);
+          }
           setAppSettings((prev) => ({
             ...prev,
-            currencySymbol:
-              appSettingsData.currencySymbol || prev.currencySymbol,
-            currencyCode: appSettingsData.currencyCode || prev.currencyCode,
-            dateFormat: appSettingsData.dateFormat || prev.dateFormat,
-            timeFormat: appSettingsData.timeFormat || prev.timeFormat,
-            language: appSettingsData.language || prev.language,
+            currencySymbol: appSettingsData.currencySymbol ?? prev.currencySymbol,
+            currencyCode: appSettingsData.currencyCode ?? prev.currencyCode,
+            dateFormat: appSettingsData.dateFormat ?? prev.dateFormat,
+            timeFormat: appSettingsData.timeFormat ?? prev.timeFormat,
+            language: lang,
           }));
-          // Only set if properties exist (they may not be in AppSettings type)
           if ((appSettingsData as any).soundEnabled !== undefined) {
             setNotificationSettings((prev) => ({
               ...prev,
-              soundEnabled:
-                (appSettingsData as any).soundEnabled ?? prev.soundEnabled,
-              lowStockAlert:
-                (appSettingsData as any).lowStockAlert ?? prev.lowStockAlert,
-              saleNotification:
-                (appSettingsData as any).saleNotification ??
-                prev.saleNotification,
-              errorNotifications:
-                (appSettingsData as any).errorNotifications ??
-                prev.errorNotifications,
+              soundEnabled: (appSettingsData as any).soundEnabled ?? prev.soundEnabled,
+              lowStockAlert: (appSettingsData as any).lowStockAlert ?? prev.lowStockAlert,
+              saleNotification: (appSettingsData as any).saleNotification ?? prev.saleNotification,
+              errorNotifications: (appSettingsData as any).errorNotifications ?? prev.errorNotifications,
             }));
           }
           if ((appSettingsData as any).defaultPrinter !== undefined) {
             setPrinterSettings((prev) => ({
               ...prev,
-              defaultPrinter:
-                (appSettingsData as any).defaultPrinter || prev.defaultPrinter,
-              paperSize: (appSettingsData as any).paperSize || prev.paperSize,
-              copies: (appSettingsData as any).copies || prev.copies,
+              defaultPrinter: (appSettingsData as any).defaultPrinter ?? prev.defaultPrinter,
+              paperSize: (appSettingsData as any).paperSize ?? prev.paperSize,
+              copies: (appSettingsData as any).copies ?? prev.copies,
             }));
           }
+        }
+
+        // 3) After initial load, only keep language dropdown in sync with actual locale (no other overwrites)
+        if (hasLoadedAppSettingsFromDb.current) {
+          setAppSettings((prev) =>
+            prev.language === currentLocale ? prev : { ...prev, language: currentLocale }
+          );
         }
       } catch (error) {
         console.error("Failed to load settings:", error);
@@ -130,7 +142,7 @@ export default function SettingsPage() {
     };
 
     loadSettings();
-  }, [receiptSettings]);
+  }, [receiptSettings, currentLocale, t]);
 
   const handleSaveStoreSettings = async () => {
     try {
@@ -144,14 +156,14 @@ export default function SettingsPage() {
       });
 
       toast({
-        title: "Store Settings Saved",
-        description: "Your store settings have been saved successfully.",
+        title: t("settings.storeSettingsSaved"),
+        description: t("settings.storeSettingsSavedDesc"),
       });
     } catch (error) {
       console.error("Failed to save store settings:", error);
       toast({
-        title: "Error",
-        description: "Failed to save store settings",
+        title: t("settings.error"),
+        description: t("settings.errorSaveStore"),
         variant: "destructive",
       });
     }
@@ -165,15 +177,19 @@ export default function SettingsPage() {
         ...printerSettings,
       } as any);
 
+      if (appSettings.language === "en" || appSettings.language === "ar") {
+        setLocale(appSettings.language);
+      }
+
       toast({
-        title: "App Settings Saved",
-        description: "Your application settings have been saved successfully.",
+        title: t("settings.appSettingsSaved"),
+        description: t("settings.appSettingsSavedDesc"),
       });
     } catch (error) {
       console.error("Failed to save app settings:", error);
       toast({
-        title: "Error",
-        description: "Failed to save app settings",
+        title: t("settings.error"),
+        description: t("settings.errorSaveApp"),
         variant: "destructive",
       });
     }
@@ -184,14 +200,14 @@ export default function SettingsPage() {
       await updateReceiptSettings(receiptSettings);
 
       toast({
-        title: "Receipt Settings Saved",
-        description: "Your receipt settings have been saved successfully.",
+        title: t("settings.receiptSettingsSaved"),
+        description: t("settings.receiptSettingsSavedDesc"),
       });
     } catch (error) {
       console.error("Failed to save receipt settings:", error);
       toast({
-        title: "Error",
-        description: "Failed to save receipt settings",
+        title: t("settings.error"),
+        description: t("settings.errorSaveReceipt"),
         variant: "destructive",
       });
     }
@@ -200,8 +216,8 @@ export default function SettingsPage() {
   const handleSaveSyncSettings = () => {
     // TODO: Implement sync settings persistence
     toast({
-      title: "Sync Settings Saved",
-      description: "Your sync settings have been saved successfully.",
+      title: t("settings.syncSettingsSaved"),
+      description: t("settings.syncSettingsSavedDesc"),
     });
   };
 
@@ -259,9 +275,9 @@ export default function SettingsPage() {
       <motion.div variants={itemVariants} className="min-w-0">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{t("settings.title")}</h1>
             <p className="text-muted-foreground mt-1">
-              Manage your store settings and preferences.
+              {t("settings.subtitle")}
             </p>
           </div>
         </div>
@@ -316,14 +332,27 @@ export default function SettingsPage() {
             />
           </motion.div>
 
-          {/* <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants}>
+            <LanguageSettings
+              language={appSettings.language}
+              onLanguageChange={(language) => {
+                setAppSettings((prev) => ({ ...prev, language }));
+                if (language === "en" || language === "ar") {
+                  setLocale(language);
+                }
+              }}
+              onSave={handleSaveAppSettings}
+            />
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
             <CurrencySettingsForm
               settings={appSettings}
               onSettingsChange={setAppSettings}
               onSave={handleSaveAppSettings}
               currencyOptions={currencyOptions}
             />
-          </motion.div> */}
+          </motion.div>
 
           {/* <motion.div variants={itemVariants}>
             <PrinterSettingsForm

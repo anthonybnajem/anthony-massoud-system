@@ -30,6 +30,7 @@ import { BarChart, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { formatQuantityWithLabel } from "@/lib/product-measurements";
 import type { Product } from "@/lib/db";
+import { useLanguage } from "@/components/language-provider";
 
 interface SalesTableProps {
   sales: any[];
@@ -48,6 +49,7 @@ export function SalesTable({
   onExportPdf,
   exportPdfLoading,
 }: SalesTableProps) {
+  const { t } = useLanguage();
   const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
   const [rowsPerPage, setRowsPerPage] = useState(ROWS_PER_PAGE_OPTIONS[0]);
   const [page, setPage] = useState(0);
@@ -75,7 +77,7 @@ export function SalesTable({
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <BarChart className="h-5 w-5 text-primary" />
-            Sales Transactions
+            {t("reports.salesTransactions")}
           </CardTitle>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Select
@@ -83,12 +85,12 @@ export function SalesTable({
               onValueChange={(value) => setRowsPerPage(Number(value))}
             >
               <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder="Rows" />
+                <SelectValue placeholder={t("reports.rows")} />
               </SelectTrigger>
               <SelectContent>
                 {ROWS_PER_PAGE_OPTIONS.map((option) => (
                   <SelectItem key={option} value={option.toString()}>
-                    {option} / page
+                    {option} {t("reports.rowsPerPage")}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -102,7 +104,7 @@ export function SalesTable({
                 disabled={!sales.length}
               >
                 <Download className="h-4 w-4" />
-                Export CSV
+                {t("reports.exportCsv")}
               </Button>
             )}
             {onExportPdf && (
@@ -115,7 +117,7 @@ export function SalesTable({
                 disabled
                 // disabled={!sales.length || exportPdfLoading}
               >
-                {exportPdfLoading ? "Preparing..." : "Export PDF"}
+                {exportPdfLoading ? t("reports.preparing") : t("reports.exportPdf")}
               </Button>
             )}
           </div>
@@ -123,10 +125,10 @@ export function SalesTable({
         <div className="text-sm text-muted-foreground">
           {sales.length > 0 ? (
             <>
-              Showing {showingFrom}–{showingTo} of {sales.length} transactions
+              {t("reports.showingXOfYTransactions", { from: showingFrom, to: showingTo, total: sales.length })}
             </>
           ) : (
-            "No transactions for the selected filters"
+            t("reports.noTransactions")
           )}
         </div>
       </CardHeader>
@@ -135,13 +137,13 @@ export function SalesTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Transaction ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead>Payment Method</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
+                <TableHead>{t("reports.date")}</TableHead>
+                <TableHead>{t("reports.transactionId")}</TableHead>
+                <TableHead>{t("reports.customer")}</TableHead>
+                <TableHead>{t("reports.items")}</TableHead>
+                <TableHead>{t("reports.paymentMethod")}</TableHead>
+                <TableHead className="text-end">{t("reports.amount")}</TableHead>
+                <TableHead className="text-center">{t("reports.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -151,7 +153,7 @@ export function SalesTable({
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Spinner className="h-6 w-6" />
                       <p className="text-sm text-muted-foreground">
-                        Loading sales data...
+                        {t("reports.loadingSalesData")}
                       </p>
                     </div>
                   </TableCell>
@@ -173,7 +175,7 @@ export function SalesTable({
                     <TableCell>
                       {sale.customerName || (
                         <span className="text-muted-foreground">
-                          Walk-in Customer
+                          {t("reports.walkInCustomer")}
                         </span>
                       )}
                     </TableCell>
@@ -216,17 +218,17 @@ export function SalesTable({
                     <TableCell>
                       <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                         {sale.paymentMethod === "credit"
-                          ? "Credit Card"
+                          ? t("reports.creditCard")
                           : sale.paymentMethod === "cash"
-                          ? "Cash"
-                          : "Mobile Payment"}
+                          ? t("reports.cash")
+                          : t("reports.mobilePayment")}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-lg">
+                    <TableCell className="text-end font-semibold text-lg">
                       ${sale.total.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-center">
-                      Coming Soon!
+                      {t("reports.comingSoon")}
                       {/* <Button
                         variant="outline"
                         size="sm"
@@ -247,10 +249,9 @@ export function SalesTable({
                         <EmptyMedia variant="icon">
                           <BarChart className="h-6 w-6" />
                         </EmptyMedia>
-                        <EmptyTitle>No sales data available</EmptyTitle>
+                        <EmptyTitle>{t("reports.noSalesData")}</EmptyTitle>
                         <EmptyDescription>
-                          No sales data found for the selected period. Try
-                          adjusting your date range or filters.
+                          {t("reports.noSalesDataFoundDesc")}
                         </EmptyDescription>
                       </EmptyHeader>
                     </Empty>
@@ -262,7 +263,7 @@ export function SalesTable({
           {sales.length > 0 && (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-t text-sm">
               <p className="text-muted-foreground">
-                Page {page + 1} of {totalPages}
+                {t("receipts.pageOf", { current: page + 1, total: totalPages })}
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -273,7 +274,7 @@ export function SalesTable({
                   className="gap-1"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
-                  Previous
+                  {t("common.previous")}
                 </Button>
                 <Button
                   variant="outline"
@@ -284,7 +285,7 @@ export function SalesTable({
                   disabled={page >= totalPages - 1}
                   className="gap-1"
                 >
-                  Next
+                  {t("common.next")}
                   <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </div>

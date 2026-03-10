@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { type CartItem as CartItemType, type Worker } from "@/components/pos-data-provider";
+import { useLanguage } from "@/components/language-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { SwitchRow } from "@/components/ui/switch-row";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +28,7 @@ import {
 import {
   formatMeasurementValue,
   getProductUnitPrice,
+  getProductUnitPriceForVariation,
   getSaleType,
   getUnitIncrement,
   getUnitLabel,
@@ -35,7 +38,7 @@ interface CartItemProps {
   item: CartItemType;
   currencySymbol: string;
   onUpdateQuantity: (lineId: string, quantity: number) => void;
-  onToggleRentalMode: (lineId: string, isRental: boolean) => void;
+  onToggleRentalMode?: (lineId: string, isRental: boolean) => void;
   onUpdateRentalDates: (
     lineId: string,
     rentalDates: { rentalStartDate?: string; rentalEndDate?: string }
@@ -69,6 +72,7 @@ export function CartItem({
   workers = [],
   variants,
 }: CartItemProps) {
+  const { t } = useLanguage();
   const isCustom = Boolean(item.customLine);
   const baseSaleType = getSaleType(item.product);
   const saleType =
@@ -78,14 +82,16 @@ export function CartItem({
       ? "item"
       : baseSaleType;
   const unitLabel = getUnitLabel(item.product);
-  const unitPrice =
-    typeof item.unitPrice === "number"
-      ? item.unitPrice
-      : getProductUnitPrice(item.product);
-  const quantityStep = getUnitIncrement(item.product);
   const variation = item.variationId
     ? item.product.variations?.find((entry) => entry.id === item.variationId)
     : undefined;
+  const unitPrice =
+    typeof item.unitPrice === "number"
+      ? item.unitPrice
+      : variation
+        ? getProductUnitPriceForVariation(item.product, variation, item.isRental)
+        : getProductUnitPrice(item.product, item.isRental);
+  const quantityStep = getUnitIncrement(item.product);
   const maxStock = Math.min(
     item.product.stock,
     variation?.stock ?? item.product.stock
@@ -96,10 +102,14 @@ export function CartItem({
       : saleType === "rental"
       ? `${formatMeasurementValue(item.quantity)} ${unitLabel}`
       : `×${formatMeasurementValue(item.quantity)}`;
-  const canRent =
-    typeof variation?.rentalPrice === "number" ||
-    typeof item.product.rentalPrice === "number";
-  const canToggleRental = !isCustom && canRent;
+  const hasSellPrice = variation
+    ? getProductUnitPriceForVariation(item.product, variation, false) > 0
+    : getProductUnitPrice(item.product, false) > 0;
+  const hasRentalPrice = variation
+    ? getProductUnitPriceForVariation(item.product, variation, true) > 0
+    : getProductUnitPrice(item.product, true) > 0;
+  const canChooseSellOrRent =
+    !isCustom && hasSellPrice && hasRentalPrice && Boolean(onToggleRentalMode);
   const canIncrease =
     maxStock > 0 && item.quantity + quantityStep <= maxStock + 0.0001;
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -239,7 +249,7 @@ export function CartItem({
             )}
             {isCustom && (
               <span className="text-[11px] px-1.5 py-0.5 rounded bg-white/30 text-slate-600">
-                Custom
+                {t("sales.customLabel")}
               </span>
             )}
             <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -259,31 +269,28 @@ export function CartItem({
               )}
             </div>
           )}
-          <div className="mb-1.5 flex items-center gap-1.5">
-            {!isCustom && (
-              <>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={item.isRental ? "outline" : "default"}
-                  className="h-6 px-2 text-[11px]"
-                  onClick={() => onToggleRentalMode(item.id, false)}
-                >
-                  Sell
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={item.isRental ? "default" : "outline"}
-                  className="h-6 px-2 text-[11px]"
-                  disabled={!canToggleRental}
-                  onClick={() => onToggleRentalMode(item.id, true)}
-                >
-                  Rent
-                </Button>
-              </>
-            )}
-          </div>
+          {canChooseSellOrRent && (
+            <div className="mb-1.5 flex items-center gap-1.5">
+              <Button
+                type="button"
+                size="sm"
+                variant={item.isRental ? "outline" : "default"}
+                className="h-6 px-2 text-[11px]"
+                onClick={() => onToggleRentalMode?.(item.id, false)}
+              >
+                {t("checkout.sell")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={item.isRental ? "default" : "outline"}
+                className="h-6 px-2 text-[11px]"
+                onClick={() => onToggleRentalMode?.(item.id, true)}
+              >
+                {t("checkout.rent")}
+              </Button>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <p className="text-xs text-muted-foreground">
               {currencySymbol}
@@ -337,16 +344,16 @@ export function CartItem({
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Cart Item</DialogTitle>
+            <DialogTitle>{t("sales.editCartItem")}</DialogTitle>
             <DialogDescription>
               {isCustom
-                ? "Update custom line details."
-                : "Update quantity and rental details for this line."}
+                ? t("sales.updateCustomLineDesc")
+                : t("sales.updateQuantityRentalDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label>Item</Label>
+              <Label>{t("sales.itemLabel")}</Label>
               <p className="text-sm font-medium">
                 {isCustom ? editName || item.product.name : item.product.name}
                 {item.variationName ? ` (${item.variationName})` : ""}
@@ -355,14 +362,14 @@ export function CartItem({
             {isCustom && (
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2 md:col-span-2">
-                  <Label>Custom Item Name</Label>
+                  <Label>{t("checkout.customItemName")}</Label>
                   <Input
                     value={editName}
                     onChange={(event) => setEditName(event.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Price</Label>
+                  <Label>{t("sales.price")}</Label>
                   <Input
                     type="number"
                     min="0"
@@ -372,14 +379,14 @@ export function CartItem({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Service Type</Label>
+                  <Label>{t("checkout.serviceType")}</Label>
                   <Input
                     value={editServiceType}
                     onChange={(event) => setEditServiceType(event.target.value)}
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label>Worker</Label>
+                  <Label>{t("checkout.worker")}</Label>
                   {workers.length > 0 ? (
                     <Select
                       value={editWorkerId || "__none__"}
@@ -388,10 +395,10 @@ export function CartItem({
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select worker" />
+                        <SelectValue placeholder={t("sales.selectWorker")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none__">None</SelectItem>
+                        <SelectItem value="__none__">{t("sales.none")}</SelectItem>
                         {workers.map((worker) => (
                           <SelectItem key={worker.id} value={worker.id}>
                             {worker.name}
@@ -401,14 +408,14 @@ export function CartItem({
                     </Select>
                   ) : (
                     <Input
-                      placeholder="Worker name"
+                      placeholder={t("sales.workerNamePlaceholder")}
                       value={editWorkerName}
                       onChange={(event) => setEditWorkerName(event.target.value)}
                     />
                   )}
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label>Notes</Label>
+                  <Label>{t("cart.notes")}</Label>
                   <textarea
                     className="w-full rounded-[14px] border border-white/30 bg-white/20 px-3 py-2 text-sm text-slate-700 backdrop-blur-[16px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                     rows={3}
@@ -416,22 +423,22 @@ export function CartItem({
                     onChange={(event) => setEditNotes(event.target.value)}
                   />
                 </div>
-                <div className="flex items-center justify-between rounded-[14px] border border-white/30 bg-white/20 px-3 py-2 md:col-span-2">
+                <SwitchRow className="rounded-[14px] border border-white/30 bg-white/20 px-3 py-2 md:col-span-2">
                   <div>
-                    <p className="text-sm font-medium text-slate-700">Taxable</p>
+                    <p className="text-sm font-medium text-slate-700">{t("sales.taxable")}</p>
                     <p className="text-xs text-slate-500">
-                      Apply sales tax to this line
+                      {t("sales.taxableDesc")}
                     </p>
                   </div>
                   <Switch
                     checked={editTaxable}
                     onCheckedChange={setEditTaxable}
                   />
-                </div>
+                </SwitchRow>
               </div>
             )}
             <div className="space-y-2">
-              <Label>Quantity ({unitLabel})</Label>
+              <Label>{t("checkout.qty")} ({unitLabel})</Label>
               <Input
                 type="number"
                 min="0"
@@ -443,7 +450,7 @@ export function CartItem({
             {item.isRental && (
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Rental Start</Label>
+                  <Label>{t("checkout.rentalStart")}</Label>
                   <Input
                     type="datetime-local"
                     value={editStartDate}
@@ -451,7 +458,7 @@ export function CartItem({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Rental End</Label>
+                  <Label>{t("checkout.rentalEnd")}</Label>
                   <Input
                     type="datetime-local"
                     value={editEndDate}
@@ -463,9 +470,9 @@ export function CartItem({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
-            <Button onClick={handleSaveEdit}>Save</Button>
+            <Button onClick={handleSaveEdit}>{t("common.save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

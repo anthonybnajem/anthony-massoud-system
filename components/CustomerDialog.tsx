@@ -11,6 +11,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/components/language-provider";
 import {
   User,
   Mail,
@@ -104,6 +105,7 @@ export default function CustomerDialog({
   onAddProject,
   showProjects = false,
 }: CustomerDialogProps) {
+  const { t } = useLanguage();
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -189,7 +191,7 @@ export default function CustomerDialog({
     customerEmail ||
     customerPhone ||
     customerLocation ||
-    "Select customer";
+    t("checkout.selectCustomer");
 
   const hasSavedCustomers = existingCustomers.length > 0;
 
@@ -197,9 +199,9 @@ export default function CustomerDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Customer Information</DialogTitle>
+          <DialogTitle>{t("checkout.customerInfo")}</DialogTitle>
           <DialogDescription>
-            Add customer details to this sale.
+            {t("checkout.customerInfoDesc")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -208,7 +210,7 @@ export default function CustomerDialog({
             <div className="flex items-center justify-between gap-2">
               <Label className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
-                Saved Customers
+                {t("checkout.savedCustomers")}
               </Label>
               <div className="flex items-center gap-2">
                 <Link
@@ -216,7 +218,7 @@ export default function CustomerDialog({
                   className="text-xs text-primary hover:underline"
                   onClick={onClose}
                 >
-                  Manage
+                  {t("checkout.manage")}
                 </Link>
                 <Button
                   variant="outline"
@@ -224,7 +226,7 @@ export default function CustomerDialog({
                   onClick={() =>
                     isCreatingProfile ? setIsCreatingProfile(false) : openCreateProfile()
                   }
-                  title={isCreatingProfile ? "Cancel" : "Add new customer"}
+                  title={isCreatingProfile ? t("common.cancel") : t("checkout.createNewCustomer")}
                   disabled={!onSaveProfile}
                 >
                   {isCreatingProfile ? (
@@ -245,14 +247,14 @@ export default function CustomerDialog({
                       aria-expanded={isSelectorOpen}
                       className="flex-1 justify-between"
                     >
-                      <span className="truncate text-left">{selectedLabel}</span>
+                      <span className="truncate text-start">{selectedLabel}</span>
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[360px] p-0">
                     <Command>
-                      <CommandInput placeholder="Search by name, email, or phone" />
-                      <CommandEmpty>No customers found.</CommandEmpty>
+                      <CommandInput placeholder={t("customers.searchPlaceholder")} />
+                      <CommandEmpty>{t("checkout.noCustomersFound")}</CommandEmpty>
                       <CommandGroup>
                         {existingCustomers.map((customer) => (
                           <CommandItem
@@ -266,12 +268,12 @@ export default function CustomerDialog({
                               {customer.email ||
                                 customer.phone ||
                                 customer.location ||
-                                "No contact data"}
+                                t("checkout.noContactData")}
                             </span>
                             {customer.defaultDiscountId && (
                               <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                                 <Percent className="h-3 w-3" />
-                                Discount assigned
+                                {t("checkout.discountAssigned")}
                               </span>
                             )}
                           </CommandItem>
@@ -283,20 +285,20 @@ export default function CustomerDialog({
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">
-                No saved customers yet. Use the plus icon to create one.
+                {t("checkout.noSavedCustomersYet")}
               </p>
             )}
             {showProjects && selectedCustomerId && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <Label>Project</Label>
+                  <Label>{t("checkout.project")}</Label>
                   <Button
                     variant="outline"
                     size="sm"
                     type="button"
                     onClick={() => setIsCreatingProject((prev) => !prev)}
                   >
-                    {isCreatingProject ? "Cancel" : "Add Project"}
+                    {isCreatingProject ? t("common.cancel") : t("checkout.addProject")}
                   </Button>
                 </div>
                 <Select
@@ -306,13 +308,13 @@ export default function CustomerDialog({
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose project" />
+                    <SelectValue placeholder={t("checkout.chooseProject")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No project</SelectItem>
+                    <SelectItem value="none">{t("checkout.noProject")}</SelectItem>
                     {projects.length === 0 ? (
                       <SelectItem value="no-projects" disabled>
-                        No projects for this customer
+                        {t("checkout.noProjectsForCustomer")}
                       </SelectItem>
                     ) : (
                       projects.map((project) => (
@@ -328,63 +330,63 @@ export default function CustomerDialog({
                     <Input
                       value={newProjectName}
                       onChange={(e) => setNewProjectName(e.target.value)}
-                      placeholder="Project name"
+                      placeholder={t("checkout.projectName")}
                     />
                     <Button
                       type="button"
                       onClick={handleCreateProject}
                       disabled={isSavingProject || !newProjectName.trim()}
                     >
-                      {isSavingProject ? "Saving..." : "Save"}
+                      {isSavingProject ? t("checkout.saving") : t("common.save")}
                     </Button>
                   </div>
                 )}
               </div>
             )}
         {isCreatingProfile && <div className="grid gap-2">
-                  <Label htmlFor="new-profile-name">Create New Customer</Label>
+                  <Label htmlFor="new-profile-name">{t("checkout.createNewCustomer")}</Label>
                   </div>}
             {isCreatingProfile && (
               <div className="rounded-md border border-dashed p-3 space-y-2">
                 <div className="grid gap-2">
-                  <Label htmlFor="new-profile-name">Name</Label>
+                  <Label htmlFor="new-profile-name">{t("checkout.nameLabel")}</Label>
                   <Input
                     id="new-profile-name"
                     value={newProfileName}
                     onChange={(e) => setNewProfileName(e.target.value)}
-                    placeholder="Customer name"
+                    placeholder={t("customers.namePlaceholder")}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="new-profile-email">Email</Label>
+                  <Label htmlFor="new-profile-email">{t("checkout.emailLabel")}</Label>
                   <Input
                     id="new-profile-email"
                     type="email"
                     value={newProfileEmail}
                     onChange={(e) => setNewProfileEmail(e.target.value)}
-                    placeholder="customer@example.com"
+                    placeholder={t("customers.emailPlaceholder")}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="new-profile-phone">Phone</Label>
+                  <Label htmlFor="new-profile-phone">{t("checkout.phoneLabel")}</Label>
                   <Input
                     id="new-profile-phone"
                     value={newProfilePhone}
                     onChange={(e) => setNewProfilePhone(e.target.value)}
-                    placeholder="Phone number"
+                    placeholder={t("customers.phonePlaceholder")}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="new-profile-location">Location</Label>
+                  <Label htmlFor="new-profile-location">{t("checkout.locationLabel")}</Label>
                   <Input
                     id="new-profile-location"
                     value={newProfileLocation}
                     onChange={(e) => setNewProfileLocation(e.target.value)}
-                    placeholder="City / Address"
+                    placeholder={t("customers.cityAddress")}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="new-profile-discount">Default Discount</Label>
+                  <Label htmlFor="new-profile-discount">{t("customers.defaultDiscount")}</Label>
                   <Select
                     value={newProfileDiscountId ?? "none"}
                     onValueChange={(value) =>
@@ -394,13 +396,13 @@ export default function CustomerDialog({
                     }
                   >
                     <SelectTrigger id="new-profile-discount">
-                      <SelectValue placeholder="Choose discount" />
+                      <SelectValue placeholder={t("checkout.chooseDiscount")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No discount</SelectItem>
+                      <SelectItem value="none">{t("checkout.noDiscount")}</SelectItem>
                       {availableDiscounts.length === 0 ? (
                         <SelectItem value="placeholder" disabled>
-                          Create discounts to reuse them
+                          {t("checkout.createDiscountsToReuse")}
                         </SelectItem>
                       ) : (
                         availableDiscounts.map((discount) => (
@@ -418,7 +420,7 @@ export default function CustomerDialog({
                     onClick={() => setIsCreatingProfile(false)}
                     disabled={isSavingProfile}
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </Button>
                   <Button
                     onClick={handleCreateProfile}
@@ -426,7 +428,7 @@ export default function CustomerDialog({
                       isSavingProfile || !newProfileName.trim() || !onSaveProfile
                     }
                   >
-                    {isSavingProfile ? "Saving..." : "Save Customer"}
+                    {isSavingProfile ? t("checkout.saving") : t("customers.saveCustomer")}
                   </Button>
                 </div>
               </div>
@@ -437,9 +439,9 @@ export default function CustomerDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
-          <Button onClick={saveCustomerInfo}>Continue</Button>
+          <Button onClick={saveCustomerInfo}>{t("checkout.continue")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

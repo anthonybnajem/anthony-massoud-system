@@ -17,10 +17,14 @@ interface ProductTabsProps<T> {
   onTabChange: (tab: string) => void;
   tabs: TabConfig<T>[];
   renderItem: (item: T) => React.ReactNode;
+  /** Optional row layout renderer; used when viewMode is "row" */
+  renderItemRow?: (item: T) => React.ReactNode;
   getKey?: (item: T, index: number) => string | number;
   containerVariants?: any;
   isTablet?: boolean;
   showTabs?: boolean;
+  /** When "row", items are shown in a single-column list; requires renderItemRow */
+  viewMode?: "grid" | "row";
   className?: string;
   contentClassName?: string;
 }
@@ -30,10 +34,12 @@ export function ProductTabs<T>({
   onTabChange,
   tabs,
   renderItem,
+  renderItemRow,
   getKey,
   containerVariants,
   isTablet = false,
   showTabs = true,
+  viewMode = "grid",
   className,
   contentClassName,
 }: ProductTabsProps<T>) {
@@ -78,13 +84,21 @@ export function ProductTabs<T>({
       )}
 
       {tabs.map((tab) => {
-        const gridClassName =
-          tab.gridClassName ??
-          `grid ${
-            isTablet
-              ? "grid-cols-2 gap-3"
-              : "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4  gap-2 sm:gap-3 md:gap-4"
-          } w-full min-w-0`;
+        const isRowView = viewMode === "row" && renderItemRow;
+        const gridClassName = isRowView
+          ? "flex flex-col gap-2 w-full min-w-0"
+          : tab.gridClassName ??
+            `grid ${
+              isTablet
+                ? "grid-cols-2 gap-3"
+                : "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4  gap-2 sm:gap-3 md:gap-4"
+            } w-full min-w-0`;
+
+        const itemRenderer = isRowView ? renderItemRow : renderItem;
+
+        // Use plain div when many items to avoid Framer Motion overload (prevents browser freeze on category change)
+        const itemCount = tab.items.length;
+        const useAnimations = !isRowView && containerVariants && itemCount <= 20;
 
         return (
           <TabsContent
@@ -94,7 +108,7 @@ export function ProductTabs<T>({
           >
             <div className={contentPaddingClass}>
               {tab.items.length > 0 ? (
-                containerVariants ? (
+                useAnimations ? (
                   <motion.div
                     className={gridClassName}
                     variants={containerVariants}
@@ -105,7 +119,7 @@ export function ProductTabs<T>({
                       <React.Fragment
                         key={getKey ? getKey(item, index) : index}
                       >
-                        {renderItem(item)}
+                        {itemRenderer(item)}
                       </React.Fragment>
                     ))}
                   </motion.div>
@@ -115,7 +129,7 @@ export function ProductTabs<T>({
                       <React.Fragment
                         key={getKey ? getKey(item, index) : index}
                       >
-                        {renderItem(item)}
+                        {itemRenderer(item)}
                       </React.Fragment>
                     ))}
                   </div>

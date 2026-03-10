@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/language-provider";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,31 +28,33 @@ export function EmployeeTableRow({
   onDelete,
   variants,
 }: EmployeeTableRowProps) {
+  const { t } = useLanguage();
   const getRoleBadge = (role: Employee["role"]) => {
-    const variants: Record<
-      Employee["role"],
-      {
-        label: string;
-        variant: "default" | "secondary" | "destructive" | "outline";
-      }
-    > = {
-      admin: { label: "Admin", variant: "destructive" },
-      manager: { label: "Manager", variant: "default" },
-      cashier: { label: "Cashier", variant: "secondary" },
-      staff: { label: "Staff", variant: "outline" },
+    const roleLabels: Record<Employee["role"], string> = {
+      admin: t("employees.roleAdmin"),
+      manager: t("employees.roleManager"),
+      cashier: t("employees.roleCashier"),
+      staff: t("employees.roleStaff"),
     };
-
-    const config = variants[role] || variants.staff;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const badgeVariants: Record<Employee["role"], "default" | "secondary" | "destructive" | "outline"> = {
+      admin: "destructive",
+      manager: "default",
+      cashier: "secondary",
+      staff: "outline",
+    };
+    return <Badge variant={badgeVariants[role]}>{roleLabels[role]}</Badge>;
   };
 
   return (
     <motion.tr
       variants={variants}
+      initial="hidden"
+      animate="show"
+      exit={{ opacity: 0, height: 0 }}
       className="hover:bg-muted/50 transition-colors"
     >
-      <TableCell className="font-medium">
-        <div className="flex items-center gap-3">
+      <TableCell className="font-medium text-start">
+        <div className="flex items-center gap-3 justify-start text-start">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
             <User className="h-5 w-5 text-primary" />
           </div>
@@ -71,13 +74,13 @@ export function EmployeeTableRow({
       <TableCell>{getRoleBadge(employee.role)}</TableCell>
       <TableCell>
         <Badge variant={employee.isActive ? "default" : "secondary"}>
-          {employee.isActive ? "Active" : "Inactive"}
+          {employee.isActive ? t("employees.active") : t("employees.inactiveLabel")}
         </Badge>
       </TableCell>
-      <TableCell className="text-sm text-muted-foreground">
+      <TableCell className="text-sm text-muted-foreground text-start">
         {format(new Date(employee.hireDate), "MMM dd, yyyy")}
       </TableCell>
-      <TableCell>
+      <TableCell className="text-end">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -86,15 +89,15 @@ export function EmployeeTableRow({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onEdit(employee)}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
+              <Edit className="me-2 h-4 w-4" />
+              {t("common.edit")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => onDelete(employee)}
               className="text-destructive"
             >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
+              <Trash2 className="me-2 h-4 w-4" />
+              {t("common.delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

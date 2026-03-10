@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useLanguage } from "@/components/language-provider";
 import { Package } from "lucide-react";
 import { Product } from "@/lib/db";
 
@@ -26,14 +27,14 @@ export default function DeleteProductDialog({
   currentProduct,
   handleDeleteProduct,
 }: DeleteProductDialogProps) {
+  const { t } = useLanguage();
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Product</AlertDialogTitle>
+          <AlertDialogTitle>{t("products.deleteProduct")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete this product? This action cannot be
-            undone.
+            {t("products.deleteProductConfirmDesc")}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -61,21 +62,21 @@ export default function DeleteProductDialog({
               </div>
             </div>
             <p className="text-sm mt-2">
-              Price: ${currentProduct.price.toFixed(2)}
+              {t("products.price")}: ${currentProduct.price.toFixed(2)}
             </p>
-            <p className="text-sm">Stock: {currentProduct.stock}</p>
+            <p className="text-sm">{t("products.stock")}: {currentProduct.stock}</p>
           </div>
         )}
 
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDeleteProduct}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            Delete
+            {t("common.delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

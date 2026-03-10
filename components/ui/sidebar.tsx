@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { VariantProps, cva } from "class-variance-authority";
-import { PanelLeft } from "lucide-react";
+import { PanelLeft, PanelRight } from "lucide-react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
@@ -152,25 +151,23 @@ const SidebarProvider = React.forwardRef<
 
     return (
       <SidebarContext.Provider value={contextValue}>
-        <TooltipProvider delayDuration={0}>
-          <div
-            style={
-              {
-                "--sidebar-width": SIDEBAR_WIDTH,
-                "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
-                ...style,
-              } as React.CSSProperties
-            }
-            className={cn(
-              "group/sidebar-wrapper flex min-h-svh w-full bg-transparent has-[[data-variant=inset]]:bg-transparent",
-              className
-            )}
-            ref={ref}
-            {...props}
-          >
-            {children}
-          </div>
-        </TooltipProvider>
+        <div
+          style={
+            {
+              "--sidebar-width": SIDEBAR_WIDTH,
+              "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+              ...style,
+            } as React.CSSProperties
+          }
+          className={cn(
+            "group/sidebar-wrapper flex min-h-svh w-full bg-transparent has-[[data-variant=inset]]:bg-transparent",
+            className
+          )}
+          ref={ref}
+          {...props}
+        >
+          {children}
+        </div>
       </SidebarContext.Provider>
     );
   }
@@ -269,7 +266,7 @@ const Sidebar = React.forwardRef<
         >
           <div
             data-sidebar="sidebar"
-            className="flex h-full w-full flex-col bg-white/30 backdrop-blur-[20px] border-r border-white/40 group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-white/50 group-data-[variant=floating]:shadow-[0_12px_28px_rgba(15,23,42,0.12)]"
+            className="flex h-full w-full flex-col bg-white/30 backdrop-blur-[20px] border-white/40 group-data-[side=left]:border-r group-data-[side=right]:border-l group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-white/50 group-data-[variant=floating]:shadow-[0_12px_28px_rgba(15,23,42,0.12)]"
           >
             {children}
           </div>
@@ -282,8 +279,12 @@ Sidebar.displayName = "Sidebar";
 
 const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,
-  React.ComponentProps<typeof Button>
->(({ className, onClick, ...props }, ref) => {
+  React.ComponentProps<typeof Button> & {
+    side?: "left" | "right";
+    /** Accessible label for the toggle (e.g. from useLanguage t("common.toggleSidebar")) */
+    "aria-label"?: string;
+  }
+>(({ className, onClick, side = "left", "aria-label": ariaLabel, ...props }, ref) => {
   const { toggleSidebar } = useSidebar();
 
   return (
@@ -292,6 +293,7 @@ const SidebarTrigger = React.forwardRef<
       data-sidebar="trigger"
       variant="ghost"
       size="icon"
+      aria-label={ariaLabel}
       className={cn("h-7 w-7", className)}
       onClick={(event) => {
         onClick?.(event);
@@ -299,8 +301,8 @@ const SidebarTrigger = React.forwardRef<
       }}
       {...props}
     >
-      <PanelLeft />
-      <span className="sr-only">Toggle Sidebar</span>
+      {side === "right" ? <PanelRight /> : <PanelLeft />}
+      {ariaLabel ? <span className="sr-only">{ariaLabel}</span> : <span className="sr-only">Toggle Sidebar</span>}
     </Button>
   );
 });
@@ -308,18 +310,24 @@ SidebarTrigger.displayName = "SidebarTrigger";
 
 const SidebarRail = React.forwardRef<
   HTMLButtonElement,
-  React.ComponentProps<"button">
->(({ className, ...props }, ref) => {
+  React.ComponentProps<"button"> & {
+    /** Accessible label (e.g. from useLanguage t("common.toggleSidebar")) */
+    "aria-label"?: string;
+    title?: string;
+  }
+>(({ className, "aria-label": ariaLabel, title: titleProp, ...props }, ref) => {
   const { toggleSidebar } = useSidebar();
+  const label = ariaLabel ?? "Toggle Sidebar";
+  const title = titleProp ?? "Toggle Sidebar";
 
   return (
     <button
       ref={ref}
       data-sidebar="rail"
-      aria-label="Toggle Sidebar"
+      aria-label={label}
       tabIndex={-1}
       onClick={toggleSidebar}
-      title="Toggle Sidebar"
+      title={title}
       className={cn(
         "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:flex",
         "[[data-side=left]_&]:cursor-w-resize [[data-side=right]_&]:cursor-e-resize",
@@ -344,7 +352,7 @@ const SidebarInset = React.forwardRef<
       ref={ref}
       className={cn(
         "relative flex min-h-svh flex-1 flex-col bg-transparent overflow-hidden min-w-0",
-        "peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
+        "peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[side=left]:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[side=left]:peer-data-[variant=inset]:ml-0 md:peer-data-[side=right]:peer-data-[state=collapsed]:peer-data-[variant=inset]:mr-2 md:peer-data-[side=right]:peer-data-[variant=inset]:mr-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
         className
       )}
       {...props}

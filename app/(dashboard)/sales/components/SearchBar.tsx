@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/components/language-provider";
 import { Search, X } from "lucide-react";
 
 interface SearchBarProps {
@@ -16,6 +17,7 @@ export function SearchBar({
   onSearchChange,
   isTablet = false,
 }: SearchBarProps) {
+  const { t } = useLanguage();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Focus search input when pressing '/'
@@ -36,7 +38,7 @@ export function SearchBar({
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
       <Input
         ref={searchInputRef}
-        placeholder="Search products by name, SKU, barcode... (Press '/' to focus)"
+        placeholder={t("sales.searchPlaceholder")}
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         className={`pl-9 pr-10 ${

@@ -8,6 +8,7 @@ import { InvoicePrint } from "@/components/invoice-print";
 import { usePosData, type Sale } from "@/components/pos-data-provider";
 import { useReceiptSettings } from "@/components/receipt-settings-provider";
 import { useDiscount } from "@/components/discount-provider";
+import { useLanguage } from "@/components/language-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,28 +50,35 @@ import {
   DeleteReceiptDialog,
 } from "./components/receipt-dialogs";
 
-const statusMeta: Record<
-  NonNullable<Sale["status"]>,
-  { label: string; badgeVariant: "default" | "secondary" | "destructive" }
-> = {
-  completed: { label: "Completed", badgeVariant: "default" },
-  voided: { label: "Voided", badgeVariant: "destructive" },
-  refunded: { label: "Refunded", badgeVariant: "secondary" },
-};
-
-const dateFilterOptions = [
-  { value: "7", label: "Last 7 days" },
-  { value: "30", label: "Last 30 days" },
-  { value: "90", label: "Last 90 days" },
-  { value: "all", label: "All time" },
-];
-
 export default function RecentReceiptsPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const { sales, updateSale, voidSale, deleteSale, returnRentalSale } =
     usePosData();
   const { settings } = useReceiptSettings();
   const { discounts } = useDiscount();
+
+  const statusMeta: Record<
+    NonNullable<Sale["status"]>,
+    { label: string; badgeVariant: "default" | "secondary" | "destructive" }
+  > = useMemo(
+    () => ({
+      completed: { label: t("receipts.completed"), badgeVariant: "default" },
+      voided: { label: t("receipts.voided"), badgeVariant: "destructive" },
+      refunded: { label: t("receipts.refunded"), badgeVariant: "secondary" },
+    }),
+    [t]
+  );
+
+  const dateFilterOptions = useMemo(
+    () => [
+      { value: "7", label: t("receipts.last7Days") },
+      { value: "30", label: t("receipts.last30Days") },
+      { value: "90", label: t("receipts.last90Days") },
+      { value: "all", label: t("receipts.allTime") },
+    ],
+    [t]
+  );
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -206,10 +214,10 @@ export default function RecentReceiptsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          Recent Receipts
+          {t("receipts.recentReceipts")}
         </h1>
         <p className="text-muted-foreground">
-          Review, edit, void, or print receipts from recent sales.
+          {t("receipts.subtitle")}
         </p>
       </div>
 
@@ -220,23 +228,23 @@ export default function RecentReceiptsPage() {
             <Input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search receipt, customer, or notes..."
+              placeholder={t("receipts.searchPlaceholder")}
               className="w-full md:w-64"
             />
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="md:w-40">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder={t("receipts.status")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="voided">Voided</SelectItem>
-                <SelectItem value="refunded">Refunded</SelectItem>
+                <SelectItem value="all">{t("receipts.allStatuses")}</SelectItem>
+                <SelectItem value="completed">{t("receipts.completed")}</SelectItem>
+                <SelectItem value="voided">{t("receipts.voided")}</SelectItem>
+                <SelectItem value="refunded">{t("receipts.refunded")}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={dateFilter} onValueChange={setDateFilter}>
               <SelectTrigger className="md:w-40">
-                <SelectValue placeholder="Date range" />
+                <SelectValue placeholder={t("receipts.dateRange")} />
               </SelectTrigger>
               <SelectContent>
                 {dateFilterOptions.map((option) => (
@@ -251,23 +259,23 @@ export default function RecentReceiptsPage() {
         <CardContent className="space-y-4">
           <div className="rounded-lg border">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Receipt</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Payment</TableHead>
-                  <TableHead>Discount</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("receipts.receipt")}</TableHead>
+                    <TableHead>{t("reports.customer")}</TableHead>
+                    <TableHead>{t("reports.items")}</TableHead>
+                    <TableHead>{t("reports.payment")}</TableHead>
+                    <TableHead>{t("receipts.discount")}</TableHead>
+                    <TableHead>{t("receipts.total")}</TableHead>
+                    <TableHead>{t("receipts.status")}</TableHead>
+                    <TableHead className="text-end">{t("receipts.actions")}</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {paginatedSales.length === 0 ? (
                   <TableRow>
-                  <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-10">
-                      No receipts match the selected filters.
+                    <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-10">
+                      {t("receipts.noReceiptsMatch")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -303,7 +311,7 @@ export default function RecentReceiptsPage() {
                         <TableCell>
                           <div className="space-y-1 text-sm">
                             <p className="font-medium">
-                              {sale.customerName || "Walk-in customer"}
+                              {sale.customerName || t("reports.walkInCustomer")}
                             </p>
                             {sale.customerPhone && (
                               <p className="text-muted-foreground text-xs">
@@ -351,8 +359,8 @@ export default function RecentReceiptsPage() {
                               {sale.discount.toFixed(2)}
                               {sale.discountId && (
                                 <p className="text-xs text-muted-foreground">
-                                  {discountLookup[sale.discountId] ||
-                                    "Saved discount"}
+                                  {                                    discountLookup[sale.discountId] ||
+                                    t("receipts.savedDiscount")}
                                 </p>
                               )}
                             </div>
@@ -379,11 +387,11 @@ export default function RecentReceiptsPage() {
                               status === "voided" && "bg-destructive/10 text-destructive"
                             )}
                           >
-                            {statusInfo?.label || "Unknown"}
+                            {statusInfo?.label || t("sales.unknown")}
                           </Badge>
                         </TableCell>
                         <TableCell
-                          className="text-right receipt-row-interactive"
+                          className="text-end receipt-row-interactive"
                           onClick={(event) => {
                             event.stopPropagation();
                             event.preventDefault();
@@ -400,15 +408,15 @@ export default function RecentReceiptsPage() {
                                 openInvoice(sale);
                               }}
                             >
-                              <Printer className="h-4 w-4 mr-1.5" />
-                              Print
+                              <Printer className="h-4 w-4 me-1.5" />
+                              {t("receipts.print")}
                             </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  aria-label="Open receipt actions"
+                                  aria-label={t("receipts.openActions")}
                                   className="receipt-menu-trigger"
                                   onClick={(event) => {
                                     event.preventDefault();
@@ -427,7 +435,7 @@ export default function RecentReceiptsPage() {
                                   className="gap-2"
                                 >
                                   <Printer className="h-4 w-4" />
-                                  View / Print
+                                  {t("receipts.viewPrint")}
                                 </DropdownMenuItem>
                               <DropdownMenuItem
                                 onSelect={(event) => {
@@ -437,7 +445,7 @@ export default function RecentReceiptsPage() {
                                 className="gap-2"
                               >
                                 <Edit2 className="h-4 w-4" />
-                                Edit
+                                {t("common.edit")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 disabled={sale.status === "voided"}
@@ -448,7 +456,7 @@ export default function RecentReceiptsPage() {
                                 className="gap-2"
                               >
                                 <Ban className="h-4 w-4" />
-                                Void
+                                {t("receipts.void")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 disabled={!isReturnableRental}
@@ -459,7 +467,7 @@ export default function RecentReceiptsPage() {
                                 className="gap-2"
                               >
                                 <RotateCcw className="h-4 w-4" />
-                                Return Rental
+                                {t("receipts.returnRental")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="gap-2 text-destructive focus:text-destructive"
@@ -469,7 +477,7 @@ export default function RecentReceiptsPage() {
                                 }}
                               >
                                 <Trash2 className="h-4 w-4" />
-                                Delete
+                                {t("common.delete")}
                               </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -485,19 +493,19 @@ export default function RecentReceiptsPage() {
 
           <div className="flex flex-col gap-3 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
             <div>
-              Showing{" "}
+              {t("receipts.showing")}{" "}
               <span className="font-medium text-foreground">
                 {paginatedSales.length}
-              </span>{" "}
-              of{" "}
+              </span>
+              {t("receipts.of")}
               <span className="font-medium text-foreground">
                 {filteredSales.length}
               </span>{" "}
-              receipts
+              {t("receipts.receiptsCount")}
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2">
-                <span>Rows per page</span>
+                <span>{t("receipts.rowsPerPage")}</span>
                 <Select value={rowsPerPage} onValueChange={setRowsPerPage}>
                   <SelectTrigger className="w-20">
                     <SelectValue />
@@ -516,10 +524,10 @@ export default function RecentReceiptsPage() {
                   onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
                   disabled={page === 0}
                 >
-                  Previous
+                  {t("receipts.previous")}
                 </Button>
                 <span>
-                  Page {page + 1} of {totalPages}
+                  {t("receipts.pageOf").replace("{current}", String(page + 1)).replace("{total}", String(totalPages))}
                 </span>
                 <Button
                   variant="outline"
@@ -529,7 +537,7 @@ export default function RecentReceiptsPage() {
                   }
                   disabled={page >= totalPages - 1}
                 >
-                  Next
+                  {t("receipts.next")}
                 </Button>
               </div>
             </div>

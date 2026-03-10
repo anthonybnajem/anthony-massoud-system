@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/language-provider";
 import {
   Dialog,
   DialogContent,
@@ -36,11 +37,12 @@ export function AddDiscountDialog({
   categories,
   currencySymbol,
 }: AddDiscountDialogProps) {
+  const { t } = useLanguage();
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New Discount</DialogTitle>
+          <DialogTitle>{t("discounts.addNewDiscount")}</DialogTitle>
         </DialogHeader>
         <DiscountForm
           discount={discount}
@@ -51,9 +53,9 @@ export function AddDiscountDialog({
         />
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
-          <Button onClick={onSubmit}>Add Discount</Button>
+          <Button onClick={onSubmit}>{t("discounts.addDiscount")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

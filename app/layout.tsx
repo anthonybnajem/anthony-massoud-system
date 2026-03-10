@@ -1,27 +1,49 @@
 "use client";
 
 import type React from "react";
+import Script from "next/script";
 import "@/app/globals.css";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { LanguageProvider } from "@/components/language-provider";
 import { DatabaseInitializer } from "@/components/database-initializer";
 import { PosDataProvider } from "@/components/pos-data-provider";
 import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { DiscountProvider } from "@/components/discount-provider";
 import { AuthProvider } from "@/components/auth-provider";
-import { useEffect } from "react";
-import { useTheme } from "next-themes";
 import { themeColors } from "@/lib/theme";
+
 const inter = Inter({ subsets: ["latin"] });
+
+// Set dir/lang from stored locale before first paint (avoids flash when Arabic is selected)
+const localeInitScript = `
+(function(){
+  try {
+    var k = "pos-system:locale";
+    var raw = localStorage.getItem(k);
+    if (raw) {
+      var l = JSON.parse(raw);
+      var isAr = typeof l === "string" && (l === "ar" || l.indexOf("ar") === 0);
+      if (isAr) {
+        document.documentElement.setAttribute("dir", "rtl");
+        document.documentElement.setAttribute("lang", "ar");
+      } else {
+        document.documentElement.setAttribute("dir", "ltr");
+        document.documentElement.setAttribute("lang", "en");
+      }
+    }
+  } catch (e) {}
+})();
+`;
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-   
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" dir="ltr" suppressHydrationWarning>
       <body
         className={inter.className}
         style={
@@ -96,20 +118,31 @@ export default function RootLayout({
           } as React.CSSProperties
         }
       >
+        <Script
+          id="locale-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: localeInitScript,
+          }}
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
+          <LanguageProvider>
           <AuthProvider>
-            <DatabaseInitializer>
-              <PosDataProvider>
-                <DiscountProvider>{children}</DiscountProvider>
-              </PosDataProvider>
-              <Toaster />
-            </DatabaseInitializer>
+            <TooltipProvider delayDuration={0}>
+              <DatabaseInitializer>
+                <PosDataProvider>
+                  <DiscountProvider>{children}</DiscountProvider>
+                </PosDataProvider>
+                <Toaster />
+              </DatabaseInitializer>
+            </TooltipProvider>
           </AuthProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

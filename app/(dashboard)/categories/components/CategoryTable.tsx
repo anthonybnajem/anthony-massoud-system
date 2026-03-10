@@ -1,5 +1,6 @@
 "use client";
 
+import { useLanguage } from "@/components/language-provider";
 import { AnimatePresence } from "framer-motion";
 import { type Category } from "@/components/pos-data-provider";
 import {
@@ -37,15 +38,16 @@ export function CategoryTable({
   onDelete,
   itemVariants,
 }: CategoryTableProps) {
+  const { t } = useLanguage();
   return (
     <div className="overflow-x-auto min-w-0">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Products</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="text-start">{t("categories.name")}</TableHead>
+            <TableHead className="text-start">{t("categories.descriptionHeader")}</TableHead>
+            <TableHead className="text-start">{t("categories.productsHeader")}</TableHead>
+            <TableHead className="text-end">{t("categories.actionsHeader")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -70,11 +72,11 @@ export function CategoryTable({
                     <EmptyMedia variant="icon">
                       <Tags className="h-6 w-6" />
                     </EmptyMedia>
-                    <EmptyTitle>No categories found</EmptyTitle>
+                    <EmptyTitle>{t("categories.noCategoriesFound")}</EmptyTitle>
                     <EmptyDescription>
                       {searchQuery
-                        ? "Try adjusting your search criteria."
-                        : "Get started by adding your first category."}
+                        ? t("categories.noCategoriesSearchDesc")
+                        : t("categories.noCategoriesEmptyDesc")}
                     </EmptyDescription>
                   </EmptyHeader>
                 </Empty>

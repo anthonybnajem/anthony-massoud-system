@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
+import { useLanguage } from "@/components/language-provider"
 import { useSubscription } from "@/components/subscription-provider"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -32,6 +33,7 @@ import { Store, Plus, Edit, Trash2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 
 export default function StoresPage() {
+  const { t } = useLanguage()
   const { stores, activeStore, setActiveStore, addStore, removeStore, updateStore, canUseEnterpriseFeatures } =
     useSubscription()
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
@@ -50,8 +52,8 @@ export default function StoresPage() {
   const handleAddStore = () => {
     if (!canUseEnterpriseFeatures) {
       toast({
-        title: "Enterprise Feature",
-        description: "Multiple stores are only available on Enterprise plan.",
+        title: t("stores.enterpriseFeature"),
+        description: t("stores.enterpriseFeatureDesc"),
         variant: "destructive",
       })
       return
@@ -59,8 +61,8 @@ export default function StoresPage() {
 
     if (!newStore.name || !newStore.address) {
       toast({
-        title: "Missing Information",
-        description: "Please provide both store name and address.",
+        title: t("stores.missingInfo"),
+        description: t("stores.missingInfoDesc"),
         variant: "destructive",
       })
       return
@@ -116,14 +118,12 @@ export default function StoresPage() {
     show: { y: 0, opacity: 1 },
   }
 
-  return
-
   if (!canUseEnterpriseFeatures) {
     return (
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6">
         <motion.div variants={itemVariants}>
-          <h1 className="text-2xl font-bold tracking-tight">Store Management</h1>
-          <p className="text-muted-foreground">Manage your store locations.</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("stores.title")}</h1>
+          <p className="text-muted-foreground">{t("stores.manageLocations")}</p>
         </motion.div>
 
         <motion.div variants={itemVariants}>
@@ -134,15 +134,14 @@ export default function StoresPage() {
                   <EmptyMedia variant="icon">
                     <Store className="h-6 w-6" />
                   </EmptyMedia>
-                  <EmptyTitle>Enterprise Feature</EmptyTitle>
+                  <EmptyTitle>{t("stores.enterpriseFeature")}</EmptyTitle>
                   <EmptyDescription>
-                    Multi-store management is only available on the Enterprise plan. Upgrade your subscription to access
-                    this feature.
+                    {t("stores.enterpriseFeatureDesc")}
                   </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent>
                   <Button asChild>
-                    <a href="/settings/subscription">Upgrade to Enterprise</a>
+                    <a href="/settings/subscription">{t("stores.upgradeLink")}</a>
                   </Button>
                 </EmptyContent>
               </Empty>
@@ -157,28 +156,28 @@ export default function StoresPage() {
     <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6">
       <motion.div variants={itemVariants} className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Store Management</h1>
-          <p className="text-muted-foreground">Manage your store locations.</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("stores.title")}</h1>
+          <p className="text-muted-foreground">{t("stores.manageLocations")}</p>
         </div>
         <Button onClick={() => setIsAddDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Store
+          {t("stores.addStore")}
         </Button>
       </motion.div>
 
       <motion.div variants={itemVariants}>
         <Card>
           <CardHeader>
-            <CardTitle>Your Stores</CardTitle>
+            <CardTitle>{t("stores.yourStores")}</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Store Name</TableHead>
-                  <TableHead>Address</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t("stores.storeName")}</TableHead>
+                  <TableHead>{t("stores.address")}</TableHead>
+                  <TableHead>{t("stores.status")}</TableHead>
+                  <TableHead className="text-end">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -189,14 +188,14 @@ export default function StoresPage() {
                     <TableCell>{store.address}</TableCell>
                     <TableCell>
                       {store.id === activeStore?.id ? (
-                        <Badge>Active</Badge>
+                        <Badge>{t("stores.active")}</Badge>
                       ) : (
                         <Button variant="outline" size="sm" onClick={() => setActiveStore(store.id)}>
-                          Set Active
+                          {t("stores.setActive")}
                         </Button>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       <div className="flex justify-end gap-2">
                         <Button
                           variant="ghost"
@@ -232,9 +231,9 @@ export default function StoresPage() {
                           <EmptyMedia variant="icon">
                             <Store className="h-6 w-6" />
                           </EmptyMedia>
-                          <EmptyTitle>No stores found</EmptyTitle>
+                          <EmptyTitle>{t("stores.noStoresFound")}</EmptyTitle>
                           <EmptyDescription>
-                            Add your first store location to get started.
+                            {t("stores.addFirstStoreDesc")}
                           </EmptyDescription>
                         </EmptyHeader>
                       </Empty>
@@ -251,23 +250,23 @@ export default function StoresPage() {
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Store</DialogTitle>
+            <DialogTitle>{t("stores.addNewStore")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="store-name">Store Name</Label>
+              <Label htmlFor="store-name">{t("stores.storeName")}</Label>
               <Input
                 id="store-name"
-                placeholder="Enter store name"
+                placeholder={t("stores.enterStoreName")}
                 value={newStore.name}
                 onChange={(e) => setNewStore({ ...newStore, name: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="store-address">Store Address</Label>
+              <Label htmlFor="store-address">{t("stores.storeAddress")}</Label>
               <Input
                 id="store-address"
-                placeholder="Enter store address"
+                placeholder={t("stores.enterStoreAddress")}
                 value={newStore.address}
                 onChange={(e) => setNewStore({ ...newStore, address: e.target.value })}
               />
@@ -275,9 +274,9 @@ export default function StoresPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
-            <Button onClick={handleAddStore}>Add Store</Button>
+            <Button onClick={handleAddStore}>{t("stores.addStore")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -286,24 +285,24 @@ export default function StoresPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Store</DialogTitle>
+            <DialogTitle>{t("stores.editStore")}</DialogTitle>
           </DialogHeader>
           {currentStore && (
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-store-name">Store Name</Label>
+                <Label htmlFor="edit-store-name">{t("stores.storeName")}</Label>
                 <Input
                   id="edit-store-name"
-                  placeholder="Enter store name"
+                  placeholder={t("stores.enterStoreName")}
                   value={currentStore.name}
                   onChange={(e) => setCurrentStore({ ...currentStore, name: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-store-address">Store Address</Label>
+                <Label htmlFor="edit-store-address">{t("stores.storeAddress")}</Label>
                 <Input
                   id="edit-store-address"
-                  placeholder="Enter store address"
+                  placeholder={t("stores.enterStoreAddress")}
                   value={currentStore.address}
                   onChange={(e) => setCurrentStore({ ...currentStore, address: e.target.value })}
                 />
@@ -312,9 +311,9 @@ export default function StoresPage() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
-            <Button onClick={handleEditStore}>Save Changes</Button>
+            <Button onClick={handleEditStore}>{t("stores.saveChanges")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -323,25 +322,24 @@ export default function StoresPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Store</AlertDialogTitle>
+            <AlertDialogTitle>{t("stores.deleteStore")}</AlertDialogTitle>
             <AlertDialogDescription>
               {currentStore && (
                 <>
-                  Are you sure you want to delete <span className="font-semibold">{currentStore.name}</span>?
-                  This action cannot be undone.
+                  {t("stores.deleteStoreConfirmDesc", { name: currentStore.name })}
                 </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteStore}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete Store
+              {t("stores.deleteStore")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useLanguage } from "@/components/language-provider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -37,8 +38,9 @@ export function CategoryForm({
   onSubmit,
   defaultValues,
   onCancel,
-  submitLabel = "Save",
+  submitLabel,
 }: CategoryFormProps) {
+  const { t } = useLanguage();
   const {
     register,
     handleSubmit,
@@ -60,18 +62,18 @@ export function CategoryForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
       <div className="grid gap-2">
-        <Label htmlFor="name">Name</Label>
-        <Input id="name" placeholder="Category name ex: steel rebar" {...register("name")} />
+        <Label htmlFor="name">{t("categories.name")}</Label>
+        <Input id="name" placeholder={t("categories.namePlaceholder")} {...register("name")} />
         {errors.name && (
           <p className="text-destructive">{errors.name.message}</p>
         )}
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="description">Description (Optional)</Label>
+        <Label htmlFor="description">{t("categories.description")}</Label>
         <Textarea
           id="description"
-          placeholder="Category description"
+          placeholder={t("categories.descriptionPlaceholder")}
           {...register("description")}
         />
       </div>
@@ -100,9 +102,9 @@ export function CategoryForm({
 
       <div className="flex justify-end gap-2 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          {t("common.cancel")}
         </Button>
-        <Button type="submit">{submitLabel}</Button>
+        <Button type="submit">{submitLabel ?? t("common.save")}</Button>
       </div>
     </form>
   );
