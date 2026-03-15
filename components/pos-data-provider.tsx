@@ -98,6 +98,7 @@ type PosDataContextType = {
     shiftId?: string
   ) => Promise<Sale>;
   recordExpense: (expense: Omit<Expense, "id" | "date">) => Promise<Expense>;
+  updateExpense: (expenseId: string, updates: Partial<Pick<Expense, "paymentStatus" | "amountPaid">>) => Promise<Expense>;
   updateSale: (saleId: string, updates: Partial<Sale>) => Promise<Sale>;
   deleteSale: (saleId: string) => Promise<void>;
   voidSale: (saleId: string, reason?: string) => Promise<Sale>;
@@ -197,6 +198,13 @@ const PosDataContext = createContext<PosDataContextType>({
     date: new Date(),
   }),
   recordExpense: async () => ({
+    id: "",
+    items: [],
+    total: 0,
+    paymentMethod: "",
+    date: new Date(),
+  }),
+  updateExpense: async () => ({
     id: "",
     items: [],
     total: 0,
@@ -1485,6 +1493,32 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateExpense = async (
+    expenseId: string,
+    updates: Partial<Pick<Expense, "paymentStatus" | "amountPaid">>
+  ): Promise<Expense> => {
+    const existing = await expensesApi.getById(expenseId);
+    if (!existing) {
+      throw new Error("Expense not found");
+    }
+    const updated: Expense = {
+      ...existing,
+      ...updates,
+      amountPaid:
+        updates.paymentStatus === "partially_paid"
+          ? (updates.amountPaid ?? existing.amountPaid)
+          : undefined,
+      updatedAt: new Date(),
+    };
+    await expensesApi.update(updated);
+    setExpenses(await expensesApi.getAll());
+    toast({
+      title: "Expense updated",
+      description: "Payment status has been updated.",
+    });
+    return updated;
+  };
+
   const updateSale = async (
     saleId: string,
     updates: Partial<Sale>
@@ -2145,6 +2179,7 @@ export function PosDataProvider({ children }: { children: React.ReactNode }) {
         removeCategory,
         recordSale,
         recordExpense,
+        updateExpense,
         updateSale,
         deleteSale,
         voidSale,

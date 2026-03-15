@@ -1218,10 +1218,15 @@ export function PosPageContent({ mode }: { mode: PosMode }) {
           paymentMethod,
           vendor: customerName.trim() || undefined,
           notes: saleNotes.trim() || undefined,
+          expenseType: "expense_out",
+          paymentStatus,
+          amountPaid: paymentStatus === "partially_paid" ? amountPaid : undefined,
         });
         setIsCheckoutOpen(false);
         setCart([]);
         setPaymentMethod("cash");
+        setPaymentStatus("paid");
+        setAmountPaid(0);
         setCustomerName("");
         setCustomerEmail("");
         setCustomerPhone("");
@@ -1521,7 +1526,7 @@ export function PosPageContent({ mode }: { mode: PosMode }) {
       <div
         className={`flex h-full w-full ${isMobile ? "flex-col" : "flex-row"} ${
           isTablet ? "gap-3" : "gap-4"
-        } overflow-hidden min-w-0 p-4 md:p-6`}
+        } overflow-hidden min-w-0 p-3 sm:p-4 md:p-6`}
       >
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
@@ -1530,29 +1535,27 @@ export function PosPageContent({ mode }: { mode: PosMode }) {
             {/* Cart Summary Bar with Sidebar Toggle */}
              
             <div
-              className={`card ${isTablet ? "p-3" : "p-4"}`}
+              className={`card ${isMobile ? "p-3" : isTablet ? "p-3" : "p-4"}`}
             >
-              
-              <div className="flex items-center justify-between gap-3">
-                   <div className="flex items-center">
-                         <SidebarTrigger className="h-9 w-9 shrink-0" aria-label={t("common.toggleSidebar")} />
-                          <Button
-                  variant="outline"
-                  size="sm"
-                  className="order-1"
-                  onClick={() => router.push("/receipts")}
-                >
-                  {t("sales.viewRecentReceipts")}
-                </Button>
-</div>
-           
-               
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <SidebarTrigger className="h-9 w-9 shrink-0" aria-label={t("common.toggleSidebar")} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 text-xs sm:text-sm truncate max-w-[140px] sm:max-w-none"
+                    onClick={() => router.push("/receipts")}
+                  >
+                    {t("sales.viewRecentReceipts")}
+                  </Button>
+                </div>
+
                 {/* Active Shift Indicator / Employee Selector */}
                 {activeShifts.length > 0 ? (
                   activeShifts.length === 1 ? (
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-green-500/10 border border-green-500/20">
-                      <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                      <span className="text-xs font-medium text-green-700 dark:text-green-400">
+                    <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-md bg-green-500/10 border border-green-500/20 min-w-0 shrink">
+                      <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+                      <span className="text-xs font-medium text-green-700 dark:text-green-400 truncate">
                         {activeShifts[0].employeeId
                           ? employees.find(
                               (e) => e.id === activeShifts[0].employeeId
@@ -1561,12 +1564,12 @@ export function PosPageContent({ mode }: { mode: PosMode }) {
                       </span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto sm:min-w-0">
                       <Select
                         value={selectedEmployeeId}
                         onValueChange={setSelectedEmployeeId}
                       >
-                        <SelectTrigger className="h-8 w-[180px] border-2 border-primary/20 bg-background">
+                        <SelectTrigger className="h-8 w-full min-w-0 max-w-[140px] sm:max-w-none sm:w-[180px] border-2 border-primary/20 bg-background">
                           <SelectValue placeholder={t("sales.selectEmployee")} />
                         </SelectTrigger>
                         <SelectContent>
@@ -1594,47 +1597,40 @@ export function PosPageContent({ mode }: { mode: PosMode }) {
                   //   </span>
                   // </div>
                 )}
-                
-                
-                <div className="flex items-center gap-3">
-                 
-                  <div className="flex items-center gap-2">
-                   
-                    <div className="p-2 bg-primary/20 rounded-lg">
+
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 basis-full sm:basis-auto sm:flex-initial justify-end">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="p-1.5 sm:p-2 bg-primary/20 rounded-lg shrink-0">
                       <ShoppingCart className="h-4 w-4 text-primary" />
                     </div>
-                    
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs text-muted-foreground">
                         {t("sales.cartItems")}
                       </p>
-                      <p className="text-base font-semibold text-foreground">
+                      <p className="text-sm sm:text-base font-semibold text-foreground truncate">
                         {cartItemCount} {cartItemCount === 1 ? t("cart.item") : t("cart.items")}
                       </p>
                     </div>
                   </div>
-                  <div className="h-8 w-px bg-border" />
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 bg-primary/20 rounded-lg">
+                  <div className="h-6 sm:h-8 w-px bg-border shrink-0" aria-hidden />
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="p-1.5 sm:p-2 bg-primary/20 rounded-lg shrink-0">
                       <Tag className="h-4 w-4 text-primary" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs text-muted-foreground">{t("sales.total")}</p>
-                      <p className="text-lg font-bold text-primary">
+                      <p className="text-base sm:text-lg font-bold text-primary truncate">
                         {currencySymbol}
                         {effectiveCartTotal.toFixed(2)}
                       </p>
                     </div>
-                    
                   </div>
-                  
                 </div>
-                
               </div>
               
             </div>
 
-            <div className={`card ${isTablet ? "p-3" : "p-4"}`}>
+            <div className={`card ${isMobile ? "p-3" : isTablet ? "p-3" : "p-4"}`}>
               <Tabs
                 value={activeSalesSection}
                 onValueChange={(value) =>
@@ -1642,15 +1638,15 @@ export function PosPageContent({ mode }: { mode: PosMode }) {
                     value as "products" | "workers" | "services" | "custom"
                   )
                 }
-                className="w-full"
+                className="w-full min-w-0"
               >
-                <TabsList className={`grid w-full h-11 ${isExpenseMode ? "grid-cols-3" : "grid-cols-4"}`}>
+                <TabsList className={`grid w-full min-w-0 h-10 sm:h-11 text-xs sm:text-sm ${isExpenseMode ? "grid-cols-3" : "grid-cols-4"}`}>
                   {!isExpenseMode && (
-                    <TabsTrigger value="products">{t("sales.products")}</TabsTrigger>
+                    <TabsTrigger value="products" className="min-w-0 truncate px-2 sm:px-4">{t("sales.products")}</TabsTrigger>
                   )}
-                  <TabsTrigger value="workers">{t("sales.workers")}</TabsTrigger>
-                  <TabsTrigger value="services">{t("sales.services")}</TabsTrigger>
-                  <TabsTrigger value="custom">{t("sales.addCustom")}</TabsTrigger>
+                  <TabsTrigger value="workers" className="min-w-0 truncate px-2 sm:px-4">{t("sales.workers")}</TabsTrigger>
+                  <TabsTrigger value="services" className="min-w-0 truncate px-2 sm:px-4">{t("sales.services")}</TabsTrigger>
+                  <TabsTrigger value="custom" className="min-w-0 truncate px-2 sm:px-4">{t("sales.addCustom")}</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>

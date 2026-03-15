@@ -1,11 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { usePosData } from "@/components/pos-data-provider";
 import { useLanguage } from "@/components/language-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { History } from "lucide-react";
+import { ArrowLeft, History } from "lucide-react";
 import { StockMovementHistory } from "../components/StockMovementHistory";
 import {
   Select,
@@ -255,8 +256,17 @@ export default function InventoryHistoryPage() {
       variants={containerVariants}
       initial="hidden"
       animate="show"
-      className="space-y-6 overflow-hidden min-w-0"
+      className="space-y-6 pt-0 px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6 overflow-hidden min-w-0"
     >
+      <div className="flex items-center gap-3">
+        <Link
+          href="/expenses"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {t("common.back")}
+        </Link>
+      </div>
       {/* Header */}
       <motion.div variants={itemVariants} className="min-w-0">
         <div className="flex items-center gap-3 mb-2">

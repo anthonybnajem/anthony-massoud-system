@@ -8,6 +8,16 @@ import { useReceiptSettings } from "@/components/receipt-settings-provider";
 import { useLanguage } from "@/components/language-provider";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -24,11 +34,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 
 export default function ExpensesHistoryPage() {
   const { t } = useLanguage();
-  const { expenses } = usePosData();
+  const { expenses, updateExpense } = usePosData();
   const { settings } = useReceiptSettings();
   const currencySymbol = settings?.currencySymbol ?? "$";
 
@@ -45,12 +55,16 @@ export default function ExpensesHistoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("30");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all");
   const [rowsPerPage, setRowsPerPage] = useState("10");
   const [page, setPage] = useState(0);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editPaymentStatus, setEditPaymentStatus] = useState<"paid" | "unpaid" | "partially_paid">("paid");
+  const [editAmountPaid, setEditAmountPaid] = useState(0);
 
   useEffect(() => {
     setPage(0);
-  }, [searchQuery, dateFilter, typeFilter, rowsPerPage]);
+  }, [searchQuery, dateFilter, typeFilter, paymentStatusFilter, rowsPerPage]);
 
   const filteredExpenses = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -78,6 +92,10 @@ export default function ExpensesHistoryPage() {
           const expType = exp.expenseType ?? "expense_out";
           if (expType !== typeFilter) return false;
         }
+        if (paymentStatusFilter !== "all") {
+          const status = exp.paymentStatus;
+          if (status !== paymentStatusFilter) return false;
+        }
         if (cutoffDate) {
           const expDate = new Date(exp.date);
           if (expDate < cutoffDate) return false;
@@ -85,7 +103,7 @@ export default function ExpensesHistoryPage() {
         return true;
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [expenses, searchQuery, dateFilter, typeFilter]);
+  }, [expenses, searchQuery, dateFilter, typeFilter, paymentStatusFilter]);
 
   const numericRows = Number(rowsPerPage) || 10;
   const totalPages = Math.max(1, Math.ceil(filteredExpenses.length / numericRows));
@@ -95,7 +113,7 @@ export default function ExpensesHistoryPage() {
   );
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-6 p-3 sm:p-4 md:p-6 overflow-hidden min-w-0">
       <div className="flex items-center gap-3">
         <Link
           href="/expenses"
@@ -106,10 +124,10 @@ export default function ExpensesHistoryPage() {
         </Link>
       </div>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
           {t("expenses.recentExpenses")}
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm sm:text-base text-muted-foreground">
           {t("expenses.recentExpensesSubtitle")}
         </p>
       </div>
@@ -133,6 +151,17 @@ export default function ExpensesHistoryPage() {
                 <SelectItem value="expense_out">{t("expenses.typeExpenseOut")}</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
+              <SelectTrigger className="md:w-40">
+                <SelectValue placeholder={t("expenses.filterByPaymentStatus")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("receipts.allStatuses")}</SelectItem>
+                <SelectItem value="paid">{t("checkout.paymentStatus.paid")}</SelectItem>
+                <SelectItem value="unpaid">{t("checkout.paymentStatus.unpaid")}</SelectItem>
+                <SelectItem value="partially_paid">{t("checkout.paymentStatus.partially_paid")}</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={dateFilter} onValueChange={setDateFilter}>
               <SelectTrigger className="md:w-40">
                 <SelectValue placeholder={t("receipts.dateRange")} />
@@ -147,8 +176,8 @@ export default function ExpensesHistoryPage() {
             </Select>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-lg border">
+        <CardContent className="space-y-4 overflow-x-auto">
+          <div className="rounded-lg border min-w-[800px]">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -157,14 +186,17 @@ export default function ExpensesHistoryPage() {
                   <TableHead>{t("expenses.vendor")}</TableHead>
                   <TableHead>{t("expenses.items")}</TableHead>
                   <TableHead>{t("expenses.paymentMethod")}</TableHead>
+                  <TableHead>{t("expenses.paymentStatus")}</TableHead>
+                  <TableHead className="text-right">{t("expenses.amountPaid")}</TableHead>
                   <TableHead className="text-right">{t("expenses.total")}</TableHead>
+                  <TableHead className="w-[80px]">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedExpenses.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={9}
                       className="text-center text-sm text-muted-foreground py-10"
                     >
                       {t("expenses.noExpensesMatch")}
@@ -179,6 +211,8 @@ export default function ExpensesHistoryPage() {
                       .filter(Boolean)
                       .slice(0, 2)
                       .join(", ");
+                    const paymentStatus = exp.paymentStatus;
+                    const amountPaid = exp.amountPaid;
                     return (
                       <TableRow key={exp.id}>
                         <TableCell>
@@ -217,9 +251,50 @@ export default function ExpensesHistoryPage() {
                         <TableCell className="text-sm capitalize">
                           {exp.paymentMethod}
                         </TableCell>
+                        <TableCell>
+                          {paymentStatus ? (
+                            <Badge
+                              variant={
+                                paymentStatus === "paid"
+                                  ? "default"
+                                  : paymentStatus === "unpaid"
+                                    ? "destructive"
+                                    : "secondary"
+                              }
+                            >
+                              {t(`checkout.paymentStatus.${paymentStatus}`)}
+                            </Badge>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right text-sm">
+                          {amountPaid != null && amountPaid > 0
+                            ? `${currencySymbol}${amountPaid.toFixed(2)}`
+                            : "—"}
+                        </TableCell>
                         <TableCell className="text-right font-medium">
                           {currencySymbol}
                           {totalDisplay.toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          {type === "expense_out" ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              aria-label={t("expenses.editPayment")}
+                              onClick={() => {
+                                setEditingExpense(exp);
+                                setEditPaymentStatus((exp.paymentStatus ?? "unpaid") as "paid" | "unpaid" | "partially_paid");
+                                setEditAmountPaid(exp.amountPaid ?? 0);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            "—"
+                          )}
                         </TableCell>
                       </TableRow>
                     );
@@ -257,6 +332,84 @@ export default function ExpensesHistoryPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!editingExpense} onOpenChange={(open) => !open && setEditingExpense(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("expenses.editPaymentTitle")}</DialogTitle>
+            <DialogDescription>{t("expenses.editPaymentDescription")}</DialogDescription>
+          </DialogHeader>
+          {editingExpense && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>{t("checkout.paymentStatus")}</Label>
+                <div className="flex flex-col gap-2">
+                  {(["paid", "unpaid", "partially_paid"] as const).map((status) => (
+                    <label
+                      key={status}
+                      className="flex items-center gap-2 cursor-pointer text-sm"
+                    >
+                      <input
+                        type="radio"
+                        name="editPaymentStatus"
+                        checked={editPaymentStatus === status}
+                        onChange={() => setEditPaymentStatus(status)}
+                        className="h-4 w-4 border-slate-400 text-primary"
+                      />
+                      <span>{t(`checkout.paymentStatus.${status}`)}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {editPaymentStatus === "partially_paid" && (
+                <div className="space-y-2">
+                  <Label>{t("checkout.amountPaid")}</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={Math.abs(editingExpense.total)}
+                    step={0.01}
+                    value={editAmountPaid === 0 ? "" : editAmountPaid}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value);
+                      const total = Math.abs(editingExpense.total);
+                      setEditAmountPaid(Number.isNaN(v) ? 0 : Math.max(0, Math.min(total, v)));
+                    }}
+                    placeholder="0"
+                  />
+                  {editAmountPaid > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {currencySymbol}
+                      {(Math.abs(editingExpense.total) - editAmountPaid).toFixed(2)} {t("checkout.balanceDue")}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingExpense(null)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!editingExpense) return;
+                try {
+                  await updateExpense(editingExpense.id, {
+                    paymentStatus: editPaymentStatus,
+                    amountPaid: editPaymentStatus === "partially_paid" ? editAmountPaid : undefined,
+                  });
+                  setEditingExpense(null);
+                } catch {
+                  // toast from provider
+                }
+              }}
+            >
+              {t("common.save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -193,7 +193,7 @@ export function AddStockView() {
 
   return (
     <div
-      className={`flex h-full w-full flex-1 ${isTablet ? "gap-3" : "gap-4"} overflow-hidden min-w-0 p-4 md:p-6`}
+      className={`flex h-full w-full flex-1 flex-col md:flex-row ${isTablet ? "gap-3" : "gap-4"} overflow-hidden min-w-0 p-3 sm:p-4 md:p-6`}
     >
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <div className="space-y-3 mb-4 shrink-0 bg-background relative z-10">

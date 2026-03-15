@@ -142,6 +142,10 @@ export type Expense = {
   notes?: string;
   /** When "restock", this expense is an inventory restock (Add Stock). When "expense_out" or omitted, money leaving the business. */
   expenseType?: ExpenseTypeKind;
+  /** Payment status for expense_out: paid, unpaid, or partially_paid. */
+  paymentStatus?: "paid" | "unpaid" | "partially_paid";
+  /** When paymentStatus is partially_paid, the amount already paid. */
+  amountPaid?: number;
   createdAt?: Date;
   updatedAt?: Date;
 };
