@@ -1219,14 +1219,10 @@ export function PosPageContent({ mode }: { mode: PosMode }) {
           vendor: customerName.trim() || undefined,
           notes: saleNotes.trim() || undefined,
           expenseType: "expense_out",
-          paymentStatus,
-          amountPaid: paymentStatus === "partially_paid" ? amountPaid : undefined,
         });
         setIsCheckoutOpen(false);
         setCart([]);
         setPaymentMethod("cash");
-        setPaymentStatus("paid");
-        setAmountPaid(0);
         setCustomerName("");
         setCustomerEmail("");
         setCustomerPhone("");
@@ -2230,6 +2226,7 @@ export function PosPageContent({ mode }: { mode: PosMode }) {
         <CheckoutDialog
           isOpen={isCheckoutOpen}
           onClose={() => setIsCheckoutOpen(false)}
+          isExpenseMode={isExpenseMode}
           customerName={customerName}
           customerEmail={customerEmail}
           customerPhone={customerPhone}

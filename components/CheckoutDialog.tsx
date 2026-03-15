@@ -21,6 +21,7 @@ import type { Worker } from "@/components/pos-data-provider";
 interface CheckoutDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  isExpenseMode?: boolean;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
@@ -100,6 +101,7 @@ interface CheckoutDialogProps {
 export default function CheckoutDialog({
   isOpen,
   onClose,
+  isExpenseMode = false,
   customerName,
   customerEmail,
   customerPhone,
@@ -342,55 +344,59 @@ export default function CheckoutDialog({
                 </span>
               </div>
 
-              <Separator className="my-3 bg-slate-200" />
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
-                  {t("checkout.paymentStatus")}
-                </label>
-                <div className="flex flex-col gap-2">
-                  {(["paid", "unpaid", "partially_paid"] as const).map((status) => (
-                    <label
-                      key={status}
-                      className="flex items-center gap-2 cursor-pointer text-sm"
-                    >
-                      <input
-                        type="radio"
-                        name="paymentStatus"
-                        checked={paymentStatus === status}
-                        onChange={() => setPaymentStatus(status)}
-                        className="h-4 w-4 border-slate-400 text-primary"
-                      />
-                      <span>{t(`checkout.paymentStatus.${status}`)}</span>
+              {!isExpenseMode && (
+                <>
+                  <Separator className="my-3 bg-slate-200" />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">
+                      {t("checkout.paymentStatus")}
                     </label>
-                  ))}
-                </div>
-                {paymentStatus === "partially_paid" && (
-                  <div className="pt-2 space-y-1">
-                    <label className="text-xs text-slate-500">
-                      {t("checkout.amountPaid")}
-                    </label>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={cartTotal}
-                      step={0.01}
-                      className={checkoutInputClass}
-                      value={amountPaid === 0 ? "" : amountPaid}
-                      onChange={(e) => {
-                        const v = parseFloat(e.target.value);
-                        setAmountPaid(Number.isNaN(v) ? 0 : Math.max(0, Math.min(cartTotal, v)));
-                      }}
-                      placeholder="0"
-                    />
-                    {amountPaid > 0 && (
-                      <p className="text-xs text-slate-500">
-                        {t("checkout.balanceDue")}: {currencySymbol}
-                        {(cartTotal - amountPaid).toFixed(2)}
-                      </p>
+                    <div className="flex flex-col gap-2">
+                      {(["paid", "unpaid", "partially_paid"] as const).map((status) => (
+                        <label
+                          key={status}
+                          className="flex items-center gap-2 cursor-pointer text-sm"
+                        >
+                          <input
+                            type="radio"
+                            name="paymentStatus"
+                            checked={paymentStatus === status}
+                            onChange={() => setPaymentStatus(status)}
+                            className="h-4 w-4 border-slate-400 text-primary"
+                          />
+                          <span>{t(`checkout.paymentStatus.${status}`)}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {paymentStatus === "partially_paid" && (
+                      <div className="pt-2 space-y-1">
+                        <label className="text-xs text-slate-500">
+                          {t("checkout.amountPaid")}
+                        </label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={cartTotal}
+                          step={0.01}
+                          className={checkoutInputClass}
+                          value={amountPaid === 0 ? "" : amountPaid}
+                          onChange={(e) => {
+                            const v = parseFloat(e.target.value);
+                            setAmountPaid(Number.isNaN(v) ? 0 : Math.max(0, Math.min(cartTotal, v)));
+                          }}
+                          placeholder="0"
+                        />
+                        {amountPaid > 0 && (
+                          <p className="text-xs text-slate-500">
+                            {t("checkout.balanceDue")}: {currencySymbol}
+                            {(cartTotal - amountPaid).toFixed(2)}
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
             </div>
           </div>
 
